@@ -22,6 +22,7 @@ An earlier terminal `./init.sh` does not export its environment to the parent sh
 - Preserve originals and existing artifacts. Synthetic helpers accept only `synthetic-*` runs; production contracts (`scripts/production.py`) accept only `prod-*` runs and paths inside `source_roots` under `sources/`. Never label real media as synthetic to bypass scope.
 - Originals under `sources/` are read-only. `.claude/hooks/protect_sources.py` blocks tool calls that would write there; do not work around it.
 - Write captions by `docs/caption-style.md` (variety 80 / mood 20, presets from `renderer/src/production/presets.json`). Never present unspoken text as `dialogue`.
+- Sound follows `docs/sound-guide.md`. Register audio with `scripts/audio_library.py`; download a Claude-found file only after the user approves that file in chat and the production config enables audio search/downloads.
 - `timeline.json` is the render input. Edit through Claude Code; do not maintain a second master timeline or launch native Remotion Studio from upstream examples.
 - Permission patterns and helper checks are defense in depth, not an OS sandbox. Do not use direct commands to widen the authorized scope.
 - Never print secrets, change global settings, push, deploy, send external messages or commit without the relevant explicit request.

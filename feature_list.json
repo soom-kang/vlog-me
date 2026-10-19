@@ -113,6 +113,16 @@
       ],
       "status": "completed",
       "evidence": "tests/test_captions.py; reports/unit5-caption-gallery.jpg; docs/caption-style.md (taste not yet tuned on real footage)"
+    },
+    {
+      "id": "sound-system",
+      "name": "BGM/SFX library, eligibility and ducking (unit 6)",
+      "description": "audio_library.py register/check/credits with license evidence, YouTube-scoped eligibility, ducking envelopes from transcripts, SFX density warnings, library audio in candidate previews",
+      "dependencies": [
+        "caption-system"
+      ],
+      "status": "completed",
+      "evidence": "tests/test_sound.py; smoke-media measured ~12 dB BGM ducking under speech in a rendered preview; no real audio registered, no human listening"
     }
   ]
 }

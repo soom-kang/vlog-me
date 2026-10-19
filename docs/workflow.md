@@ -24,11 +24,12 @@
 3. 사용자는 `open work/<run>/review/vN/index.html`로 페이지를 열고 채팅으로 `c01 채택`, `c03 자막 수정: …`, `c05 제외`처럼 답합니다.
 4. Claude가 답을 `selection.json`(`decisions`: 후보마다 `adopt`·`caption_edit`·`drop`, 수정이면 `note`)으로 옮기고 `review.py select`로 기록합니다. 리뷰 뒤에 `candidates.json`이 바뀌면 선택을 거부하므로 다시 build합니다.
 
-효과음·BGM은 카드에 계획만 표시하고 미리보기 소리에는 아직 넣지 않습니다(단위 6).
+등록된 음원을 지정한 효과음·BGM은 미리보기 소리에 들어가고, BGM은 대사 구간에서 자동으로 12 dB 낮아집니다. 음원을 지정하지 않은 항목은 계획만 표시합니다. 자세한 기준은 [사운드 가이드](sound-guide.md)에 있습니다.
 
 `python3 scripts/analyze.py --run-id prod-...`는 ingest가 끝난 run의 proxy만 읽습니다. Claude는 `analysis/index.md`와 클립별 `summary.md`부터 읽고, 필요한 구간만 contact sheet로 확인합니다. `reaction`은 대사 밖의 큰 소리라는 신호일 뿐 웃음이라는 판정이 아닙니다. Whisper는 음악·정적 구간에서 없는 대사(예: 자막 제작자 문구)를 지어낼 수 있습니다. 알려진 문구이거나 정적과 대부분 겹치는 대사는 `의심`으로 표시되고 웃음 후보 판정에서 빠집니다. 이 표시는 휴리스틱이므로 후보를 고를 때 화면과 함께 확인합니다. 실패하면 이전 시도를 `analysis.failed-*`로 남기고 다시 실행할 수 있습니다.
-| 음원 탐색·다운로드·선곡·권리 사실 확인 | 미구현; 음원 목록 비어 있음 |
-| 음원 적격성 상태 검사 | fixture predicate만 구현; 사실 확인 기능 아님 |
+| 음원 등록·hash·loudness 측정·사용 판정(`audio_library.py`) | 구현. 등록된 실제 음원 0개 |
+| 무료 음원 탐색·다운로드 | 절차만 문서화. production config의 `audio_search`·`audio_downloads`와 파일별 사용자 승인 필요 |
+| 권리 사실 확인 | Claude가 공식 근거를 확인해 기록. 판정은 no-claim 보증이 아님 |
 | 게시·Content ID 검사 | 미구현·권한 없음 |
 
 ## 시작과 상태

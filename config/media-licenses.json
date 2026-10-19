@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "assets": [],
-  "note": "No library audio has been acquired or approved. Generated test tones are setup fixtures only."
+  "note": "Register files under assets/audio/ with scripts/audio_library.py register. Nothing is downloaded automatically; Claude-found files need production config audio_search and audio_downloads plus the user's approval per download."
 }

@@ -4,17 +4,17 @@
 
 ## 현재 위치 (2026-10-19)
 
-현재 phase는 `setup_synthetic_only`입니다. 단위 1–5(범위·데이터 계약, Ingest, Analyze, 후보 카드·기대 화면, 자막 preset)를 구현했지만 phase는 아직 바꾸지 않았습니다. 그래서 실제 원본에는 아직 실행되지 않습니다.
+현재 phase는 `setup_synthetic_only`입니다. 단위 1–6(범위·데이터 계약, Ingest, Analyze, 후보 카드·기대 화면, 자막 preset, 사운드)을 구현했지만 phase는 아직 바꾸지 않았습니다. 그래서 실제 원본에는 아직 실행되지 않습니다.
 
 할 수 있는 것:
 - 환경 점검(`./init.sh`)
 - 합성 영상·사진·테스트 톤의 렌더와 QA, 읽기 전용 미리보기
 - production 계약 검사: `scripts/production.py`의 범위 검증, `prod-*` run 경로, `sources/` 경로 검사, timeline v2 검증
-- 합성 fixture 검증: `./scripts/smoke-media.sh`(HDR·VFR·세로·무음 영상, 큰 소리·장면 전환, 한국어 합성 음성, HEIC를 임시 폴더에서 생성해 ingest·분석·후보 카드 렌더)
+- 합성 fixture 검증: `./scripts/smoke-media.sh`(HDR·VFR·세로·무음 영상, 큰 소리·장면 전환, 한국어 합성 음성, HEIC, 테스트 톤 음원을 임시 폴더에서 생성해 ingest·분석·후보 카드·ducking 렌더)
 
 아직 할 수 없는 것:
 - 실제 원본 ingest·분석(phase 전환 필요)
-- 최종 timeline 조립, 음원 탐색·배치, 롱폼 렌더
+- 실제 음원 확보(사용자 파일 또는 승인한 다운로드), 최종 timeline 조립, 롱폼 렌더
 
 ## 두 phase는 서로 배타적입니다
 
@@ -36,7 +36,7 @@ production으로 바꾸려면 사용자가 채팅으로 명시적으로 요청�
 | 3. Analyze | 로컬 Whisper 전사, 음량·웃음 후보 피크, 무음, 장면 전환, contact sheet, 클립 요약 | 완료(합성 fixture). 실제 대화·웃음 탐지 품질은 sample로 확인 필요 |
 | 4. 후보 카드·기대 화면 | 후보별 이유와 편집 계획, 자막을 합성한 still, 960×540 미리보기, 리뷰 페이지, 선택 기록 | 완료(합성 fixture). 기본 자막 preset은 시스템 폰트 |
 | 5. 예능 80 · 감성 20 자막 | preset 14종 레지스트리, OFL 한글 폰트 5종 번들, 글자 수·비율 검사, [자막 가이드](caption-style.md) | 완료(합성 fixture). 실제 영상에서 취향 조정 필요 |
-| 6. 사운드 | 사용자 음원 등록, 무료 음원·효과음 탐색(다운로드는 승인 후), 배치 규칙 | 대기 |
+| 6. 사운드 | 음원 라이브러리 등록·검사(`audio_library.py`), YouTube 기준 사용 판정, 대사 ducking·효과음 밀도 규칙, 미리보기에 BGM·효과음 반영, [사운드 가이드](sound-guide.md) | 완료(합성 fixture). 실제 음원 0개, 청취 미실행 |
 | 7. 롱폼 렌더 | 1080p30 구간 렌더와 이어 붙이기, QA | 대기 |
 | 8. Skill·harness | `vlog-workflow`, `vlog-scout`, `k-variety-caption`, `vlog-sound` | 대기 |
 
@@ -45,7 +45,7 @@ production으로 바꾸려면 사용자가 채팅으로 명시적으로 요청�
 ## 다음 단위를 여는 프롬프트 예
 
 ```text
-docs/roadmap.md의 단위 6(사운드)을 시작해줘.
+docs/roadmap.md의 단위 7(롱폼 렌더)을 시작해줘.
 - 이번에는 코드와 합성 fixture 테스트만 만들고 실제 원본은 열지 마.
 - phase는 아직 setup_synthetic_only로 둬.
 - 기존 테스트와 ./scripts/smoke-render.sh가 계속 통과해야 해.

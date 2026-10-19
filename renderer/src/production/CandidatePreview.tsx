@@ -1,10 +1,12 @@
 import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
-import {Video} from '@remotion/media';
+import {Audio, Video} from '@remotion/media';
+import {gainAt} from '../gain.mjs';
 import {Caption, type CaptionCue} from './Captions';
 
 type Segment = {src: string; trimBefore: number; frames: number; playbackRate: number};
+type AudioCue = {id: string; src: string; from: number; duration: number; gain: number[][]};
 export type CandidateProps = {
-  kind: 'video' | 'image'; segments: Segment[]; zoom: number; captions: CaptionCue[];
+  kind: 'video' | 'image'; segments: Segment[]; zoom: number; captions: CaptionCue[]; audio?: AudioCue[];
   durationInFrames: number; keyFrame: number;
 };
 
@@ -15,7 +17,7 @@ const Zoomed = ({zoom, durationInFrames, children}: {zoom: number; durationInFra
   return <AbsoluteFill style={{transform: `scale(${scale})`}}>{children}</AbsoluteFill>;
 };
 
-export const CandidatePreview = ({kind, segments, zoom, captions, durationInFrames}: CandidateProps) => {
+export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], durationInFrames}: CandidateProps) => {
   let offset = 0;
   return (
     <AbsoluteFill style={{backgroundColor: 'black'}}>
@@ -37,6 +39,12 @@ export const CandidatePreview = ({kind, segments, zoom, captions, durationInFram
           </Sequence>
         );
       })}
+      {audio.map((cue) => (
+        // Library BGM/SFX from run/audio; the BGM envelope already ducks under speech.
+        <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
+          <Audio src={staticFile(cue.src)} volume={(frame) => gainAt(frame, cue.gain)} />
+        </Sequence>
+      ))}
       {captions.map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
           <Caption cue={cue} />
@@ -46,7 +54,7 @@ export const CandidatePreview = ({kind, segments, zoom, captions, durationInFram
   );
 };
 
-const EMPTY: CandidateProps = {kind: 'image', segments: [], zoom: 1, captions: [], durationInFrames: 30, keyFrame: 0};
+const EMPTY: CandidateProps = {kind: 'image', segments: [], zoom: 1, captions: [], audio: [], durationInFrames: 30, keyFrame: 0};
 
 export const CandidateComposition = () => (
   <Composition id="CandidatePreview" component={CandidatePreview} durationInFrames={30} fps={30} width={1920} height={1080}

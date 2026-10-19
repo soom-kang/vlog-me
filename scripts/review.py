@@ -12,12 +12,15 @@ import json
 import math
 from pathlib import Path
 import re
+import shutil
 import signal
 
+import audio_library
 import common
 from common import digest, read_json, run_command, run_lock, safe_path, write_json
 import ingest
 import production
+import sound
 
 FPS = 30
 CANDIDATE_ID = r"c\d{2,3}"
@@ -110,12 +113,84 @@ def validate_candidates(data, entries):
             if not isinstance(sfx.get("name"), str) or not sfx["name"].strip():
                 raise ValueError(f"{cid}: sfx needs a name")
             _number(sfx.get("at"), 0, length, f"{cid}: sfx at")
+            if "asset" in sfx and not re.fullmatch(audio_library.ASSET_ID, str(sfx["asset"])) or str(sfx.get("asset", "sfx-")).startswith("bgm-"):
+                raise ValueError(f"{cid}: sfx asset must be a registered sfx-* ID")
+            _number(sfx.get("gain_db", -6), -40, 0, f"{cid}: sfx gain_db")
+        bgm = plan.get("bgm")
+        if isinstance(bgm, dict):
+            if not re.fullmatch(audio_library.ASSET_ID, str(bgm.get("asset"))) or not bgm["asset"].startswith("bgm-"):
+                raise ValueError(f"{cid}: bgm asset must be a registered bgm-* ID")
+            _number(bgm.get("gain_db", sound.BGM_BASE_DB), -40, -6, f"{cid}: bgm gain_db")
+        elif bgm is not None and not isinstance(bgm, str):
+            raise ValueError(f"{cid}: bgm is a note string or {{asset, gain_db}}")
         if not isinstance(c.get("preview", False), bool):
             raise ValueError(f"{cid}: preview must be true or false")
     return candidates
 
 
-def render_props(candidate, entry):
+def used_audio(candidates):
+    ids = set()
+    for candidate in candidates:
+        plan = candidate["plan"]
+        ids |= {s["asset"] for s in plan.get("sfx", []) if s.get("asset")}
+        if isinstance(plan.get("bgm"), dict):
+            ids.add(plan["bgm"]["asset"])
+    return sorted(ids)
+
+
+def stage_audio(run, asset_ids, platforms):
+    """Copy eligible library files into run/audio/ so the bundle can serve them. Refuses ineligible assets."""
+    if not asset_ids:
+        return {}
+    library = {a["id"]: a for a in audio_library.load_library()["assets"]}
+    staged = {}
+    folder = run / "audio"
+    folder.mkdir(exist_ok=True)
+    for asset_id in asset_ids:
+        asset = library.get(asset_id)
+        if asset is None:
+            raise ValueError(f"{asset_id} is not registered in config/media-licenses.json")
+        usable, reason = audio_library.eligibility(asset, platforms)
+        if not usable:
+            raise ValueError(f"{asset_id} cannot be used yet: {reason}")
+        source = safe_path(common.ROOT, asset["file"], True)
+        target = safe_path(folder, asset_id + source.suffix.lower())
+        if not target.exists():
+            shutil.copyfile(source, target)
+        if digest(target) != asset["sha256"]:
+            raise ValueError(f"{asset_id}: staged file differs from the registered hash")
+        staged[asset_id] = {"src": str(target.relative_to(run)), "frames": max(1, int(asset["duration_seconds"] * FPS))}
+    return staged
+
+
+def speech_segments(run, entry):
+    path = run / "analysis" / entry["id"] / "transcript.json"
+    if entry["kind"] != "video" or not path.is_file():
+        return []
+    return [s for s in read_json(path)["segments"] if not s.get("suspect")]
+
+
+def audio_cues(candidate, entry, total, staged, speech):
+    plan = candidate["plan"]
+    cues = []
+    bgm = plan.get("bgm")
+    if isinstance(bgm, dict):
+        frames = min(total, staged[bgm["asset"]]["frames"])
+        talk = sound.map_speech(plan["cuts"], plan.get("speed", 1), speech) if entry["kind"] == "video" else []
+        cues.append({"id": "bgm", "src": staged[bgm["asset"]]["src"], "from": 0, "duration": frames,
+                     "gain": sound.duck_envelope(frames, talk, base_db=bgm.get("gain_db", sound.BGM_BASE_DB)) if frames > 1 else [[0, -80]]})
+    for index, sfx in enumerate(plan.get("sfx", [])):
+        if not sfx.get("asset"):
+            continue
+        start = min(round(sfx["at"] * FPS), total - 1)
+        frames = max(2, min(staged[sfx["asset"]]["frames"], total - start))
+        db = sfx.get("gain_db", -6)
+        cues.append({"id": f"sfx-{index}", "src": staged[sfx["asset"]]["src"], "from": start, "duration": frames,
+                     "gain": [[0, db], [frames - 1, db]]})
+    return cues
+
+
+def render_props(candidate, entry, staged=None, speech=()):
     """Frame-exact props for the Remotion CandidatePreview composition."""
     plan = candidate["plan"]
     if entry["kind"] == "video":
@@ -137,6 +212,7 @@ def render_props(candidate, entry):
                          "speaker": caption.get("speaker"), "from": start,
                          "duration": max(1, min(round(caption["duration"] * FPS), total - start))})
     return {"kind": kind, "segments": segments, "zoom": plan.get("zoom", 1), "captions": captions,
+            "audio": audio_cues(candidate, entry, total, staged or {}, list(speech)),
             "durationInFrames": total, "keyFrame": min(round(candidate["key_moment"] * FPS), total - 1)}
 
 
@@ -161,8 +237,16 @@ def card_html(candidate, entry, folder):
         frames = f'<figure><img src="{cid}/src-1.jpg" alt=""><figcaption>사진</figcaption></figure>'
         edit = [f"줌 ×{plan.get('zoom', 1):g}(천천히 확대)"]
     edit += [f"자막 [{KIND_LABELS[c['kind']]}·{e(production.validate_caption_text(c, False))}] “{e(c['text'])}” {c['at']:.1f}s" for c in plan.get("captions", [])]
-    edit += [f"효과음 {e(s['name'])} {s['at']:.1f}s" for s in plan.get("sfx", [])]
-    edit += [f"BGM {e(plan['bgm'])}"] if plan.get("bgm") else []
+    edit += [f"효과음 {e(s['name'])} {s['at']:.1f}s" + (f" · {e(s['asset'])} {s.get('gain_db', -6)} dB" if s.get("asset") else " · (음원 미지정, 계획만)")
+             for s in plan.get("sfx", [])]
+    bgm = plan.get("bgm")
+    if isinstance(bgm, dict):
+        edit.append(f"BGM {e(bgm['asset'])} {bgm.get('gain_db', sound.BGM_BASE_DB)} dB · 대사 중 -{sound.DUCK_DEPTH_DB} dB" +
+                    (f" · {e(bgm['note'])}" if bgm.get("note") else ""))
+    elif bgm:
+        edit.append(f"BGM {e(bgm)} (음원 미지정, 계획만)")
+    warnings = sound.sfx_warnings([{"asset": s.get("asset") or s["name"], "from": round(s["at"] * FPS)} for s in plan.get("sfx", [])])
+    edit += [f"주의: {e(w)}" for w in warnings]
     edit += [e(n) for n in plan.get("notes", [])]
     preview = (f'<video controls preload="metadata" src="{cid}/preview.mp4"></video>'
                if (folder / cid / "preview.mp4").is_file() else "")
@@ -216,7 +300,7 @@ figcaption{{font-size:12px;color:var(--muted)}}.expected,video{{width:100%;displ
 .quote{{margin:10px 0 0}}.why{{color:var(--muted);margin:6px 0 0}}.evidence{{font-size:13px;color:var(--muted);margin:4px 0 0;padding-left:18px}}
 ul{{font-size:14px;padding-left:18px;margin:6px 0 0}}footer{{margin-top:12px;font-size:13px;color:var(--muted)}}code{{font-size:12px}}
 </style><main><h1>후보 리뷰 v{version}</h1>
-<p style="color:var(--muted);margin:0">{html.escape(run_id)} · 후보 {len(candidates)}개 (fun {fun} · mood {len(candidates) - fun}) · 기대 화면은 편집안대로 자막을 합성한 장면입니다. 효과음·BGM은 계획만 표시하며 아직 소리에 넣지 않았습니다.<br>{html.escape(ratio)}</p>
+<p style="color:var(--muted);margin:0">{html.escape(run_id)} · 후보 {len(candidates)}개 (fun {fun} · mood {len(candidates) - fun}) · 기대 화면은 편집안대로 자막을 합성한 장면입니다. 등록된 음원을 지정한 BGM·효과음은 미리보기에 들어가고, 음원을 지정하지 않은 항목은 계획만 표시합니다.<br>{html.escape(ratio)}</p>
 {body}</main></html>'''
 
 
@@ -236,6 +320,7 @@ def build(run_id):
         entries = read_entries(run)
         candidates_path = safe_path(run, "candidates.json", True)
         candidates = validate_candidates(read_json(candidates_path), entries)
+        staged = stage_audio(run, used_audio(candidates), config.get("audio_platforms", ["youtube"]))
         review_root = run / "review"
         review_root.mkdir(exist_ok=True)
         version = 1 + max([int(p.name[1:]) for p in review_root.glob("v*") if p.name[1:].isdigit()], default=0)
@@ -257,7 +342,7 @@ def build(run_id):
                                      "-i", str(proxy), "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "4", out], timeout=timeout)
                     else:
                         run_command(["sips", "-Z", "480", str(proxy), "--out", out], timeout=timeout)
-                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry),
+                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry)),
                              "preview": bool(candidate.get("preview"))})
             write_json(folder / "render-input.json", {"run_id": run_id, "version": version, "jobs": jobs})
             run_command(["node", str(common.ROOT / "renderer/scripts/review.mjs"), run_id, str(version), str(run)], timeout=timeout)
