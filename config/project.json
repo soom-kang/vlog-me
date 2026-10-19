@@ -1,0 +1,21 @@
+{
+  "project": "vlog-me",
+  "agent_runtime": "claude-code",
+  "phase": "setup_synthetic_only",
+  "use_subagents": false,
+  "source_roots": [],
+  "vlog_type": null,
+  "runtime_policy": "content_driven",
+  "target_duration_seconds": null,
+  "editorial_direction": null,
+  "caption_style": null,
+  "sound_design": "rich_contextual",
+  "audio_asset_policy": "free_only",
+  "audio_platforms": ["youtube", "instagram", "tiktok"],
+  "attribution_policy": null,
+  "external_processing": false,
+  "audio_downloads": false,
+  "production_render": false,
+  "upload": false,
+  "synthetic_profile": {"width": 1280, "height": 720, "fps": 30, "color": "SDR BT.709", "concurrency": 2, "timeout_seconds": 180}
+}

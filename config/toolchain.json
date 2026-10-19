@@ -1,0 +1,46 @@
+{
+  "verified_on": "2026-10-18",
+  "timezone": "Asia/Seoul",
+  "platform": "Darwin",
+  "architecture": "arm64",
+  "node": {
+    "source": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-darwin-arm64.tar.gz",
+    "sha256": "6a9724d9b50a5f22b4816cded441b5a8d9ddae546191a5e5b7efa5a5e2ee26d5",
+    "version": "v24.22.0",
+    "checksum_source": "https://nodejs.org/dist/v24.22.0/SHASUMS256.txt"
+  },
+  "existing_tools": {
+    "claude": "2.1.302 (Claude Code)",
+    "ffmpeg": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.0.2 Copyright (c) 2007-2026 the FFmpeg developers",
+    "python3": "Python 3.15.0"
+  },
+  "renderer": {
+    "dependencies": {
+      "@remotion/bundler": "4.0.536",
+      "@remotion/cli": "4.0.536",
+      "@remotion/media": "4.0.536",
+      "@remotion/renderer": "4.0.536",
+      "react": "19.3.1",
+      "react-dom": "19.3.1",
+      "remotion": "4.0.536"
+    },
+    "devDependencies": {
+      "@types/react": "19.3.0",
+      "@types/react-dom": "19.3.0",
+      "eslint": "10.13.0",
+      "typescript": "5.9.3",
+      "typescript-eslint": "8.71.2"
+    },
+    "lockfile_sha256": "f896fc4e5600750c69db6162d0b724c605340a5189742d187b46de5d4dd51ac2"
+  },
+  "browser": {
+    "path": "renderer/node_modules/.remotion/chrome-for-testing/mac-arm64/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+    "remotion": "4.0.536",
+    "chromeMode": "chrome-for-testing"
+  },
+  "skill_lock": "config/skills-lock.json",
+  "scope": "project-local; no other project dependency",
+  "asr": "not_installed",
+  "audio_library": "empty"
+}

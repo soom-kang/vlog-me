@@ -1,0 +1,140 @@
+{
+  "checks": [
+    {
+      "name": "claude",
+      "status": "PASS",
+      "path": "/opt/homebrew/bin/claude",
+      "version": "2.1.302 (Claude Code)"
+    },
+    {
+      "name": "node",
+      "status": "PASS",
+      "path": "/Users/soom.kang/Desktop/work/2.services/vlog-me/.tools/node-v24.22.0-darwin-arm64/bin/node",
+      "version": "v24.22.0"
+    },
+    {
+      "name": "npm",
+      "status": "PASS",
+      "path": "/Users/soom.kang/Desktop/work/2.services/vlog-me/.tools/node-v24.22.0-darwin-arm64/bin/npm",
+      "version": "11.19.1"
+    },
+    {
+      "name": "ffmpeg",
+      "status": "PASS",
+      "path": "/opt/homebrew/bin/ffmpeg",
+      "version": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers"
+    },
+    {
+      "name": "ffprobe",
+      "status": "PASS",
+      "path": "/opt/homebrew/bin/ffprobe",
+      "version": "ffprobe version 9.0.2 Copyright (c) 2007-2026 the FFmpeg developers"
+    },
+    {
+      "name": "python3",
+      "status": "PASS",
+      "path": "/opt/homebrew/bin/python3",
+      "version": "Python 3.15.0"
+    },
+    {
+      "name": "CLAUDE.md",
+      "status": "PASS"
+    },
+    {
+      "name": "feature_list.json",
+      "status": "PASS"
+    },
+    {
+      "name": "config/project.json",
+      "status": "PASS"
+    },
+    {
+      "name": "renderer/package-lock.json",
+      "status": "PASS"
+    },
+    {
+      "name": ".tools/browser.json",
+      "status": "PASS"
+    },
+    {
+      "name": "setup_scope",
+      "status": "PASS"
+    },
+    {
+      "name": "upstream_skill_integrity",
+      "status": "PASS"
+    },
+    {
+      "name": "local_browser",
+      "status": "PASS"
+    },
+    {
+      "name": "pinned_dependencies",
+      "status": "PASS"
+    }
+  ],
+  "free_disk_bytes": 166436433920,
+  "real_media": "NOT_RUN",
+  "asr": "NOT_INSTALLED",
+  "audio_library": "EMPTY"
+}
+test_audio_policy_unknown_is_not_clear (test_contracts.ContractTests.test_audio_policy_unknown_is_not_clear) ... ok
+test_content_driven_duration (test_contracts.ContractTests.test_content_driven_duration) ... ok
+test_invalid_edits_rejected (test_contracts.ContractTests.test_invalid_edits_rejected) ... ok
+test_original_audio_maps_once_per_video_clip (test_contracts.ContractTests.test_original_audio_maps_once_per_video_clip) ... ok
+test_path_aliases_and_overwrite_rejected (test_contracts.ContractTests.test_path_aliases_and_overwrite_rejected) ... ok
+test_real_run_rejected_before_read (test_contracts.ContractTests.test_real_run_rejected_before_read) ... ok
+test_resume_checks_inputs_outputs_and_partial_state (test_contracts.ContractTests.test_resume_checks_inputs_outputs_and_partial_state) ... ok
+test_current_scope_blocks_create_before_allocating_run (test_recovery.RecoveryTests.test_current_scope_blocks_create_before_allocating_run) ... ok
+test_current_scope_blocks_reuse_even_when_frozen_config_is_valid (test_recovery.RecoveryTests.test_current_scope_blocks_reuse_even_when_frozen_config_is_valid) ... ok
+test_generation_failure_is_readable_without_manifest (test_recovery.RecoveryTests.test_generation_failure_is_readable_without_manifest) ... {"allocated_run": "synthetic-20261018-145642-afaf8094"}
+ok
+test_inventory_failure_records_failed_preparation (test_recovery.RecoveryTests.test_inventory_failure_records_failed_preparation) ... {"allocated_run": "synthetic-20261018-145642-e990d635"}
+ok
+test_late_credit_collision_preserves_existing_content (test_recovery.RecoveryTests.test_late_credit_collision_preserves_existing_content) ... ok
+test_new_defaults_do_not_invalidate_completed_run (test_recovery.RecoveryTests.test_new_defaults_do_not_invalidate_completed_run) ... ok
+test_scope_change_during_preparation_records_failure (test_recovery.RecoveryTests.test_scope_change_during_preparation_records_failure) ... {"allocated_run": "synthetic-20261018-145642-509c773b"}
+ok
+test_scope_change_during_render_retains_uncommitted_partial (test_recovery.RecoveryTests.test_scope_change_during_render_retains_uncommitted_partial) ... ok
+test_sigint_stops_owned_child_before_releasing_lock (test_recovery.RecoveryTests.test_sigint_stops_owned_child_before_releasing_lock) ... ok
+test_wrong_state_run_id_is_rejected_without_rewrite (test_recovery.RecoveryTests.test_wrong_state_run_id_is_rejected_without_rewrite) ... ok
+test_claude_launcher_inherits_local_node_and_project (test_startup.StartupTests.test_claude_launcher_inherits_local_node_and_project) ... ok
+test_integrity_checks_survive_python_optimization (test_startup.StartupTests.test_integrity_checks_survive_python_optimization) ... ok
+test_skill_tampering_and_unregistered_files_rejected (test_startup.StartupTests.test_skill_tampering_and_unregistered_files_rejected) ... ok
+test_changed_timeline_requires_explicit_refresh_and_preserves_state (test_studio.StudioTests.test_changed_timeline_requires_explicit_refresh_and_preserves_state) ... ok
+test_first_prepare_and_repeat_reuse_do_not_rewrite (test_studio.StudioTests.test_first_prepare_and_repeat_reuse_do_not_rewrite) ... ok
+test_interrupted_refresh_leaves_detectable_mismatch (test_studio.StudioTests.test_interrupted_refresh_leaves_detectable_mismatch) ... ok
+test_launcher_limits_interactivity_and_refresh_does_not_launch (test_studio.StudioTests.test_launcher_limits_interactivity_and_refresh_does_not_launch) ... ok
+test_modified_props_and_invalid_owner_are_preserved (test_studio.StudioTests.test_modified_props_and_invalid_owner_are_preserved) ... ok
+test_props_alias_rejected_without_touching_target (test_studio.StudioTests.test_props_alias_rejected_without_touching_target) ... ok
+test_render_lock_blocks_refresh_without_changing_props (test_studio.StudioTests.test_render_lock_blocks_refresh_without_changing_props) ... ok
+test_scope_brief_state_and_invalid_timeline_stop_before_props_write (test_studio.StudioTests.test_scope_brief_state_and_invalid_timeline_stop_before_props_write) ... ok
+test_unowned_or_partial_props_are_preserved (test_studio.StudioTests.test_unowned_or_partial_props_are_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 1.307s
+
+OK
+
+> vlog-me-renderer@0.1.0 lint
+> eslint src scripts tests
+
+
+> vlog-me-renderer@0.1.0 typecheck
+> tsc --noEmit
+
+
+> vlog-me-renderer@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ dB ducking converts to amplitude without boosting source (0.35725ms)
+✔ fade interpolates in dB and clamps outside cue (0.064958ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 55.3975
+PASS: local preflight, contracts, lint, typecheck and tests. Render/model checks are separate.

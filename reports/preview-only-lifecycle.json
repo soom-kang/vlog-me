@@ -1,0 +1,183 @@
+{
+  "status": "PASS",
+  "run_id": "synthetic-20261018-151755-5c1016f2",
+  "direct_shell_entry": "PASS",
+  "startup_seconds": 0.073,
+  "bind": "127.0.0.1",
+  "sigterm_exit_code": 0,
+  "port_closed_after_exit": true,
+  "http_checks": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "method": "GET",
+      "path": "/preview.mp4",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "method": "GET",
+      "path": "/preview.mp4",
+      "status": 206,
+      "expected": 206
+    },
+    {
+      "method": "HEAD",
+      "path": "/preview.mp4",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/execute",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/update-default-props",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/render",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/install-package",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/transcribe",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/ws",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/state.json",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/assets/video.mp4",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/../config/project.json",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "GET",
+      "path": "/%2e%2e/config/project.json",
+      "status": 404,
+      "expected": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/execute",
+      "status": 405,
+      "expected": 405
+    },
+    {
+      "method": "PUT",
+      "path": "/api/ai/execute",
+      "status": 405,
+      "expected": 405
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/ai/execute",
+      "status": 405,
+      "expected": 405
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/ai/execute",
+      "status": 405,
+      "expected": 405
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/ai/execute",
+      "status": 405,
+      "expected": 405
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 403,
+      "expected": 403
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 403,
+      "expected": 403
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 400,
+      "expected": 400
+    },
+    {
+      "method": "GET",
+      "path": "/preview.mp4",
+      "status": 416,
+      "expected": 416
+    }
+  ],
+  "render_reuse": "PASS",
+  "state_and_output_mtimes_unchanged": true,
+  "qa": {
+    "status": "PASS",
+    "scope": "synthetic_encoded_output",
+    "duration_seconds": 6.0,
+    "dimensions": [
+      1280,
+      720
+    ],
+    "codecs": [
+      "h264",
+      "aac"
+    ],
+    "loudness": {
+      "input_i": "-26.14",
+      "input_tp": "-18.63",
+      "input_lra": "4.20",
+      "input_thresh": "-36.34",
+      "output_i": "-17.14",
+      "output_tp": "-10.48",
+      "output_lra": "3.80",
+      "output_thresh": "-27.37",
+      "normalization_type": "dynamic",
+      "target_offset": "1.14"
+    },
+    "elapsed_seconds": 19.32,
+    "child_max_rss_bytes_macos": 858816512,
+    "artifact_bytes": 47396986,
+    "human_listen": "NOT_RUN",
+    "platform_check": "not_checked",
+    "asr": "NOT_RUN",
+    "renderer_result": "{\"status\":\"rendered_partial_pending_verification\",\"duration_frames\":180}\n"
+  }
+}

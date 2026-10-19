@@ -1,0 +1,17 @@
+{
+  "exit_code": 0,
+  "status": "PARTIAL",
+  "skill_advertised": false,
+  "project_reads": [
+    "/Users/soom.kang/Desktop/work/2.services/vlog-me/CLAUDE.md",
+    "/Users/soom.kang/Desktop/work/2.services/vlog-me/config/project.json",
+    "/Users/soom.kang/Desktop/work/2.services/vlog-me/.claude/skills/remotion-best-practices/SKILL.md",
+    "/Users/soom.kang/Desktop/work/2.services/vlog-me/.claude/skills/remotion-best-practices/remotion-markup/REFERENCE.md"
+  ],
+  "result": "`/remotion-best-practices`가 이 세션에 slash command로 등록되어 있지 않아 실행되지 않았습니다. 대신 로컬 Skill 파일인 `.claude/skills/remotion-best-practices/SKILL.md`와 `remotion-markup/REFERENCE.md`를 읽고 답합니다. 파일 수정, shell 실행, 원본 접근, 다운로드는 하지 않았고, 함께 붙여 주신 Python 검사 스크립트도 실행하지 않았습니다.\n\n- **Scope marker:** `VLOG_SETUP_ONLY` (`CLAUDE.md:12`). `config/project.json`의 `phase`는 `setup_synthetic_only`입니다.\n- **허용된 작업:**\n  - 환경 설정\n  - 합성 fixture 작업. helper는 `synthetic-*` run만 받습니다.\n  - `./init.sh` 검증\n  - `./scripts/smoke-render.sh`로 하는 합성 smoke render\n- **금지된 작업:**\n  - 원본 사진·영상 읽기와 처리\n  - 음악·SFX·ASR 모델 다운로드\n  - 업로드, 유료 미디어 서비스 사용\n  - 실제 제작용 렌더링\n  - subagent나 외부 coordinator 사용\n  - 실제 미디어에 synthetic 라벨을 붙이는 우회\n  - 명시적 요청 없는 push, deploy, commit, 외부 메시지 발송\n  - config에서도 `external_processing`, `audio_downloads`, `production_render`, `upload`가 모두 `false`이고 `use_subagents`도 `false`입니다.\n- **길이 결정 방식:** `runtime_policy: \"content_driven\"`, `target_duration_seconds: null`입니다. 고정된 목표 길이 없이 내용에 따라 정하며, `timeline.json`이 렌더 입력입니다.\n- **권장 Video/Audio import:** `import { Audio, Video } from \"@remotion/media\";` (`remotion-markup/REFERENCE.md:105-111`)",
+  "total_cost_usd": 0.16748839999999998,
+  "duration_ms": 14610,
+  "permission_denial_count": 0,
+  "file_read_check": "PASS",
+  "slash_command_registration": "NOT_AVAILABLE_IN_RESTRICTED_MODE"
+}

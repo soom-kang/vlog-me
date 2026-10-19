@@ -1,0 +1,41 @@
+# Session Progress
+
+## Current State
+
+- Last Updated: 2026-10-19 Asia/Seoul
+- Active Feature: none; preview-only-viewer 완료
+- Scope: setup_synthetic_only; production agent는 Claude Code
+- Repository: Git 미초기화
+
+## Completed
+
+- 기존 공식 Remotion Skill 143개 파일·ref·hash 유지.
+- Claude 시작 환경, scope 재검사, 실패 기록·중단 정리·출력 보존 유지.
+- native Studio 실행 제거. studio.sh 및 npm studio는 읽기 전용 encoded preview만 제공.
+- loopback bind, GET/HEAD 두 경로, byte range, 쓰기·agent·편집·설치·render API 거부.
+- Python 33개·Node 2개·lint·typecheck 통과.
+- 실제 HTTP 23건·브라우저 재생과 탐색·파일 mtime 보존 통과.
+- SIGTERM 종료 회귀 수정, exit 0과 port 해제 실측 통과.
+- 최종 run: synthetic-20261018-151755-5c1016f2. 날짜는 UTC.
+
+## Evidence
+
+- reports/preview-only-review.md: 현재 동작·변경·검증·제한.
+- reports/preview-only-checks.log: 최종 정적·계약 검사.
+- reports/preview-only-lifecycle.json: 최종 코드의 시작·HTTP·재사용·mtime·SIGTERM 종료.
+- reports/preview-only-http.json: 앞선 HTTP 확인.
+- reports/preview-only-browser.json 및 preview-only-viewer.png: 재생·탐색 화면.
+- reports/adversarial-review.md 및 setup-report.md: 이전 검토의 역사적 근거.
+- reports/claude-review-check.json: 이전 세션의 실제 Claude Skill 호출. 이번에는 model 재호출 없음.
+
+## Decisions and Limits
+
+- Custom Skill·subagent·automation·dependency 추가 없음.
+- 유형·톤은 제작 prompt에서 결정하고 목표 길이는 null.
+- live --refresh 제거. 새 run을 Claude Code에서 수정·렌더한 후 완료 영상을 미리보기.
+- 뷰어는 128 MiB 이하의 검증된 합성 snapshot만 재생하며 state·props·영상을 변경하지 않음.
+- 검증용 서버·탭 종료. 실패·partial·lock·stale은 보존.
+
+## Deferred
+
+원본 처리·ASR·음원 다운로드·권리 확인·취향·사람 청취·장시간/4K·업로드는 NOT_RUN입니다.

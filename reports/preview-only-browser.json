@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "viewport": [
+    1280,
+    720
+  ],
+  "run_id": "synthetic-20261018-151327-d6ceff08",
+  "playback_reached_end": true,
+  "media_after_seek": {
+    "currentTime": 0.985575,
+    "duration": 6.016,
+    "muted": true,
+    "paused": true,
+    "videoHeight": 720,
+    "videoWidth": 1280
+  },
+  "agent_or_edit_controls_visible": false,
+  "human_listen": "NOT_RUN"
+}

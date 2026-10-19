@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "run_id": "synthetic-20261018-145659-bb6031a1",
+  "actions": {
+    "status": {
+      "owner": "vlog-me.synthetic.v1",
+      "run_id": "synthetic-20261018-145659-bb6031a1",
+      "stage": "synthetic_encoded_output",
+      "status": "succeeded",
+      "input_fingerprint": "55168d4d1e3efcdf7f173e2adc60b6f7f429d72debeb3b7d094d36eda7c05380",
+      "next_action": "report synthetic evidence; real media remains disabled",
+      "human_review": "not_run",
+      "outputs": {
+        "preview.mp4": "59d5655666c65967353e272df2d7f7db1d9c80ebee0717a37f0bfc542ff29dcc",
+        "frame.png": "3e1a85677e538d17329ea86f233ceb6072107d5e567f2de7515f1b8d8054eb18",
+        "verify.json": "60cf038ad5f68680909db06c03b68f3d1d81fb389e7d9e4c247b5e1000fa049e",
+        "audio-credits.md": "ae8c0377c42e1cd0912d1fdf43b744225b9da52050ba68c7d928ca7d515c6602"
+      }
+    },
+    "render": {
+      "owner": "vlog-me.synthetic.v1",
+      "run_id": "synthetic-20261018-145659-bb6031a1",
+      "stage": "synthetic_encoded_output",
+      "status": "succeeded",
+      "input_fingerprint": "55168d4d1e3efcdf7f173e2adc60b6f7f429d72debeb3b7d094d36eda7c05380",
+      "next_action": "report synthetic evidence; real media remains disabled",
+      "human_review": "not_run",
+      "outputs": {
+        "preview.mp4": "59d5655666c65967353e272df2d7f7db1d9c80ebee0717a37f0bfc542ff29dcc",
+        "frame.png": "3e1a85677e538d17329ea86f233ceb6072107d5e567f2de7515f1b8d8054eb18",
+        "verify.json": "60cf038ad5f68680909db06c03b68f3d1d81fb389e7d9e4c247b5e1000fa049e",
+        "audio-credits.md": "ae8c0377c42e1cd0912d1fdf43b744225b9da52050ba68c7d928ca7d515c6602"
+      }
+    }
+  },
+  "file_mtimes_unchanged": true,
+  "lock_present": false,
+  "qa": {
+    "status": "PASS",
+    "scope": "synthetic_encoded_output",
+    "duration_seconds": 6.0,
+    "dimensions": [
+      1280,
+      720
+    ],
+    "codecs": [
+      "h264",
+      "aac"
+    ],
+    "loudness": {
+      "input_i": "-26.14",
+      "input_tp": "-18.63",
+      "input_lra": "4.20",
+      "input_thresh": "-36.34",
+      "output_i": "-17.14",
+      "output_tp": "-10.48",
+      "output_lra": "3.80",
+      "output_thresh": "-27.37",
+      "normalization_type": "dynamic",
+      "target_offset": "1.14"
+    },
+    "elapsed_seconds": 18.87,
+    "child_max_rss_bytes_macos": 1055784960,
+    "artifact_bytes": 47396986,
+    "human_listen": "NOT_RUN",
+    "platform_check": "not_checked",
+    "asr": "NOT_RUN",
+    "renderer_result": "{\"status\":\"rendered_partial_pending_verification\",\"duration_frames\":180}\n"
+  },
+  "original_media": "NOT_RUN",
+  "audio_downloads": "NOT_RUN"
+}

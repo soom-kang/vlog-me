@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "run_id": "synthetic-20261018-145223-9f8c6d01",
+  "launches": 2,
+  "second_launch_props": "reused",
+  "canonical_caption": "Studio 갱신 검증 완료",
+  "refresh_seen_in_browser": true,
+  "viewport": [
+    1280,
+    720
+  ],
+  "frame": 30,
+  "default_agent_cli_label": "Claude Code",
+  "screenshot": "reports/studio-review.png",
+  "read_only_enforced": false,
+  "host_annotation_agent_action_visible": true,
+  "agent_action_used": false,
+  "loopback_only_bind": false,
+  "external_reachability": "NOT_RUN",
+  "server_stopped": true,
+  "tab_closed": true
+}

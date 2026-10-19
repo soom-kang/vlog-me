@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "check": "SIGTERM shutdown",
+  "reason": "InterruptedError raised by signal handler was swallowed by selector; communicate and wait timed out after 5s each",
+  "cleanup": "After the failed executor session ended, no matching viewer process remained in the scoped process check",
+  "original_media": "NOT_RUN"
+}

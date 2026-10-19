@@ -1,0 +1,58 @@
+{
+  "features": [
+    {
+      "id": "setup-foundation",
+      "name": "Claude-only synthetic setup",
+      "description": "Local runtime, unchanged upstream Skill, scoped harness and synthetic media verification",
+      "dependencies": [],
+      "status": "completed",
+      "evidence": "reports/setup-report.md",
+      "done_criteria": [
+        "local checks pass",
+        "synthetic encoded output verified",
+        "negative cases and state invalidation checked",
+        "limits and handoff recorded"
+      ]
+    },
+    {
+      "id": "real-media-validation",
+      "name": "Authorized real-media and ASR evaluation",
+      "description": "Deferred until a bounded source scope is authorized; no ASR model installed now",
+      "dependencies": [
+        "setup-foundation"
+      ],
+      "status": "not-started",
+      "evidence": "Not authorized in current setup request"
+    },
+    {
+      "id": "editorial-calibration",
+      "name": "Story, captions and licensed audio calibration",
+      "description": "Production brief and human comparison; audio downloads remain disabled",
+      "dependencies": [
+        "real-media-validation"
+      ],
+      "status": "not-started",
+      "evidence": "No original-media or audio-library samples processed"
+    },
+    {
+      "id": "setup-adversarial-review",
+      "name": "Adversarial setup review and recovery fixes",
+      "description": "Review Claude-only startup, Skill integration and synthetic state/recovery against the design",
+      "dependencies": [
+        "setup-foundation"
+      ],
+      "status": "completed",
+      "evidence": "reports/adversarial-review.md"
+    },
+    {
+      "id": "preview-only-viewer",
+      "name": "Read-only encoded preview",
+      "description": "Replace native Studio with a loopback viewer that serves only a verified synthetic output",
+      "dependencies": [
+        "setup-adversarial-review"
+      ],
+      "status": "completed",
+      "evidence": "reports/preview-only-review.md"
+    }
+  ]
+}

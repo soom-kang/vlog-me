@@ -1,0 +1,22 @@
+{
+  "run_id": "synthetic-20261018-143016-f8b2d6f7",
+  "state": {
+    "owner": "vlog-me.synthetic.v1",
+    "run_id": "synthetic-20261018-143016-f8b2d6f7",
+    "stage": "synthetic_encoded_output",
+    "status": "succeeded",
+    "input_fingerprint": "6944f2a009891aeb6024beae8070e468ac6be52d6b17aa6b0a405f11fc2f9691",
+    "next_action": "report synthetic evidence; real media remains disabled",
+    "human_review": "not_run",
+    "outputs": {
+      "preview.mp4": "bc2355268034278277475b8d71b15559997057c88c2600ed7a167dae99d1222f",
+      "frame.png": "b5541a6cfb6d29460727139c5a4ca5fceb9df0abfad0791f345ce71a2bde5fc9",
+      "verify.json": "1eadf6211c03a6199ee06ec0aa40400ae110f7bfcbf6fa42596f30bed9d8bdc0",
+      "audio-credits.md": "ae8c0377c42e1cd0912d1fdf43b744225b9da52050ba68c7d928ca7d515c6602"
+    }
+  },
+  "checks": [
+    "12-second generated video plus 2-second photo",
+    "caption edited before first render"
+  ]
+}

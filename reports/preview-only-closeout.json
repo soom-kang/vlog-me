@@ -1,0 +1,83 @@
+{
+  "status": "PASS",
+  "checked_at": "2026-10-19T00:19:20.513770+09:00",
+  "modified": [
+    "CLAUDE.md",
+    "README.md",
+    "docs/workflow.md",
+    "feature_list.json",
+    "progress.md",
+    "renderer/package.json",
+    "reports/adversarial-review.md",
+    "reports/setup-report.md",
+    "scripts/studio.py",
+    "session-handoff.md",
+    "tests/test_studio.py"
+  ],
+  "added": [
+    "reports/preview-only-browser.json",
+    "reports/preview-only-checks.log",
+    "reports/preview-only-closeout.json",
+    "reports/preview-only-http.json",
+    "reports/preview-only-lifecycle-failed.json",
+    "reports/preview-only-lifecycle.json",
+    "reports/preview-only-review.md",
+    "reports/preview-only-viewer.png"
+  ],
+  "protected_files_unchanged": true,
+  "protected_count": 155,
+  "unexpected_changes": [],
+  "deleted": [],
+  "syntax_errors": [],
+  "broken_links": [],
+  "known_secret_pattern_files": [],
+  "dependencies_unchanged": true,
+  "git_status_exit_code": 128,
+  "line_changes": {
+    "feature_list.json": {
+      "added": 10,
+      "removed": 0
+    },
+    "progress.md": {
+      "added": 22,
+      "removed": 21
+    },
+    "session-handoff.md": {
+      "added": 29,
+      "removed": 41
+    },
+    "README.md": {
+      "added": 5,
+      "removed": 5
+    },
+    "CLAUDE.md": {
+      "added": 4,
+      "removed": 2
+    },
+    "renderer/package.json": {
+      "added": 1,
+      "removed": 1
+    },
+    "tests/test_studio.py": {
+      "added": 169,
+      "removed": 144
+    },
+    "docs/workflow.md": {
+      "added": 10,
+      "removed": 4
+    },
+    "scripts/studio.py": {
+      "added": 142,
+      "removed": 49
+    },
+    "reports/adversarial-review.md": {
+      "added": 2,
+      "removed": 0
+    },
+    "reports/setup-report.md": {
+      "added": 2,
+      "removed": 0
+    }
+  },
+  "scope": "Owned source/docs/config/Skill/reports; runtime, dependencies, cache and synthetic work excluded. No original media scanned."
+}
