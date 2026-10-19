@@ -1,0 +1,23 @@
+{
+  "project": "vlog-me",
+  "agent_runtime": "claude-code",
+  "phase": "production",
+  "use_subagents": false,
+  "source_roots": ["sources/REPLACE-WITH-TRIP-FOLDER"],
+  "vlog_type": "travel",
+  "runtime_policy": "content_driven",
+  "target_duration_seconds": null,
+  "editorial_direction": "fun 60 / mood 40, small everyday laughs over heavy sentiment",
+  "caption_style": "variety 80 / mood 20",
+  "sound_design": "rich_contextual",
+  "audio_asset_policy": "free_only",
+  "audio_platforms": ["youtube"],
+  "attribution_policy": "credits.md plus description text",
+  "external_processing": false,
+  "upload": false,
+  "asr_local": true,
+  "audio_search": false,
+  "audio_downloads": false,
+  "production_render": false,
+  "production_profile": {"width": 1920, "height": 1080, "fps": 30, "color": "SDR BT.709", "concurrency": 4, "timeout_seconds": 3600}
+}

@@ -9,6 +9,7 @@
 | 도구 점검·Skill 무결성·지침·인수인계 | 구현 |
 | 합성 asset 생성·inventory·timeline·기본 caption·믹스·렌더 QA | 구현 |
 | 상태 저장·hash 검증·실패/partial 보존·재개 | 합성 run에 한해 구현 |
+| production 범위 검증·`prod-*` run·`sources/` 경로·timeline v2 검증·원본 보호 hook | 구현(`scripts/production.py`); phase 전환 전이라 실행 진입점 없음 |
 | 실제 원본 ingestion·VFR mapping·HDR·HEIC | 미구현·현재 권한 없음 |
 | ASR·장면 발견·story 선별·예능 caption 작성 | 문서 지침만 존재; model/backend 미설치 |
 | 음원 탐색·다운로드·선곡·권리 사실 확인 | 미구현; 음원 목록 비어 있음 |

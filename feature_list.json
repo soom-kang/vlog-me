@@ -63,6 +63,46 @@
       ],
       "status": "completed",
       "evidence": "reports/project-review-2026-10-19.md"
+    },
+    {
+      "id": "production-contract",
+      "name": "Production scope and timeline v2 contract (unit 1)",
+      "description": "Exclusive production phase validation, prod-* runs, sources/ path checks, timeline v2 validator, caption share report and source-protection hook. Phase not switched.",
+      "dependencies": [
+        "project-review-docs"
+      ],
+      "status": "completed",
+      "evidence": "tests/test_production.py; docs/superpowers/specs/2026-10-19-production-harness-design.md"
+    },
+    {
+      "id": "production-ingest",
+      "name": "Ingest (unit 2)",
+      "description": "ffprobe inventory, VFR/HDR/rotation detection, CFR 1080p SDR proxy, HEIC to JPG",
+      "dependencies": [
+        "production-contract"
+      ],
+      "status": "not-started",
+      "evidence": "See docs/roadmap.md"
+    },
+    {
+      "id": "production-analyze",
+      "name": "Analyze (unit 3)",
+      "description": "Local Whisper transcript, loudness/laugh peaks, silence, scene cuts, contact sheets, clip summaries",
+      "dependencies": [
+        "production-ingest"
+      ],
+      "status": "not-started",
+      "evidence": "See docs/roadmap.md"
+    },
+    {
+      "id": "candidate-review",
+      "name": "Candidate cards and expected frames (unit 4)",
+      "description": "Reasons, edit plans, caption-composited stills, 480p previews, read-only review page",
+      "dependencies": [
+        "production-analyze"
+      ],
+      "status": "not-started",
+      "evidence": "See docs/roadmap.md"
     }
   ]
 }

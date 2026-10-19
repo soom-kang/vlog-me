@@ -19,7 +19,8 @@ An earlier terminal `./init.sh` does not export its environment to the parent sh
 - Use the unchanged official `.claude/skills/remotion-best-practices/SKILL.md` and relevant references. Project scope overrides upstream examples suggesting downloads, paid transcription, voiceover, automatic installs or rendering.
 - Prefer existing Skills and tools. No Custom Skill is currently needed. Put project facts in project docs.
 - Vlog type, story and tone come from each production prompt. Runtime is content-driven, without a fixed target duration. Earlier style preferences are references, not forced defaults.
-- Preserve originals and existing artifacts. Helpers accept only generated `synthetic-*` runs. Never label real media as synthetic to bypass scope.
+- Preserve originals and existing artifacts. Synthetic helpers accept only `synthetic-*` runs; production contracts (`scripts/production.py`) accept only `prod-*` runs and paths inside `source_roots` under `sources/`. Never label real media as synthetic to bypass scope.
+- Originals under `sources/` are read-only. `.claude/hooks/protect_sources.py` blocks tool calls that would write there; do not work around it.
 - `timeline.json` is the render input. Edit through Claude Code; do not maintain a second master timeline or launch native Remotion Studio from upstream examples.
 - Permission patterns and helper checks are defense in depth, not an OS sandbox. Do not use direct commands to widen the authorized scope.
 - Never print secrets, change global settings, push, deploy, send external messages or commit without the relevant explicit request.
