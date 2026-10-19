@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""Turn Claude's candidates.json into review cards with expected frames, then record the user's selection.
+
+`build` renders, per candidate: four source frames, an expected still with captions composited
+(Remotion renderStill) and, when requested, a 960x540 preview clip. Output goes to a new
+review/vN/ folder with a static index.html (no scripts) that opens straight from disk.
+`select` validates selection.json written from the user's chat answer and records it.
+"""
+import argparse
+import html
+import json
+import math
+from pathlib import Path
+import re
+import signal
+
+import common
+from common import digest, read_json, run_command, run_lock, safe_path, write_json
+import ingest
+import production
+
+FPS = 30
+CANDIDATE_ID = r"c\d{2,3}"
+DECISIONS = {"adopt", "caption_edit", "drop"}
+MIN_CUT = 0.3
+PHOTO_SECONDS = (1.0, 10.0)
+KIND_LABELS = {"variety": "예능", "situation": "상황", "sfx_text": "효과 글자", "inner_voice": "속마음",
+               "dialogue": "대사", "mood": "감성", "place": "장소"}
+
+
+def _number(value, low, high, name):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not low <= value <= high:
+        raise ValueError(f"{name} must be {low}..{high}")
+    return float(value)
+
+
+def edited_seconds(candidate, entry):
+    plan = candidate["plan"]
+    if entry["kind"] == "photo":
+        return float(plan.get("photo_seconds", 3.0))
+    return sum(end - start for start, end in plan["cuts"]) / plan.get("speed", 1)
+
+
+def edited_to_source(candidate, t):
+    """Map a time in the edited candidate to the source proxy time."""
+    plan = candidate["plan"]
+    speed = plan.get("speed", 1)
+    remaining = t * speed
+    for start, end in plan["cuts"]:
+        if remaining <= end - start:
+            return start + remaining
+        remaining -= end - start
+    return plan["cuts"][-1][1]
+
+
+def validate_candidates(data, entries):
+    """`entries` maps source id -> sources.json entry. Returns candidates in order."""
+    candidates = data.get("candidates") if isinstance(data, dict) else None
+    if not isinstance(candidates, list) or not candidates:
+        raise ValueError("candidates.json needs a non-empty candidates list")
+    seen = set()
+    for c in candidates:
+        cid = c.get("id")
+        if not isinstance(cid, str) or not re.fullmatch(CANDIDATE_ID, cid) or cid in seen:
+            raise ValueError("Candidate IDs must be unique c01-style IDs")
+        seen.add(cid)
+        for key in ["title", "reason"]:
+            if not isinstance(c.get(key), str) or not c[key].strip():
+                raise ValueError(f"{cid}: {key} is required")
+        if c.get("tag") not in production.CLIP_TAGS:
+            raise ValueError(f"{cid}: tag must be fun or mood")
+        if not isinstance(c.get("evidence", []), list) or not all(isinstance(e, str) for e in c.get("evidence", [])):
+            raise ValueError(f"{cid}: evidence must be a list of strings")
+        entry = entries.get(c.get("source"))
+        if not entry:
+            raise ValueError(f"{cid}: unknown source")
+        plan = c.get("plan")
+        if not isinstance(plan, dict):
+            raise ValueError(f"{cid}: plan is required")
+        _number(plan.get("zoom", 1), 1, 3, f"{cid}: zoom")
+        if entry["kind"] == "video":
+            start, end = (c.get("range") or [None, None])[:2]
+            _number(start, 0, entry["duration_seconds"], f"{cid}: range start")
+            _number(end, start + MIN_CUT, entry["duration_seconds"], f"{cid}: range end")
+            _number(plan.get("speed", 1), 0.25, 4, f"{cid}: speed")
+            cuts = plan.get("cuts")
+            if not isinstance(cuts, list) or not cuts:
+                raise ValueError(f"{cid}: cuts are required for video")
+            previous = start
+            for cut in cuts:
+                if not isinstance(cut, list) or len(cut) != 2:
+                    raise ValueError(f"{cid}: cuts are [in, out] seconds")
+                cut_in = _number(cut[0], previous, end, f"{cid}: cut in")
+                _number(cut[1], cut_in + MIN_CUT, end, f"{cid}: cut out")
+                previous = cut[1]
+        else:
+            if c.get("range") is not None or "cuts" in plan or "speed" in plan:
+                raise ValueError(f"{cid}: photos have no range, cuts or speed")
+            _number(plan.get("photo_seconds", 3.0), *PHOTO_SECONDS, f"{cid}: photo_seconds")
+        length = edited_seconds(c, entry)
+        _number(c.get("key_moment"), 0, length, f"{cid}: key_moment")
+        for caption in plan.get("captions", []):
+            if caption.get("kind") not in production.CAPTION_KINDS:
+                raise ValueError(f"{cid}: unknown caption kind")
+            if caption.get("position", "bottom") not in production.CAPTION_POSITIONS:
+                raise ValueError(f"{cid}: unknown caption position")
+            if not isinstance(caption.get("text"), str) or not caption["text"].strip():
+                raise ValueError(f"{cid}: empty caption")
+            at = _number(caption.get("at"), 0, length, f"{cid}: caption at")
+            _number(caption.get("duration"), 0.2, length - at + 0.01, f"{cid}: caption duration")
+        for sfx in plan.get("sfx", []):
+            if not isinstance(sfx.get("name"), str) or not sfx["name"].strip():
+                raise ValueError(f"{cid}: sfx needs a name")
+            _number(sfx.get("at"), 0, length, f"{cid}: sfx at")
+        if not isinstance(c.get("preview", False), bool):
+            raise ValueError(f"{cid}: preview must be true or false")
+    return candidates
+
+
+def render_props(candidate, entry):
+    """Frame-exact props for the Remotion CandidatePreview composition."""
+    plan = candidate["plan"]
+    if entry["kind"] == "video":
+        speed = plan.get("speed", 1)
+        segments = [{"src": entry["proxy"], "trimBefore": round(start * FPS),
+                     "frames": max(1, round((end - start) * FPS / speed)), "playbackRate": speed}
+                    for start, end in plan["cuts"]]
+        kind = "video"
+    else:
+        segments = [{"src": entry["proxy"], "trimBefore": 0, "frames": round(plan.get("photo_seconds", 3.0) * FPS),
+                     "playbackRate": 1}]
+        kind = "image"
+    total = sum(s["frames"] for s in segments)
+    captions = []
+    for index, caption in enumerate(plan.get("captions", [])):
+        start = min(round(caption["at"] * FPS), total - 1)
+        captions.append({"id": f"cap-{index}", "kind": caption["kind"], "preset": caption.get("preset", caption["kind"]),
+                         "text": caption["text"], "position": caption.get("position", "bottom"),
+                         "speaker": caption.get("speaker"), "from": start,
+                         "duration": max(1, min(round(caption["duration"] * FPS), total - start))})
+    return {"kind": kind, "segments": segments, "zoom": plan.get("zoom", 1), "captions": captions,
+            "durationInFrames": total, "keyFrame": min(round(candidate["key_moment"] * FPS), total - 1)}
+
+
+def clock(seconds):
+    seconds = max(0.0, float(seconds))
+    return f"{int(seconds // 60):02d}:{seconds % 60:04.1f}"
+
+
+def card_html(candidate, entry, folder):
+    e = html.escape
+    cid = candidate["id"]
+    plan = candidate["plan"]
+    length = edited_seconds(candidate, entry)
+    if entry["kind"] == "video":
+        span = f"{e(Path(entry['original']).name)} · {clock(candidate['range'][0])}–{clock(candidate['range'][1])} → 편집 후 {length:.1f}초"
+        frames = "".join(f'<figure><img src="{cid}/src-{i}.jpg" alt=""><figcaption>{clock(t)}</figcaption></figure>'
+                         for i, t in enumerate(source_times(candidate, entry), start=1))
+        cuts = " · ".join(f"{clock(a)}–{clock(b)}" for a, b in plan["cuts"])
+        edit = [f"컷 {cuts}", f"속도 ×{plan.get('speed', 1):g} · 줌 ×{plan.get('zoom', 1):g}"]
+    else:
+        span = f"{e(Path(entry['original']).name)} · 사진 {length:.1f}초"
+        frames = f'<figure><img src="{cid}/src-1.jpg" alt=""><figcaption>사진</figcaption></figure>'
+        edit = [f"줌 ×{plan.get('zoom', 1):g}(천천히 확대)"]
+    edit += [f"자막 [{KIND_LABELS[c['kind']]}·{e(c.get('preset', c['kind']))}] “{e(c['text'])}” {c['at']:.1f}s" for c in plan.get("captions", [])]
+    edit += [f"효과음 {e(s['name'])} {s['at']:.1f}s" for s in plan.get("sfx", [])]
+    edit += [f"BGM {e(plan['bgm'])}"] if plan.get("bgm") else []
+    edit += [e(n) for n in plan.get("notes", [])]
+    preview = (f'<video controls preload="metadata" src="{cid}/preview.mp4"></video>'
+               if (folder / cid / "preview.mp4").is_file() else "")
+    dialogue = f'<p class="quote">“{e(candidate["dialogue"])}”</p>' if candidate.get("dialogue") else ""
+    evidence = "".join(f"<li>{e(x)}</li>" for x in candidate.get("evidence", []))
+    return f'''<article id="{cid}">
+<header><b>#{cid} {e(candidate["title"])}</b><span class="tag {candidate["tag"]}">{candidate["tag"]}</span><span class="span">{span}</span></header>
+<div class="cols"><section><h3>현재 원본</h3><div class="frames">{frames}</div>{dialogue}
+<p class="why">왜: {e(candidate["reason"])}</p><ul class="evidence">{evidence}</ul></section>
+<section><h3>기대 화면 ({candidate["key_moment"]:.1f}s)</h3><img class="expected" src="{cid}/expected.jpg" alt="기대 화면">{preview}
+<ul>{"".join(f"<li>{x}</li>" for x in edit)}</ul></section></div>
+<footer>채팅으로 답해 주세요: <code>{cid} 채택</code> · <code>{cid} 자막 수정: …</code> · <code>{cid} 제외</code></footer>
+</article>'''
+
+
+def source_times(candidate, entry):
+    if entry["kind"] != "video":
+        return [0.0]
+    key = candidate["key_moment"]
+    length = edited_seconds(candidate, entry)
+    return [edited_to_source(candidate, t) for t in (0.0, max(0.0, key - 1.0), key, max(0.0, length - 0.05))]
+
+
+def page_html(run_id, version, candidates, entries, folder):
+    groups = {}
+    for candidate in candidates:
+        groups.setdefault(candidate["source"], []).append(candidate)
+    body = "".join(f'<h2>{e_id} · {html.escape(Path(entries[e_id]["original"]).name)}</h2>' +
+                   "".join(card_html(c, entries[e_id], folder) for c in items) for e_id, items in groups.items())
+    fun = sum(c["tag"] == "fun" for c in candidates)
+    return f'''<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>vlog-me · 후보 리뷰 v{version}</title>
+<style>
+:root{{--bg:#f6f5f2;--card:#fff;--text:#1d1d1b;--muted:#6b6a66;--line:#dedcd6;--fun:#fdeccf;--fun-t:#7a4a00;--mood:#dcecf7;--mood-t:#0c447c}}
+@media (prefers-color-scheme:dark){{:root{{--bg:#191918;--card:#232321;--text:#f1f0ec;--muted:#a9a7a0;--line:#3a3936;--fun:#5a3c0c;--fun-t:#fde3b5;--mood:#173a57;--mood-t:#cfe5f7}}}}
+body{{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,"Apple SD Gothic Neo",sans-serif}}
+main{{max-width:1180px;margin:auto;padding:24px 16px}}h1{{font-size:22px;margin:0 0 4px}}h2{{font-size:17px;margin:32px 0 12px}}
+h3{{font-size:13px;color:var(--muted);font-weight:500;margin:0 0 8px}}
+article{{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 16px}}
+header{{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}}.span{{margin-left:auto;color:var(--muted);font-size:13px}}
+.tag{{font-size:12px;padding:2px 10px;border-radius:8px}}.tag.fun{{background:var(--fun);color:var(--fun-t)}}.tag.mood{{background:var(--mood);color:var(--mood-t)}}
+.cols{{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}}@media (max-width:760px){{.cols{{grid-template-columns:1fr}}}}
+.frames{{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}}figure{{margin:0}}figure img{{width:100%;display:block;border-radius:4px}}
+figcaption{{font-size:12px;color:var(--muted)}}.expected,video{{width:100%;display:block;border-radius:8px;border:1px solid var(--line);margin-bottom:8px}}
+.quote{{margin:10px 0 0}}.why{{color:var(--muted);margin:6px 0 0}}.evidence{{font-size:13px;color:var(--muted);margin:4px 0 0;padding-left:18px}}
+ul{{font-size:14px;padding-left:18px;margin:6px 0 0}}footer{{margin-top:12px;font-size:13px;color:var(--muted)}}code{{font-size:12px}}
+</style><main><h1>후보 리뷰 v{version}</h1>
+<p style="color:var(--muted);margin:0">{html.escape(run_id)} · 후보 {len(candidates)}개 (fun {fun} · mood {len(candidates) - fun}) · 기대 화면은 편집안대로 자막을 합성한 장면입니다. 효과음·BGM은 계획만 표시하며 아직 소리에 넣지 않았습니다.</p>
+{body}</main></html>'''
+
+
+def read_entries(run):
+    return {e["id"]: e for e in read_json(safe_path(run, "sources.json", True))["entries"]}
+
+
+def build(run_id):
+    config = production.require_production_scope()
+    run = production.production_run_path(run_id)
+    timeout = config["production_profile"]["timeout_seconds"]
+    with run_lock(run):
+        state = ingest.status(run_id)
+        allowed = {("analyzed", "pending"), ("reviewed", "pending"), ("review", "failed"), ("review", "paused")}
+        if (state.get("stage"), state.get("status")) not in allowed:
+            raise ValueError(f"Review needs an analyzed run, got {state.get('stage')}/{state.get('status')}")
+        entries = read_entries(run)
+        candidates_path = safe_path(run, "candidates.json", True)
+        candidates = validate_candidates(read_json(candidates_path), entries)
+        review_root = run / "review"
+        review_root.mkdir(exist_ok=True)
+        version = 1 + max([int(p.name[1:]) for p in review_root.glob("v*") if p.name[1:].isdigit()], default=0)
+        folder = safe_path(review_root, f"v{version}")
+        folder.mkdir()
+        previous = {k: v for k, v in state.items() if k not in {"error"}}
+        state = {**previous, "stage": "review", "status": "running", "next_action": "wait for review rendering"}
+        write_json(run / "state.json", state, replace=True)
+        try:
+            jobs = []
+            for candidate in candidates:
+                entry = entries[candidate["source"]]
+                (folder / candidate["id"]).mkdir()
+                proxy = safe_path(run, entry["proxy"], True)
+                for index, t in enumerate(source_times(candidate, entry), start=1):
+                    out = str(folder / candidate["id"] / f"src-{index}.jpg")
+                    if entry["kind"] == "video":
+                        run_command(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-ss", f"{t:.3f}",
+                                     "-i", str(proxy), "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "4", out], timeout=timeout)
+                    else:
+                        run_command(["sips", "-Z", "480", str(proxy), "--out", out], timeout=timeout)
+                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry),
+                             "preview": bool(candidate.get("preview"))})
+            write_json(folder / "render-input.json", {"run_id": run_id, "version": version, "jobs": jobs})
+            run_command(["node", str(common.ROOT / "renderer/scripts/review.mjs"), run_id, str(version), str(run)], timeout=timeout)
+            for job in jobs:
+                safe_path(folder, f"{job['id']}/expected.jpg", True)
+                if job["preview"]:
+                    safe_path(folder, f"{job['id']}/preview.mp4", True)
+            (folder / "index.html").write_text(page_html(run_id, version, candidates, entries, folder), encoding="utf-8")
+            production.require_production_scope()
+            state.update(stage="reviewed", status="pending", review_version=version,
+                         candidates_sha256=digest(candidates_path),
+                         next_action=f"open review/v{version}/index.html; record the user's choices with review.py select")
+            write_json(run / "state.json", state, replace=True)
+            return {**state, "page": str(folder / "index.html")}
+        except BaseException as exc:
+            state.update(status="paused" if isinstance(exc, (KeyboardInterrupt, InterruptedError)) else "failed",
+                         error=str(exc)[:2000] or type(exc).__name__,
+                         next_action=f"inspect review/v{version}; fix candidates.json and build again")
+            write_json(run / "state.json", state, replace=True)
+            raise
+
+
+def validate_selection(data, candidates):
+    decisions = data.get("decisions") if isinstance(data, dict) else None
+    ids = {c["id"] for c in candidates}
+    if not isinstance(decisions, dict) or set(decisions) != ids:
+        raise ValueError("selection.json must decide every candidate exactly once")
+    for cid, decision in decisions.items():
+        if not isinstance(decision, dict) or decision.get("decision") not in DECISIONS:
+            raise ValueError(f"{cid}: decision must be adopt, caption_edit or drop")
+        if decision["decision"] == "caption_edit" and not str(decision.get("note", "")).strip():
+            raise ValueError(f"{cid}: caption_edit needs the user's note")
+    if not any(d["decision"] != "drop" for d in decisions.values()):
+        raise ValueError("At least one candidate must be kept")
+    return decisions
+
+
+def select(run_id):
+    production.require_production_scope()
+    run = production.production_run_path(run_id)
+    with run_lock(run):
+        state = ingest.status(run_id)
+        if (state.get("stage"), state.get("status")) != ("reviewed", "pending"):
+            raise ValueError("Selection needs a reviewed run")
+        candidates_path = safe_path(run, "candidates.json", True)
+        if digest(candidates_path) != state.get("candidates_sha256"):
+            raise ValueError("candidates.json changed after the review was built; build the review again")
+        candidates = validate_candidates(read_json(candidates_path), read_entries(run))
+        selection_path = safe_path(run, "selection.json", True)
+        decisions = validate_selection(read_json(selection_path), candidates)
+        state.update(stage="selected", status="pending", selection_sha256=digest(selection_path),
+                     counts_selected={k: sum(d["decision"] == k for d in decisions.values()) for k in sorted(DECISIONS)},
+                     next_action="assemble timeline v2 from adopted candidates (unit 5+)")
+        write_json(run / "state.json", state, replace=True)
+        return state
+
+
+def main():
+    def interrupted(signum, _frame):
+        raise InterruptedError(f"Stopped by signal {signum}")
+    signal.signal(signal.SIGTERM, interrupted)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=["build", "select"])
+    parser.add_argument("--run-id", required=True)
+    args = parser.parse_args()
+    try:
+        result = build(args.run_id) if args.action == "build" else select(args.run_id)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    except KeyboardInterrupt:
+        parser.exit(130, "PAUSED: interrupted; inspect retained run state\n")
+    except Exception as exc:
+        parser.exit(1, f"FAIL: {exc}\n")
+
+
+if __name__ == "__main__":
+    main()

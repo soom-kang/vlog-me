@@ -1,6 +1,7 @@
 import {AbsoluteFill, Composition, Img, Sequence, staticFile} from 'remotion';
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from './gain.mjs';
+import {CandidateComposition} from './production/CandidatePreview';
 
 type Interval = {id: string; from: number; duration: number};
 type Timeline = {
@@ -45,8 +46,11 @@ export const TimelineVideo = ({timeline, assets}: Props) => (
 
 // One data-driven template: edit timeline.json, not per-clip JSX in Studio.
 export const Root = () => (
+  <>
   <Composition id="VlogSetup" component={TimelineVideo} durationInFrames={30} fps={30} width={1280} height={720}
     defaultProps={{timeline: {fps: 30, width: 1280, height: 720, duration_frames: 30, clips: [], audio: [], captions: []}, assets: {}}}
     calculateMetadata={({props}) => ({durationInFrames: props.timeline.duration_frames, fps: props.timeline.fps,
       width: props.timeline.width, height: props.timeline.height})} />
+  <CandidateComposition />
+  </>
 );

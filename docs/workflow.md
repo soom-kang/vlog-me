@@ -14,7 +14,16 @@
 
 `python3 scripts/ingest.py run --source-root sources/<여행>`은 새 `prod-*` run을 만들고 원본을 읽기만 합니다. 처리하지 못한 파일은 이유와 함께 `sources.json`의 `skipped`에 남고, HDR proxy는 `color_review: needed`로 표시됩니다. 촬영 시각은 UTC로 정규화하며, 시간대 정보가 없는 사진은 이 Mac의 시간대로 해석합니다.
 | 분석: 한국어 전사(whisper.cpp `ggml-large-v3-turbo`)·소리 이벤트·정적·장면 전환·contact sheet·클립 요약 | 구현(`scripts/analyze.py`), 합성 fixture로만 검증 |
-| story 선별·예능 caption 작성 | 미구현(단위 4·5) |
+| 후보 카드·기대 화면·선택 기록 | 구현(`scripts/review.py`, `renderer/src/production/`), 합성 fixture로만 검증 |
+| 번들 폰트 기반 자막 preset 완성·timeline 조립 | 미구현(단위 5 이후) |
+
+후보 리뷰 흐름은 다음과 같습니다.
+1. Claude가 `analysis/index.md`와 클립 요약을 읽고 `work/<run>/candidates.json`을 씁니다. 후보마다 `id`(c01), `title`, `tag`(fun/mood), `source`, `range`(원본 초), `reason`, `evidence`, `dialogue`, `key_moment`(편집 후 초), `preview`(true/false), `plan`(`cuts`, `speed`, `zoom`, `captions`, `sfx`, `bgm`, `notes`, 사진은 `photo_seconds`)을 담습니다.
+2. `python3 scripts/review.py build --run-id prod-...`가 새 `review/vN/`에 원본 프레임 4장, 자막을 합성한 기대 화면, 요청한 후보의 960×540 미리보기를 만듭니다. 이전 버전은 덮어쓰지 않습니다.
+3. 사용자는 `open work/<run>/review/vN/index.html`로 페이지를 열고 채팅으로 `c01 채택`, `c03 자막 수정: …`, `c05 제외`처럼 답합니다.
+4. Claude가 답을 `selection.json`(`decisions`: 후보마다 `adopt`·`caption_edit`·`drop`, 수정이면 `note`)으로 옮기고 `review.py select`로 기록합니다. 리뷰 뒤에 `candidates.json`이 바뀌면 선택을 거부하므로 다시 build합니다.
+
+효과음·BGM은 카드에 계획만 표시하고 미리보기 소리에는 아직 넣지 않습니다(단위 6).
 
 `python3 scripts/analyze.py --run-id prod-...`는 ingest가 끝난 run의 proxy만 읽습니다. Claude는 `analysis/index.md`와 클립별 `summary.md`부터 읽고, 필요한 구간만 contact sheet로 확인합니다. `reaction`은 대사 밖의 큰 소리라는 신호일 뿐 웃음이라는 판정이 아닙니다. Whisper는 음악·정적 구간에서 없는 대사(예: 자막 제작자 문구)를 지어낼 수 있습니다. 알려진 문구이거나 정적과 대부분 겹치는 대사는 `의심`으로 표시되고 웃음 후보 판정에서 빠집니다. 이 표시는 휴리스틱이므로 후보를 고를 때 화면과 함께 확인합니다. 실패하면 이전 시도를 `analysis.failed-*`로 남기고 다시 실행할 수 있습니다.
 | 음원 탐색·다운로드·선곡·권리 사실 확인 | 미구현; 음원 목록 비어 있음 |
