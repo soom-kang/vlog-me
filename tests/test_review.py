@@ -214,7 +214,7 @@ class ReviewRunTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "reviewed run"):
             review.select(self.run_id)
         common.write_json(self.root / "config/project.json",
-                          json.loads((PROJECT_ROOT / "config/project.json").read_text()), replace=True)
+                          json.loads((PROJECT_ROOT / "config/setup.example.json").read_text()), replace=True)
         with patch.object(review, "run_command", side_effect=AssertionError("No commands allowed")):
             with self.assertRaises(ValueError):
                 review.build(self.run_id)

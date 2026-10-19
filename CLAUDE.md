@@ -6,7 +6,7 @@ Start Claude Code with `./scripts/claude.sh` so it inherits project-local Node/n
 
 1. Confirm this directory is `vlog-me`. Read `progress.md`, `feature_list.json`, and `session-handoff.md`.
 2. Read `docs/workflow.md` for the current operation and `docs/roadmap.md` for the path to real production. Consult `docs/superpowers/specs/2026-10-18-vlog-environment-design.md` only for deeper decisions.
-3. Run `./init.sh`. It checks local tools, contracts, lint and types without installing, rendering, downloading audio or calling a model.
+3. Run `./init.sh`. It works in both phases and checks local tools, the current phase's config, ASR model and audio library status, contracts, lint and types without installing, rendering, downloading audio or calling a model.
 4. Inspect existing changes (`git status`) before editing. This folder is a Git repository; do not commit, push or rewrite history unless requested.
 
 An earlier terminal `./init.sh` does not export its environment to the parent shell.
@@ -35,7 +35,7 @@ An earlier terminal `./init.sh` does not export its environment to the parent sh
 ./scripts/smoke-render.sh
 ```
 
-`./scripts/smoke-longform.sh` builds and renders a 2-minute synthetic edit in chunks and measures frames, loudness and A/V sync (several minutes). `./scripts/smoke-media.sh` checks ingest, analysis (signals, contact sheets, Korean TTS transcription when the local Whisper model exists) and review-card rendering on generated media in a temporary root. The second command above creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
+`./scripts/smoke-render.sh` runs only in the setup phase and explains itself otherwise. Tests never read the live `config/project.json` or `config/media-licenses.json`; they use `config/setup.example.json`, `config/production.example.json` and temporary roots. `./scripts/smoke-longform.sh` builds and renders a 2-minute synthetic edit in chunks and measures frames, loudness and A/V sync (several minutes). `./scripts/smoke-media.sh` checks ingest, analysis (signals, contact sheets, Korean TTS transcription when the local Whisper model exists) and review-card rendering on generated media in a temporary root. The second command above creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
 
 ```bash
 python3 scripts/synthetic.py status --run-id synthetic-RUN-ID

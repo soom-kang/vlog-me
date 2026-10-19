@@ -23,7 +23,7 @@ class RecoveryTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix="vlog-recovery-")
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
-        self.config = common.read_json(PROJECT_ROOT / "config/project.json")
+        self.config = common.read_json(PROJECT_ROOT / "config/setup.example.json")
         (self.root / "config").mkdir()
         common.write_json(self.root / "config/project.json", self.config)
         for module in (common, synthetic):

@@ -12,7 +12,7 @@ from common import audio_eligibility, safe_path, validate_timeline, write_json, 
 import common
 import synthetic
 
-PROJECT_CONFIG = json.loads((Path(__file__).resolve().parents[1] / 'config/project.json').read_text())
+PROJECT_CONFIG = json.loads((Path(__file__).resolve().parents[1] / 'config/setup.example.json').read_text())
 
 
 def fixture():

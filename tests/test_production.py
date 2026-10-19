@@ -96,7 +96,7 @@ class ProductionTests(unittest.TestCase):
     def test_phases_are_exclusive(self):
         with self.assertRaises(ValueError):
             common.validate_setup_config(production_config())
-        setup = json.loads((PROJECT_ROOT / "config/project.json").read_text())
+        setup = json.loads((PROJECT_ROOT / "config/setup.example.json").read_text())
         with self.assertRaises(ValueError):
             production.validate_production_config(setup)
 

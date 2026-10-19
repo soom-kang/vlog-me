@@ -49,7 +49,10 @@ disable-model-invocation: true
 2. `config/project.json`을 `config/production.example.json` 형태로 바꾸고 `source_roots`에 그 폴더를 적습니다. `.tools/whisper/ggml-large-v3-turbo.bin` 파일이 있을 때만 `asr_model`을 그 이름으로 두고, 없으면 `null`로 둡니다(없는 모델을 적으면 분석이 실패합니다).
 3. `.claude/settings.json`에서 `Read(sources/**)`와 `Bash(* sources/*)` 계열 deny만 풉니다. `Edit/Write(sources/**)` deny와 `protect_sources.py` hook은 유지합니다.
 4. `audio_search`·`audio_downloads`·`production_render`는 기본 `false`입니다. 필요하면 Claude가 켜자고 제안할 수 있지만, 사용자가 채팅으로 동의한 뒤에만 `true`로 바꿉니다.
-5. 바꾼 내용을 사용자에게 보여주고, 합성 검증으로 돌아갈 때는 setup 설정으로 되돌립니다(두 phase는 동시에 쓸 수 없음).
+5. 바꾼 내용을 사용자에게 보여줍니다.
+6. 합성 검증(setup)으로 돌아갈 때는 `config/setup.example.json`을 `config/project.json`으로 복사하고, `.claude/settings.json`의 deny에 `Read(sources/**)`, `Bash(* sources/*)`, `Bash(* ./sources/*)`를 다시 넣습니다. 두 phase는 동시에 쓸 수 없습니다.
+
+`./init.sh`는 두 phase 모두에서 동작합니다. doctor가 현재 phase, 전사 모델 상태, 등록 음원 수를 보고합니다. `./scripts/smoke-render.sh`(합성 렌더)는 setup에서만 실행되고, production에서는 `./scripts/smoke-media.sh`와 `./scripts/smoke-longform.sh`를 씁니다.
 
 ## 4. 지키는 것
 

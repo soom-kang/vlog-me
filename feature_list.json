@@ -153,6 +153,16 @@
       ],
       "status": "in_progress",
       "evidence": "reports/first-sample-review-2026-10-19.md; render/v3/verify.json (8/8, -14.16 LUFS, -2.1 dBTP); tests/test_inserts.py; 118 tests PASS on setup-config copy; typecheck/lint PASS; human viewing/listening NOT_RUN"
+    },
+    {
+      "id": "phase-aware-harness",
+      "name": "Harness checks in both phases",
+      "description": "Phase-aware doctor (scope, ASR model, audio library), tests isolated from live config and audio library via config/setup.example.json and temp roots, smoke-render explains setup-only use",
+      "dependencies": [
+        "project-skills"
+      ],
+      "status": "completed",
+      "evidence": "tests/test_phase_configs.py; ./init.sh PASS (124 tests) in production and in setup (temporary swap, restored byte-identical); smoke-media PASS in production; smoke-render PASS in setup"
     }
   ]
 }

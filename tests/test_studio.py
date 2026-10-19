@@ -14,7 +14,7 @@ import common
 import studio
 from test_contracts import fixture
 
-PROJECT_CONFIG = json.loads((Path(__file__).resolve().parents[1] / "config/project.json").read_text())
+PROJECT_CONFIG = json.loads((Path(__file__).resolve().parents[1] / "config/setup.example.json").read_text())
 
 
 class MemorySocket:

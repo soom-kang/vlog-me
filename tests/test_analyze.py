@@ -197,7 +197,7 @@ class AnalyzeRunTests(unittest.TestCase):
         self.analyze()
         with self.assertRaisesRegex(ValueError, "ingested run"):
             self.analyze()
-        self.write_config(json.loads((PROJECT_ROOT / "config/project.json").read_text()))
+        self.write_config(json.loads((PROJECT_ROOT / "config/setup.example.json").read_text()))
         with patch.object(analyze, "run_command", side_effect=AssertionError("No commands allowed")):
             with self.assertRaises(ValueError):
                 analyze.analyze(self.run_id)

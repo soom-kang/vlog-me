@@ -157,7 +157,7 @@ class IngestUnitTests(unittest.TestCase):
 
     def test_setup_phase_and_unlisted_roots_are_rejected_before_any_command(self):
         common.write_json(self.root / "config/project.json",
-                          json.loads((PROJECT_ROOT / "config/project.json").read_text()), replace=True)
+                          json.loads((PROJECT_ROOT / "config/setup.example.json").read_text()), replace=True)
         with patch.object(ingest, "run_command", side_effect=AssertionError("No commands allowed")):
             with self.assertRaises(ValueError):
                 ingest.ingest(TRIP)

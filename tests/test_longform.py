@@ -24,7 +24,7 @@ import review
 from test_ingest import TRIP
 from test_production import production_config
 from test_review import FakeReview
-from test_sound import fake_measure, fields
+from test_sound import empty_library, fake_measure, fields
 
 
 def plan_candidates():
@@ -54,7 +54,7 @@ class LongformFixture(unittest.TestCase):
         (self.root / "config").mkdir()
         self.config = production_config()
         common.write_json(self.root / "config/project.json", self.config)
-        shutil.copy2(PROJECT_ROOT / "config/media-licenses.json", self.root / "config/media-licenses.json")
+        empty_library(self.root)
         shutil.copytree(PROJECT_ROOT / "renderer/assets/fonts", self.root / "renderer/assets/fonts")
         shutil.copy2(PROJECT_ROOT / "config/fonts-lock.json", self.root / "config/fonts-lock.json")
         (self.root / "assets/audio/user").mkdir(parents=True)
@@ -259,7 +259,7 @@ class LongformMediaTests(unittest.TestCase):
         config.update(production_render=True)
         config["production_profile"] |= {"chunk_seconds": 30}
         common.write_json(self.root / "config/project.json", config)
-        shutil.copy2(PROJECT_ROOT / "config/media-licenses.json", self.root / "config/media-licenses.json")
+        empty_library(self.root)
         shutil.copy2(PROJECT_ROOT / "config/fonts-lock.json", self.root / "config/fonts-lock.json")
         for name in [".tools", "renderer"]:
             (self.root / name).symlink_to(PROJECT_ROOT / name)

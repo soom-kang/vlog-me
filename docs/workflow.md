@@ -2,7 +2,7 @@
 
 ## 허용 범위
 
-phase는 두 가지이며 동시에 쓸 수 없습니다.
+phase는 두 가지이며 동시에 쓸 수 없습니다. setup 설정의 원본은 `config/setup.example.json`, production 설정 예시는 `config/production.example.json`입니다. `./init.sh`는 두 phase 모두에서 동작합니다.
 - `setup_synthetic_only`(현재 기본값): 합성 run만 만들고 렌더합니다. 실제 원본은 열지 않습니다.
 - `production`: `source_roots`에 적은 `sources/<여행>/`만 읽습니다. 사용자가 채팅으로 요청할 때만 `/vlog-workflow` 절차로 전환합니다.
 

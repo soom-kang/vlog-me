@@ -33,6 +33,11 @@ def fake_measure(command, **_kwargs):
     return subprocess.CompletedProcess(command, 0, "", EBUR_SUMMARY)
 
 
+def empty_library(root):
+    """Tests start from an empty audio library, never the user's registered files."""
+    common.write_json(root / "config/media-licenses.json", {"schema_version": 2, "assets": []})
+
+
 def fields(asset_id="sfx-boing", kind="sfx", **extra):
     base = {"id": asset_id, "kind": kind, "file": f"assets/audio/user/{asset_id}.wav", "title": "Boing", "source": "user library",
             "license": "CC0", "license_status": "verified", "license_evidence": "https://example.invalid/license",
@@ -75,7 +80,7 @@ class LibraryTests(unittest.TestCase):
         self.root = Path(temporary.name).resolve()
         (self.root / "config").mkdir()
         (self.root / "assets/audio/user").mkdir(parents=True)
-        shutil.copy2(PROJECT_ROOT / "config/media-licenses.json", self.root / "config/media-licenses.json")
+        empty_library(self.root)
         for name in ["sfx-boing", "bgm-walk", "sfx-pending"]:
             (self.root / f"assets/audio/user/{name}.wav").write_text(f"audio {name}")
         for module in (common, production):
@@ -125,7 +130,7 @@ class LibraryTests(unittest.TestCase):
             audio_library.check(self.root)
 
     def test_claude_found_audio_needs_production_download_flags(self):
-        common.write_json(self.root / "config/project.json", json.loads((PROJECT_ROOT / "config/project.json").read_text()))
+        common.write_json(self.root / "config/project.json", json.loads((PROJECT_ROOT / "config/setup.example.json").read_text()))
         with self.assertRaises(ValueError):
             self.register(**fields(origin="claude_search"))
         (self.root / "sources/trip").mkdir(parents=True)
@@ -149,7 +154,7 @@ class PreviewSoundTests(unittest.TestCase):
             (trip / name).write_text(f"original {name}")
         (self.root / "config").mkdir()
         common.write_json(self.root / "config/project.json", production_config())
-        shutil.copy2(PROJECT_ROOT / "config/media-licenses.json", self.root / "config/media-licenses.json")
+        empty_library(self.root)
         (self.root / "assets/audio/user").mkdir(parents=True)
         for module in (common, production):
             root_patch = patch.object(module, "ROOT", self.root)
@@ -226,7 +231,7 @@ class SoundMediaTests(unittest.TestCase):
         trip.mkdir(parents=True)
         (self.root / "config").mkdir()
         common.write_json(self.root / "config/project.json", production_config())
-        shutil.copy2(PROJECT_ROOT / "config/media-licenses.json", self.root / "config/media-licenses.json")
+        empty_library(self.root)
         for name in [".tools", "renderer"]:
             (self.root / name).symlink_to(PROJECT_ROOT / name)
         for module in (common, production):
