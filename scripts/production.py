@@ -3,6 +3,7 @@
 Synthetic setup keeps its own strict contract in common.py. The two phases are exclusive:
 `phase: production` blocks synthetic create/render, and the setup phase blocks everything here.
 """
+import json
 import math
 from pathlib import Path
 import re
@@ -15,9 +16,11 @@ SOURCE_PARENT = "sources"
 PROFILE_LIMITS = {"concurrency": 8, "timeout_seconds": 14400}
 CLIP_TAGS = {"fun", "mood"}
 TRANSITIONS = {"cut", "fade", "whip"}
-VARIETY_CAPTIONS = {"variety", "situation", "sfx_text", "inner_voice"}
-MOOD_CAPTIONS = {"mood", "place"}
-CAPTION_KINDS = VARIETY_CAPTIONS | MOOD_CAPTIONS | {"dialogue"}
+# Shared with the renderer so Python validation and Remotion presets cannot drift apart.
+CAPTION_REGISTRY = json.loads((Path(__file__).resolve().parents[1] / "renderer/src/production/presets.json").read_text(encoding="utf-8"))
+CAPTION_KINDS = set(CAPTION_REGISTRY["kinds"])
+VARIETY_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "variety"}
+MOOD_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "mood"}
 CAPTION_POSITIONS = {"bottom", "top", "center", "upper_left", "upper_right", "lower_left", "lower_right"}
 AUDIO_KINDS = {"original", "bgm", "sfx"}
 
@@ -80,6 +83,27 @@ def source_path(config, relative, exists=True):
             break
         return safe_path(base, inner, exists=exists)
     raise ValueError("Path is outside the allowed source roots")
+
+
+def validate_caption_text(caption, require_preset=True):
+    """Kind, preset and line length checks shared by timeline v2 and candidate cards. Returns the preset."""
+    spec = CAPTION_REGISTRY["kinds"].get(caption.get("kind"))
+    if spec is None:
+        raise ValueError("Unknown caption kind")
+    preset = caption.get("preset")
+    if preset is None and not require_preset:
+        preset = spec["presets"][0]
+    if preset not in spec["presets"]:
+        raise ValueError(f"Caption preset must be one of {spec['presets']} for {caption['kind']}")
+    text = caption.get("text")
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Empty caption")
+    lines = text.split("\n")
+    if len(lines) > CAPTION_REGISTRY["max_lines"] or any(len(line) > spec["max_chars"] for line in lines):
+        raise ValueError(f"{caption['kind']} captions allow {CAPTION_REGISTRY['max_lines']} lines of {spec['max_chars']} characters")
+    if caption.get("position", "bottom") not in CAPTION_POSITIONS:
+        raise ValueError("Unknown caption position")
+    return preset
 
 
 def _interval(cue, limit=None):
@@ -178,14 +202,7 @@ def validate_timeline_v2(timeline, sources):
 
     for caption in captions:
         _interval(caption, cursor)
-        if caption.get("kind") not in CAPTION_KINDS:
-            raise ValueError("Unknown caption kind")
-        if not isinstance(caption.get("preset"), str) or not caption["preset"].strip():
-            raise ValueError("Caption needs a preset")
-        if not isinstance(caption.get("text"), str) or not caption["text"].strip():
-            raise ValueError("Empty caption")
-        if caption.get("position", "bottom") not in CAPTION_POSITIONS:
-            raise ValueError("Unknown caption position")
+        validate_caption_text(caption)
     return cursor
 
 
@@ -196,4 +213,7 @@ def caption_style_share(timeline):
         kind = caption.get("kind")
         counts["variety" if kind in VARIETY_CAPTIONS else "mood" if kind in MOOD_CAPTIONS else "dialogue"] += 1
     styled = counts["variety"] + counts["mood"]
-    return {**counts, "variety_share": round(counts["variety"] / styled, 2) if styled else None}
+    share = round(counts["variety"] / styled, 2) if styled else None
+    low, high = CAPTION_REGISTRY["share_window"]
+    return {**counts, "variety_share": share, "target": CAPTION_REGISTRY["target_variety_share"],
+            "in_window": share is not None and low <= share <= high}

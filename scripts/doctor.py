@@ -25,6 +25,18 @@ def verify_skill_integrity(root):
         raise ValueError("Unregistered or missing project Skill")
 
 
+def verify_font_integrity(root):
+    lock = read_json(safe_path(root, "config/fonts-lock.json", True))
+    base = safe_path(root, lock["path"])
+    declared = {name: sha for font in lock["fonts"] for name, sha in font["files"].items()}
+    actual = {str(p.relative_to(base)) for p in base.rglob("*") if p.is_file() or p.is_symlink()}
+    if not declared or set(declared) != actual:
+        raise ValueError("Font file set differs from lock")
+    for relative, expected in declared.items():
+        if digest(safe_path(base, relative, True)) != expected:
+            raise ValueError("Font file hash mismatch")
+
+
 def main():
     checks = []
     for binary in ["claude", "node", "npm", "ffmpeg", "ffprobe", "python3"]:
@@ -48,6 +60,11 @@ def main():
         checks.append({"name": "upstream_skill_integrity", "status": "PASS"})
     except (AssertionError, KeyError, OSError, ValueError):
         checks.append({"name": "upstream_skill_integrity", "status": "FAIL"})
+    try:
+        verify_font_integrity(ROOT)
+        checks.append({"name": "bundled_fonts", "status": "PASS"})
+    except (AssertionError, KeyError, OSError, ValueError):
+        checks.append({"name": "bundled_fonts", "status": "FAIL"})
     try:
         browser = read_json(ROOT / ".tools/browser.json")
         safe_path(ROOT, browser["path"], True)

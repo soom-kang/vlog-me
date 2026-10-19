@@ -1,0 +1,52 @@
+{
+  "verified_on": "2026-10-19",
+  "approved": "user in chat, committed to Git",
+  "path": "renderer/assets/fonts",
+  "fonts": [
+    {
+      "family": "Black Han Sans",
+      "license": "SIL Open Font License 1.1",
+      "source": "https://github.com/google/fonts/tree/main/ofl/blackhansans",
+      "files": {
+        "blackhansans/BlackHanSans-Regular.ttf": "31960809284026681774a8e52dc19ebcad26cf69b0ad9d560f288296fbb52739",
+        "blackhansans/OFL.txt": "c324192c8b3a988bae45a9a7e4ac1258b684739003bda114e0523423440457c9"
+      }
+    },
+    {
+      "family": "Jua",
+      "license": "SIL Open Font License 1.1",
+      "source": "https://github.com/google/fonts/tree/main/ofl/jua",
+      "files": {
+        "jua/Jua-Regular.ttf": "769677aef240bfc3b9965f2b50748075bff885e6c6992fc591a3fb268279f898",
+        "jua/OFL.txt": "44a7c6e4c5572392ae122d3b1d8c6ba6fd640a7797e675384585d947f2773e3c"
+      }
+    },
+    {
+      "family": "Do Hyeon",
+      "license": "SIL Open Font License 1.1",
+      "source": "https://github.com/google/fonts/tree/main/ofl/dohyeon",
+      "files": {
+        "dohyeon/DoHyeon-Regular.ttf": "35644be7f28e0a68a447b1f7af351dcde5674b870f24f7b5f43e26d00b4ab653",
+        "dohyeon/OFL.txt": "de5ff32211a4340b01477af39ee339d639438955e409f79b666d4b9207f3c92c"
+      }
+    },
+    {
+      "family": "Gowun Batang",
+      "license": "SIL Open Font License 1.1",
+      "source": "https://github.com/google/fonts/tree/main/ofl/gowunbatang",
+      "files": {
+        "gowunbatang/GowunBatang-Regular.ttf": "466c593e7147412e748af4856d5ad14709b5a860bdf62b9c2546f2c5874e9849",
+        "gowunbatang/OFL.txt": "49a57cc769fa9affd6eefb9070a61e3d3f6b757c97cafb15848bc6d1c81acc78"
+      }
+    },
+    {
+      "family": "Nanum Gothic",
+      "license": "SIL Open Font License 1.1",
+      "source": "https://github.com/google/fonts/tree/main/ofl/nanumgothic",
+      "files": {
+        "nanumgothic/NanumGothic-ExtraBold.ttf": "5c4568e5295a8c52bc30e7efa1ea6d2de43556268ef42daba93540a1ece691ae",
+        "nanumgothic/OFL.txt": "eeacf16032901d0ed0456876ec77b8f0fda6b3fecec7d972f8543eb602e6c30f"
+      }
+    }
+  ]
+}

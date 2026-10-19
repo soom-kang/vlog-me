@@ -103,6 +103,16 @@
       ],
       "status": "completed",
       "evidence": "tests/test_review.py; scripts/smoke-media.sh renders real stills and a preview; reports/unit4-expected-frame-synthetic.jpg"
+    },
+    {
+      "id": "caption-system",
+      "name": "Variety 80 / mood 20 caption presets (unit 5)",
+      "description": "Shared preset registry for renderer and validators, 14 presets, bundled OFL Korean fonts with lock, line limits, ratio report, style guide and gallery",
+      "dependencies": [
+        "candidate-review"
+      ],
+      "status": "completed",
+      "evidence": "tests/test_captions.py; reports/unit5-caption-gallery.jpg; docs/caption-style.md (taste not yet tuned on real footage)"
     }
   ]
 }

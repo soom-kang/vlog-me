@@ -15,7 +15,8 @@
 `python3 scripts/ingest.py run --source-root sources/<여행>`은 새 `prod-*` run을 만들고 원본을 읽기만 합니다. 처리하지 못한 파일은 이유와 함께 `sources.json`의 `skipped`에 남고, HDR proxy는 `color_review: needed`로 표시됩니다. 촬영 시각은 UTC로 정규화하며, 시간대 정보가 없는 사진은 이 Mac의 시간대로 해석합니다.
 | 분석: 한국어 전사(whisper.cpp `ggml-large-v3-turbo`)·소리 이벤트·정적·장면 전환·contact sheet·클립 요약 | 구현(`scripts/analyze.py`), 합성 fixture로만 검증 |
 | 후보 카드·기대 화면·선택 기록 | 구현(`scripts/review.py`, `renderer/src/production/`), 합성 fixture로만 검증 |
-| 번들 폰트 기반 자막 preset 완성·timeline 조립 | 미구현(단위 5 이후) |
+| 자막 preset 레지스트리·번들 폰트·글자 수/비율 검사 | 구현(`renderer/src/production/presets.json`, [자막 가이드](caption-style.md)) |
+| 최종 timeline 조립 | 미구현(단위 6 이후) |
 
 후보 리뷰 흐름은 다음과 같습니다.
 1. Claude가 `analysis/index.md`와 클립 요약을 읽고 `work/<run>/candidates.json`을 씁니다. 후보마다 `id`(c01), `title`, `tag`(fun/mood), `source`, `range`(원본 초), `reason`, `evidence`, `dialogue`, `key_moment`(편집 후 초), `preview`(true/false), `plan`(`cuts`, `speed`, `zoom`, `captions`, `sfx`, `bgm`, `notes`, 사진은 `photo_seconds`)을 담습니다.

@@ -1,0 +1,14 @@
+{
+  "target_variety_share": 0.8,
+  "share_window": [0.7, 0.9],
+  "max_lines": 2,
+  "kinds": {
+    "variety": {"group": "variety", "max_chars": 18, "presets": ["pop", "shout", "punch"]},
+    "situation": {"group": "variety", "max_chars": 28, "presets": ["box-yellow", "box-dark"]},
+    "sfx_text": {"group": "variety", "max_chars": 8, "presets": ["tilt-red", "tilt-blue", "burst"]},
+    "inner_voice": {"group": "variety", "max_chars": 24, "presets": ["bracket", "whisper"]},
+    "dialogue": {"group": "dialogue", "max_chars": 32, "presets": ["dialogue"]},
+    "mood": {"group": "mood", "max_chars": 26, "presets": ["serif-fade", "serif-low"]},
+    "place": {"group": "mood", "max_chars": 20, "presets": ["place-card"]}
+  }
+}

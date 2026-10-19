@@ -9,4 +9,4 @@ DEFAULT_MODEL="$VLOG_ROOT/.tools/whisper/ggml-large-v3-turbo.bin"
 if [ -z "${VLOG_WHISPER_MODEL:-}" ] && [ -f "$DEFAULT_MODEL" ]; then
   export VLOG_WHISPER_MODEL="$DEFAULT_MODEL"
 fi
-VLOG_MEDIA_TESTS=1 exec python3 -m unittest tests.test_ingest.IngestMediaTests tests.test_analyze.AnalyzeMediaTests tests.test_review.ReviewMediaTests -v
+VLOG_MEDIA_TESTS=1 exec python3 -m unittest tests.test_ingest.IngestMediaTests tests.test_analyze.AnalyzeMediaTests tests.test_review.ReviewMediaTests tests.test_captions.GalleryMediaTests -v

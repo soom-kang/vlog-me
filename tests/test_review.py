@@ -33,8 +33,8 @@ def candidates():
          "reason": "대사 직후 웃음 후보, 같은 골목 반복", "evidence": ["v001 reaction 00:31"],
          "dialogue": "여기 아까 왔던 데 아니야?", "key_moment": 5.0, "preview": True,
          "plan": {"cuts": [[12.0, 20.0], [30.0, 36.0]], "speed": 1.0, "zoom": 1.2,
-                  "captions": [{"kind": "situation", "preset": "box", "text": "같은 골목 3바퀴째", "at": 0.0, "duration": 3.0, "position": "upper_left"},
-                               {"kind": "sfx_text", "preset": "tilt", "text": "띠용?!", "at": 4.5, "duration": 1.0, "position": "upper_right"},
+                  "captions": [{"kind": "situation", "preset": "box-yellow", "text": "같은 골목 3바퀴째", "at": 0.0, "duration": 3.0, "position": "upper_left"},
+                               {"kind": "sfx_text", "preset": "tilt-red", "text": "띠용?!", "at": 4.5, "duration": 1.0, "position": "upper_right"},
                                {"kind": "inner_voice", "preset": "bracket", "text": "(기억력 테스트 실패)", "at": 5.0, "duration": 4.0}],
                   "sfx": [{"name": "띠용", "at": 4.5}], "bgm": "잠깐 멈춤", "notes": ["정적 3초 → 1.2초"]}},
         {"id": "c02", "title": "노을 바다", "tag": "mood", "source": "p001", "key_moment": 2.0,
@@ -258,8 +258,8 @@ class ReviewMediaTests(unittest.TestCase):
         data["candidates"][0]["plan"]["cuts"] = [[0.5, 2.5], [3.5, 5.5]]
         data["candidates"][0]["plan"]["sfx"] = [{"name": "띠용", "at": 1.8}]
         data["candidates"][0]["plan"]["captions"] = [
-            {"kind": "situation", "preset": "box", "text": "같은 골목 3바퀴째", "at": 0.0, "duration": 3.5, "position": "upper_left"},
-            {"kind": "sfx_text", "preset": "tilt", "text": "띠용?!", "at": 1.8, "duration": 1.2, "position": "upper_right"},
+            {"kind": "situation", "preset": "box-yellow", "text": "같은 골목 3바퀴째", "at": 0.0, "duration": 3.5, "position": "upper_left"},
+            {"kind": "sfx_text", "preset": "tilt-red", "text": "띠용?!", "at": 1.8, "duration": 1.2, "position": "upper_right"},
             {"kind": "variety", "preset": "pop", "text": "결국 원점", "at": 2.0, "duration": 1.5},
             {"kind": "inner_voice", "preset": "bracket", "text": "(기억력 테스트 실패)", "at": 2.0, "duration": 1.8, "position": "center"}]
         common.write_json(run / "candidates.json", data)

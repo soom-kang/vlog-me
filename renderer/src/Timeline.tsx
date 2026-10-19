@@ -2,6 +2,7 @@ import {AbsoluteFill, Composition, Img, Sequence, staticFile} from 'remotion';
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from './gain.mjs';
 import {CandidateComposition} from './production/CandidatePreview';
+import {GalleryComposition} from './production/CaptionGallery';
 
 type Interval = {id: string; from: number; duration: number};
 type Timeline = {
@@ -52,5 +53,6 @@ export const Root = () => (
     calculateMetadata={({props}) => ({durationInFrames: props.timeline.duration_frames, fps: props.timeline.fps,
       width: props.timeline.width, height: props.timeline.height})} />
   <CandidateComposition />
+  <GalleryComposition />
   </>
 );

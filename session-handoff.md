@@ -16,8 +16,8 @@ cd /Users/soom.kang/Desktop/work/2.services/vlog-me
 ## Preview and Recovery
 
 ```bash
-python3 scripts/synthetic.py status --run-id synthetic-20261019-044629-b23b5340
-./scripts/studio.sh synthetic-20261019-044629-b23b5340
+python3 scripts/synthetic.py status --run-id synthetic-20261019-051308-c5ad231d
+./scripts/studio.sh synthetic-20261019-051308-c5ad231d
 ```
 
 출력된 127.0.0.1 URL을 열고 확인 후 Ctrl-C로 종료합니다. npm studio alias도 같은 helper입니다. agent·편집·설치·render UI/API가 없으며 viewer는 state·props·출력을 변경하지 않습니다. 완료·hash 검증을 통과한 128 MiB 이하 합성 영상 snapshot만 읽습니다.
@@ -28,7 +28,7 @@ live --refresh는 제거되어 exit 2로 종료합니다. pending run은 Claude 
 
 ## Verified
 
-- Python 75개·Node 2개·lint·typecheck: 2026-10-19 `./init.sh` PASS(production 계약 포함). 이전 기록: reports/preview-only-checks.log.
+- Python 83개·Node 2개·lint·typecheck: 2026-10-19 `./init.sh` PASS(production 계약 포함). 이전 기록: reports/preview-only-checks.log.
 - 최종 6초 렌더·HTTP 23건·상태/파일 보존·SIGTERM 종료: reports/preview-only-lifecycle.json.
 - 실제 브라우저 무음 재생·탐색: reports/preview-only-browser.json 및 preview-only-viewer.png.
 - 현재 검증용 server와 tab은 종료했습니다.
@@ -44,4 +44,4 @@ live --refresh는 제거되어 exit 2로 종료합니다. pending run은 Claude 
 
 ## Next Permitted Action
 
-현재 결과를 설명하거나 합성 fixture를 검증할 수 있습니다. production 계약(단위 1)은 구현했고 phase는 바꾸지 않았습니다. 단위 2(Ingest), 단위 3(Analyze), 단위 4(후보 카드·기대 화면)는 합성 fixture로 검증했습니다(`./scripts/smoke-media.sh`). Whisper 모델은 `.tools/whisper/ggml-large-v3-turbo.bin`입니다. 다음은 [로드맵](docs/roadmap.md) 단위 5(예능 80 · 감성 20 자막)이며, 사용자가 명시적으로 요청할 때만 시작합니다. 원본 보호 hook(`.claude/hooks/protect_sources.py`)이 `sources/` 쓰기를 막습니다. 원본 접근·음원 다운로드·실제 본편 렌더·업로드를 시작하지 않습니다. 범위 밖 native Remotion Studio 명령으로 우회하지 않습니다. commit·push·전역 설정 변경도 명시 요청 없이 수행하지 않습니다(이 폴더는 Git 저장소입니다).
+현재 결과를 설명하거나 합성 fixture를 검증할 수 있습니다. production 계약(단위 1)은 구현했고 phase는 바꾸지 않았습니다. 단위 2(Ingest), 단위 3(Analyze), 단위 4(후보 카드·기대 화면), 단위 5(자막 preset·번들 폰트)는 합성 fixture로 검증했습니다(`./scripts/smoke-media.sh`). Whisper 모델은 `.tools/whisper/ggml-large-v3-turbo.bin`입니다. 자막은 [자막 가이드](docs/caption-style.md)를 따릅니다. 다음은 [로드맵](docs/roadmap.md) 단위 6(사운드)이며, 사용자가 명시적으로 요청할 때만 시작합니다. 원본 보호 hook(`.claude/hooks/protect_sources.py`)이 `sources/` 쓰기를 막습니다. 원본 접근·음원 다운로드·실제 본편 렌더·업로드를 시작하지 않습니다. 범위 밖 native Remotion Studio 명령으로 우회하지 않습니다. commit·push·전역 설정 변경도 명시 요청 없이 수행하지 않습니다(이 폴더는 Git 저장소입니다).

@@ -100,12 +100,10 @@ def validate_candidates(data, entries):
         length = edited_seconds(c, entry)
         _number(c.get("key_moment"), 0, length, f"{cid}: key_moment")
         for caption in plan.get("captions", []):
-            if caption.get("kind") not in production.CAPTION_KINDS:
-                raise ValueError(f"{cid}: unknown caption kind")
-            if caption.get("position", "bottom") not in production.CAPTION_POSITIONS:
-                raise ValueError(f"{cid}: unknown caption position")
-            if not isinstance(caption.get("text"), str) or not caption["text"].strip():
-                raise ValueError(f"{cid}: empty caption")
+            try:
+                production.validate_caption_text(caption, require_preset=False)
+            except ValueError as exc:
+                raise ValueError(f"{cid}: {exc}") from exc
             at = _number(caption.get("at"), 0, length, f"{cid}: caption at")
             _number(caption.get("duration"), 0.2, length - at + 0.01, f"{cid}: caption duration")
         for sfx in plan.get("sfx", []):
@@ -134,7 +132,7 @@ def render_props(candidate, entry):
     captions = []
     for index, caption in enumerate(plan.get("captions", [])):
         start = min(round(caption["at"] * FPS), total - 1)
-        captions.append({"id": f"cap-{index}", "kind": caption["kind"], "preset": caption.get("preset", caption["kind"]),
+        captions.append({"id": f"cap-{index}", "kind": caption["kind"], "preset": production.validate_caption_text(caption, False),
                          "text": caption["text"], "position": caption.get("position", "bottom"),
                          "speaker": caption.get("speaker"), "from": start,
                          "duration": max(1, min(round(caption["duration"] * FPS), total - start))})
@@ -162,7 +160,7 @@ def card_html(candidate, entry, folder):
         span = f"{e(Path(entry['original']).name)} · 사진 {length:.1f}초"
         frames = f'<figure><img src="{cid}/src-1.jpg" alt=""><figcaption>사진</figcaption></figure>'
         edit = [f"줌 ×{plan.get('zoom', 1):g}(천천히 확대)"]
-    edit += [f"자막 [{KIND_LABELS[c['kind']]}·{e(c.get('preset', c['kind']))}] “{e(c['text'])}” {c['at']:.1f}s" for c in plan.get("captions", [])]
+    edit += [f"자막 [{KIND_LABELS[c['kind']]}·{e(production.validate_caption_text(c, False))}] “{e(c['text'])}” {c['at']:.1f}s" for c in plan.get("captions", [])]
     edit += [f"효과음 {e(s['name'])} {s['at']:.1f}s" for s in plan.get("sfx", [])]
     edit += [f"BGM {e(plan['bgm'])}"] if plan.get("bgm") else []
     edit += [e(n) for n in plan.get("notes", [])]
@@ -195,6 +193,11 @@ def page_html(run_id, version, candidates, entries, folder):
     body = "".join(f'<h2>{e_id} · {html.escape(Path(entries[e_id]["original"]).name)}</h2>' +
                    "".join(card_html(c, entries[e_id], folder) for c in items) for e_id, items in groups.items())
     fun = sum(c["tag"] == "fun" for c in candidates)
+    share = production.caption_style_share({"captions": [x for c in candidates for x in c["plan"].get("captions", [])]})
+    ratio = ("자막 비율: 스타일 자막 없음" if share["variety_share"] is None else
+             f"자막 비율: 예능 {share['variety']} · 감성 {share['mood']} · 대사 {share['dialogue']} "
+             f"(예능 {share['variety_share']:.0%}, 목표 {share['target']:.0%} 참고" +
+             ("" if share["in_window"] else " · 목표 범위 밖") + ")")
     return f'''<!doctype html>
 <html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>vlog-me · 후보 리뷰 v{version}</title>
@@ -213,7 +216,7 @@ figcaption{{font-size:12px;color:var(--muted)}}.expected,video{{width:100%;displ
 .quote{{margin:10px 0 0}}.why{{color:var(--muted);margin:6px 0 0}}.evidence{{font-size:13px;color:var(--muted);margin:4px 0 0;padding-left:18px}}
 ul{{font-size:14px;padding-left:18px;margin:6px 0 0}}footer{{margin-top:12px;font-size:13px;color:var(--muted)}}code{{font-size:12px}}
 </style><main><h1>후보 리뷰 v{version}</h1>
-<p style="color:var(--muted);margin:0">{html.escape(run_id)} · 후보 {len(candidates)}개 (fun {fun} · mood {len(candidates) - fun}) · 기대 화면은 편집안대로 자막을 합성한 장면입니다. 효과음·BGM은 계획만 표시하며 아직 소리에 넣지 않았습니다.</p>
+<p style="color:var(--muted);margin:0">{html.escape(run_id)} · 후보 {len(candidates)}개 (fun {fun} · mood {len(candidates) - fun}) · 기대 화면은 편집안대로 자막을 합성한 장면입니다. 효과음·BGM은 계획만 표시하며 아직 소리에 넣지 않았습니다.<br>{html.escape(ratio)}</p>
 {body}</main></html>'''
 
 
