@@ -54,6 +54,9 @@ def validate_production_config(config):
     profile = config.get("production_profile", {})
     if any(profile.get(k) != v for k, v in {"width": 1920, "height": 1080, "fps": 30, "color": "SDR BT.709"}.items()):
         raise ValueError("Unsupported production output profile")
+    chunk = profile.get("chunk_seconds", 300)
+    if type(chunk) is not int or not 30 <= chunk <= 900:
+        raise ValueError("Production chunk_seconds must be 30..900")
     for key, maximum in PROFILE_LIMITS.items():
         value = profile.get(key)
         if type(value) is not int or not 1 <= value <= maximum:

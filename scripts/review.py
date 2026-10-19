@@ -314,7 +314,9 @@ def build(run_id):
     timeout = config["production_profile"]["timeout_seconds"]
     with run_lock(run):
         state = ingest.status(run_id)
-        allowed = {("analyzed", "pending"), ("reviewed", "pending"), ("review", "failed"), ("review", "paused")}
+        # Selected/assembled runs may be reviewed again, e.g. after caption edits.
+        allowed = {("analyzed", "pending"), ("reviewed", "pending"), ("review", "failed"), ("review", "paused"),
+                   ("selected", "pending"), ("assembled", "pending")}
         if (state.get("stage"), state.get("status")) not in allowed:
             raise ValueError(f"Review needs an analyzed run, got {state.get('stage')}/{state.get('status')}")
         entries = read_entries(run)

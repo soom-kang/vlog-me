@@ -16,7 +16,16 @@
 | 분석: 한국어 전사(whisper.cpp `ggml-large-v3-turbo`)·소리 이벤트·정적·장면 전환·contact sheet·클립 요약 | 구현(`scripts/analyze.py`), 합성 fixture로만 검증 |
 | 후보 카드·기대 화면·선택 기록 | 구현(`scripts/review.py`, `renderer/src/production/`), 합성 fixture로만 검증 |
 | 자막 preset 레지스트리·번들 폰트·글자 수/비율 검사 | 구현(`renderer/src/production/presets.json`, [자막 가이드](caption-style.md)) |
-| 최종 timeline 조립 | 미구현(단위 6 이후) |
+| 조립·롱폼 렌더 | 구현(`scripts/assemble.py`, `scripts/render_prod.py`), 합성 2분 영상으로만 검증 |
+
+조립과 렌더는 다음 순서입니다.
+1. `python3 scripts/assemble.py --run-id prod-...`가 채택한 후보를 촬영 순서(또는 `selection.json`의 `order`)로 이어 `timeline.json`(v2)을 만듭니다. `자막 수정`이 남아 있으면 거부하므로 리뷰를 다시 만들고 다시 선택합니다. 이전 timeline은 `timeline.prev-*.json`으로 남습니다. 확인할 점은 `assemble-report.md`에 적힙니다.
+2. Claude가 `timeline.json`을 직접 고칠 수 있습니다. 렌더할 때마다 다시 검증합니다.
+3. `python3 scripts/render_prod.py --run-id prod-...`는 config의 `production_render: true`가 있어야 실행됩니다. 영상은 `chunk_seconds`(기본 300초) 구간마다 소리 없이 렌더하고, 소리는 전체를 한 번에 WAV로 렌더한 뒤 약 -14 LUFS·true peak -1.5 dBTP로 맞춰 합칩니다.
+4. 결과는 새 `render/vN/`에 `final.mp4`, `verify.json`, `credits.md`로 남습니다. 프레임 수, 길이, 소리 길이, decode, 음량, true peak 검사를 통과해야 `final.mp4`가 생깁니다.
+5. 중간에 실패하면 같은 명령을 다시 실행합니다. 입력이 같으면 끝난 구간은 재사용합니다. 렌더 중 멈춘 구간은 `*.failed-*.mp4`로 남기고 한 번 더 시도합니다.
+
+합성 검증에서 영상 디코딩이 간헐적으로 멈추는 delayRender timeout을 두 번 관찰했습니다(합성 렌더 139프레임, 롱폼 2903프레임). 원인은 확정하지 못했고, 롱폼 렌더러는 구간 재시도와 재개로 대응합니다.
 
 후보 리뷰 흐름은 다음과 같습니다.
 1. Claude가 `analysis/index.md`와 클립 요약을 읽고 `work/<run>/candidates.json`을 씁니다. 후보마다 `id`(c01), `title`, `tag`(fun/mood), `source`, `range`(원본 초), `reason`, `evidence`, `dialogue`, `key_moment`(편집 후 초), `preview`(true/false), `plan`(`cuts`, `speed`, `zoom`, `captions`, `sfx`, `bgm`, `notes`, 사진은 `photo_seconds`)을 담습니다.

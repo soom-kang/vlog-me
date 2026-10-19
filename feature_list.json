@@ -123,6 +123,16 @@
       ],
       "status": "completed",
       "evidence": "tests/test_sound.py; smoke-media measured ~12 dB BGM ducking under speech in a rendered preview; no real audio registered, no human listening"
+    },
+    {
+      "id": "longform-render",
+      "name": "Assemble and chunked long-form render (unit 7)",
+      "description": "Selection to timeline v2, ProductionTimeline composition, silent video chunks plus one full WAV mix, resume, loudness normalization and QA",
+      "dependencies": [
+        "sound-system"
+      ],
+      "status": "completed",
+      "evidence": "tests/test_longform.py; scripts/smoke-longform.sh: 2-min synthetic, 3720 frames, 5 chunks, -14.96 LUFS, TP -1.43, max A/V offset 17 ms, 434 s render. Intermittent delayRender stalls observed twice; mitigated with retry/resume, root cause unknown"
     }
   ]
 }

@@ -23,6 +23,7 @@ An earlier terminal `./init.sh` does not export its environment to the parent sh
 - Originals under `sources/` are read-only. `.claude/hooks/protect_sources.py` blocks tool calls that would write there; do not work around it.
 - Write captions by `docs/caption-style.md` (variety 80 / mood 20, presets from `renderer/src/production/presets.json`). Never present unspoken text as `dialogue`.
 - Sound follows `docs/sound-guide.md`. Register audio with `scripts/audio_library.py`; download a Claude-found file only after the user approves that file in chat and the production config enables audio search/downloads.
+- Production renders need `production_render: true`, set only when the user asks for a render. Never overwrite a finished `render/vN/`.
 - `timeline.json` is the render input. Edit through Claude Code; do not maintain a second master timeline or launch native Remotion Studio from upstream examples.
 - Permission patterns and helper checks are defense in depth, not an OS sandbox. Do not use direct commands to widen the authorized scope.
 - Never print secrets, change global settings, push, deploy, send external messages or commit without the relevant explicit request.
@@ -34,7 +35,7 @@ An earlier terminal `./init.sh` does not export its environment to the parent sh
 ./scripts/smoke-render.sh
 ```
 
-`./scripts/smoke-media.sh` checks ingest, analysis (signals, contact sheets, Korean TTS transcription when the local Whisper model exists) and review-card rendering on generated media in a temporary root. The second command above creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
+`./scripts/smoke-longform.sh` builds and renders a 2-minute synthetic edit in chunks and measures frames, loudness and A/V sync (several minutes). `./scripts/smoke-media.sh` checks ingest, analysis (signals, contact sheets, Korean TTS transcription when the local Whisper model exists) and review-card rendering on generated media in a temporary root. The second command above creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
 
 ```bash
 python3 scripts/synthetic.py status --run-id synthetic-RUN-ID
