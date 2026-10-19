@@ -10,7 +10,9 @@
 | 합성 asset 생성·inventory·timeline·기본 caption·믹스·렌더 QA | 구현 |
 | 상태 저장·hash 검증·실패/partial 보존·재개 | 합성 run에 한해 구현 |
 | production 범위 검증·`prod-*` run·`sources/` 경로·timeline v2 검증·원본 보호 hook | 구현(`scripts/production.py`); phase 전환 전이라 실행 진입점 없음 |
-| 실제 원본 ingestion·VFR mapping·HDR·HEIC | 미구현·현재 권한 없음 |
+| 원본 ingest: inventory·hash·VFR/HDR/회전 감지·CFR 1080p SDR proxy·HEIC→JPG | 구현(`scripts/ingest.py`), 합성 fixture로만 검증. 실제 원본은 phase 전환 후 |
+
+`python3 scripts/ingest.py run --source-root sources/<여행>`은 새 `prod-*` run을 만들고 원본을 읽기만 합니다. 처리하지 못한 파일은 이유와 함께 `sources.json`의 `skipped`에 남고, HDR proxy는 `color_review: needed`로 표시됩니다. 촬영 시각은 UTC로 정규화하며, 시간대 정보가 없는 사진은 이 Mac의 시간대로 해석합니다.
 | ASR·장면 발견·story 선별·예능 caption 작성 | 문서 지침만 존재; model/backend 미설치 |
 | 음원 탐색·다운로드·선곡·권리 사실 확인 | 미구현; 음원 목록 비어 있음 |
 | 음원 적격성 상태 검사 | fixture predicate만 구현; 사실 확인 기능 아님 |

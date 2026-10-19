@@ -81,8 +81,8 @@
       "dependencies": [
         "production-contract"
       ],
-      "status": "not-started",
-      "evidence": "See docs/roadmap.md"
+      "status": "completed",
+      "evidence": "tests/test_ingest.py; scripts/smoke-ingest.sh PASS 2026-10-19 (synthetic fixtures only; real HDR color not reviewed)"
     },
     {
       "id": "production-analyze",

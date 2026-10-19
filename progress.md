@@ -3,7 +3,7 @@
 ## Current State
 
 - Last Updated: 2026-10-19 Asia/Seoul
-- Active Feature: none; production-contract(단위 1) 완료, phase는 setup_synthetic_only 유지
+- Active Feature: none; 단위 1(production 계약)·단위 2(Ingest, 합성 fixture 검증) 완료, phase는 setup_synthetic_only 유지
 - Scope: setup_synthetic_only; production agent는 Claude Code
 - Repository: Git 저장소(main). commit·push는 명시 요청 시에만
 
@@ -13,10 +13,10 @@
 - Claude 시작 환경, scope 재검사, 실패 기록·중단 정리·출력 보존 유지.
 - native Studio 실행 제거. studio.sh 및 npm studio는 읽기 전용 encoded preview만 제공.
 - loopback bind, GET/HEAD 두 경로, byte range, 쓰기·agent·편집·설치·render API 거부.
-- Python 47개(production 계약 14개 포함)·Node 2개·lint·typecheck 통과(2026-10-19). 새 합성 smoke render succeeded.
+- Python 56개(production 계약·ingest 포함, 미디어 smoke 1개는 skip)·Node 2개·lint·typecheck 통과(2026-10-19). 새 합성 smoke render succeeded.
 - 실제 HTTP 23건·브라우저 재생과 탐색·파일 mtime 보존 통과.
 - SIGTERM 종료 회귀 수정, exit 0과 port 해제 실측 통과.
-- 최종 run: synthetic-20261019-014338-96352ca2. 날짜는 UTC.
+- 최종 run: synthetic-20261019-015052-59a08a8a. 날짜는 UTC.
 
 ## Evidence
 
@@ -38,6 +38,6 @@
 
 ## Deferred
 
-다음 후보: [로드맵](docs/roadmap.md) 단위 2(Ingest). 사용자 요청 시에만 시작. 설계: docs/superpowers/specs/2026-10-19-production-harness-design.md.
+다음 후보: [로드맵](docs/roadmap.md) 단위 3(Analyze). Whisper 모델 다운로드는 승인 필요. 사용자 요청 시에만 시작. 설계: docs/superpowers/specs/2026-10-19-production-harness-design.md.
 
 원본 처리·ASR·음원 다운로드·권리 확인·취향·사람 청취·장시간/4K·업로드는 NOT_RUN입니다.

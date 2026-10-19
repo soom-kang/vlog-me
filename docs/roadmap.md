@@ -4,15 +4,16 @@
 
 ## 현재 위치 (2026-10-19)
 
-현재 phase는 `setup_synthetic_only`입니다. 단위 1(범위·데이터 계약)은 구현했지만 phase는 아직 바꾸지 않았습니다.
+현재 phase는 `setup_synthetic_only`입니다. 단위 1(범위·데이터 계약)과 단위 2(Ingest)를 구현했지만 phase는 아직 바꾸지 않았습니다. 그래서 실제 원본에는 아직 실행되지 않습니다.
 
 할 수 있는 것:
 - 환경 점검(`./init.sh`)
 - 합성 영상·사진·테스트 톤의 렌더와 QA, 읽기 전용 미리보기
 - production 계약 검사: `scripts/production.py`의 범위 검증, `prod-*` run 경로, `sources/` 경로 검사, timeline v2 검증
+- 합성 fixture ingest 검증: `./scripts/smoke-ingest.sh`(HDR·VFR·세로·무음 영상과 HEIC를 임시 폴더에서 생성해 처리)
 
 아직 할 수 없는 것:
-- 원본 ingest와 분석(전사·음량·장면)
+- 실제 원본 ingest(phase 전환 필요), 분석(전사·음량·장면)
 - 후보 카드와 기대 화면 미리보기
 - 예능 자막 렌더, 음원 탐색·배치, 롱폼 렌더
 
@@ -32,7 +33,7 @@ production으로 바꾸려면 사용자가 채팅으로 명시적으로 요청�
 | 단위 | 내용 | 상태 |
 | --- | --- | --- |
 | 1. 범위·데이터 계약 | production 범위 검증, `prod-*` run, `sources/` 경로 검사, timeline v2, 원본 보호 hook | 완료 |
-| 2. Ingest | ffprobe inventory, VFR·HDR·회전 감지, CFR 1080p SDR proxy, HEIC→JPG | 대기 |
+| 2. Ingest | ffprobe inventory, VFR·HDR·회전 감지, CFR 1080p SDR proxy, HEIC→JPG | 완료(합성 fixture). HDR 색감은 실제 영상으로 눈 확인 필요 |
 | 3. Analyze | 로컬 Whisper 전사, 음량·웃음 후보 피크, 무음, 장면 전환, contact sheet, 클립 요약 | 대기 |
 | 4. 후보 카드·기대 화면 | 후보별 이유와 편집 계획, 자막을 합성한 still, 480p 미리보기, 리뷰 페이지 | 대기 |
 | 5. 예능 80 · 감성 20 자막 | preset 컴포넌트와 OFL 한글 폰트 | 대기 |
@@ -45,7 +46,7 @@ production으로 바꾸려면 사용자가 채팅으로 명시적으로 요청�
 ## 다음 단위를 여는 프롬프트 예
 
 ```text
-docs/roadmap.md의 단위 2(Ingest)를 시작해줘.
+docs/roadmap.md의 단위 3(Analyze)을 시작해줘.
 - 이번에는 코드와 합성 fixture 테스트만 만들고 실제 원본은 열지 마.
 - phase는 아직 setup_synthetic_only로 둬.
 - 기존 테스트와 ./scripts/smoke-render.sh가 계속 통과해야 해.

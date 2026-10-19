@@ -32,7 +32,7 @@ An earlier terminal `./init.sh` does not export its environment to the parent sh
 ./scripts/smoke-render.sh
 ```
 
-The second command creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
+`./scripts/smoke-ingest.sh` checks ingest on generated HDR/VFR/rotated/silent clips and HEIC photos in a temporary root. The second command above creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
 
 ```bash
 python3 scripts/synthetic.py status --run-id synthetic-RUN-ID
