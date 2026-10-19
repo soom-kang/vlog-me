@@ -112,6 +112,29 @@ def qa(partial, timeline, timeout):
             "integrated_lufs": float(final_loudness["input_i"]), "true_peak_dbtp": float(final_loudness["input_tp"])}
 
 
+def node_timeout(profile, duration_frames):
+    """Whole-render limit: the profile value, or six times the video length plus ten minutes if longer."""
+    return max(profile["timeout_seconds"], int(duration_frames / FPS * 6) + 600)
+
+
+def check(run_id):
+    """Validate timeline.json (and its audio) without rendering. Does not need production_render."""
+    config = production.require_production_scope()
+    run = production.production_run_path(run_id)
+    entries = review.read_entries(run)
+    timeline = read_json(safe_path(run, "timeline.json", True))
+    used = sorted({c.get("source") for c in timeline.get("audio", []) if c.get("kind") in {"bgm", "sfx"}})
+    library = {a["id"]: a for a in audio_library.load_library()["assets"]}
+    platforms = config.get("audio_platforms", ["youtube"])
+    problems = [f"{asset_id}: {'not registered' if asset_id not in library else audio_library.eligibility(library[asset_id], platforms)[1]}"
+                for asset_id in used if asset_id not in library or not audio_library.eligibility(library[asset_id], platforms)[0]]
+    if problems:
+        raise ValueError("Audio not usable: " + "; ".join(problems))
+    duration = production.validate_timeline_v2(timeline, assemble.source_map(entries, [library[i] for i in used]))
+    return {"status": "PASS", "run_id": run_id, "duration_seconds": round(duration / FPS, 2),
+            "captions": production.caption_style_share(timeline), "clips": len(timeline["clips"])}
+
+
 def render(run_id):
     config = production.require_production_scope()
     if not config["production_render"]:
@@ -147,7 +170,7 @@ def render(run_id):
         started = time.monotonic()
         try:
             rendered = run_command(["node", str(common.ROOT / "renderer/scripts/render-prod.mjs"), run_id, str(version), str(run)],
-                                   timeout=timeout)
+                                   timeout=node_timeout(profile, timeline["duration_frames"]))
             partial, measured_mix = finish(folder, timeline, timeout)
             report = qa(partial, timeline, timeout)
             production.require_production_scope()
@@ -183,9 +206,10 @@ def main():
     signal.signal(signal.SIGTERM, interrupted)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--check", action="store_true", help="validate timeline.json without rendering")
     args = parser.parse_args()
     try:
-        print(json.dumps(render(args.run_id), indent=2, ensure_ascii=False))
+        print(json.dumps(check(args.run_id) if args.check else render(args.run_id), indent=2, ensure_ascii=False))
     except KeyboardInterrupt:
         parser.exit(130, "PAUSED: interrupted; finished chunks are kept for resume\n")
     except Exception as exc:

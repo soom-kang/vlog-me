@@ -3,7 +3,7 @@
 ## Current State
 
 - Last Updated: 2026-10-19 Asia/Seoul
-- Active Feature: none; 단위 1(production 계약)·단위 2(Ingest)·단위 3(Analyze)·단위 4(후보 카드·기대 화면)·단위 5(자막 preset·번들 폰트)·단위 6(사운드)·단위 7(조립·롱폼 렌더) 완료(합성 fixture 검증), phase는 setup_synthetic_only 유지
+- Active Feature: none; 단위 1(production 계약)·단위 2(Ingest)·단위 3(Analyze)·단위 4(후보 카드·기대 화면)·단위 5(자막 preset·번들 폰트)·단위 6(사운드)·단위 7(조립·롱폼 렌더)·단위 8(프로젝트 Skill) 완료(합성 fixture 검증), phase는 setup_synthetic_only 유지
 - Scope: setup_synthetic_only; production agent는 Claude Code
 - Repository: Git 저장소(main). commit·push는 명시 요청 시에만
 
@@ -13,10 +13,10 @@
 - Claude 시작 환경, scope 재검사, 실패 기록·중단 정리·출력 보존 유지.
 - native Studio 실행 제거. studio.sh 및 npm studio는 읽기 전용 encoded preview만 제공.
 - loopback bind, GET/HEAD 두 경로, byte range, 쓰기·agent·편집·설치·render API 거부.
-- Python 104개(production 계약부터 조립·롱폼 렌더까지 포함, 미디어 smoke 6개는 skip)·Node 2개·lint·typecheck 통과(2026-10-19). 새 합성 smoke render succeeded.
+- Python 112개(production 계약부터 조립·롱폼 렌더까지 포함, 미디어 smoke 6개는 skip)·Node 2개·lint·typecheck 통과(2026-10-19). 새 합성 smoke render succeeded.
 - 실제 HTTP 23건·브라우저 재생과 탐색·파일 mtime 보존 통과.
 - SIGTERM 종료 회귀 수정, exit 0과 port 해제 실측 통과.
-- 최종 run: synthetic-20261019-062743-ee85e59d. 날짜는 UTC.
+- 최종 run: synthetic-20261019-064243-1f9751cd. 날짜는 UTC.
 
 ## Evidence
 
@@ -40,6 +40,6 @@
 
 관찰: 2026-10-19 합성 렌더 1회(synthetic-20261019-051010-fabe9121)가 139프레임 delayRender timeout으로 실패해 보존했습니다. 이후 폰트 로딩을 자막 첫 렌더 시점으로 옮겼고, 연속 5회 렌더는 성공했습니다. 원인은 확정하지 못했습니다.
 
-다음 후보: [로드맵](docs/roadmap.md) 단위 8(Skill·harness) 또는 첫 실제 sample(phase 전환 요청 필요). 2분 합성 롱폼: 3720프레임·5구간·-14.96 LUFS·TP -1.43·A/V 최대 17ms, 렌더 434초(약 3.5배). 등록된 실제 음원은 0개이며, 다운로드는 파일별 승인이 필요합니다. OFL 폰트 5종은 2026-10-19 승인·Git 포함(config/fonts-lock.json). 자막 갤러리: reports/unit5-caption-gallery.jpg. 단위 4 기대 화면 예: reports/unit4-expected-frame-synthetic.jpg. Whisper 모델 ggml-large-v3-turbo는 2026-10-19 승인·설치(.tools/whisper, SHA-256 확인). 사용자 요청 시에만 시작. 설계: docs/superpowers/specs/2026-10-19-production-harness-design.md.
+다음 후보: 첫 실제 sample([로드맵](docs/roadmap.md) "다음: 첫 실제 sample", `/vlog-workflow`로 시작, phase 전환 요청 필요). 2분 합성 롱폼: 3720프레임·5구간·-14.96 LUFS·TP -1.43·A/V 최대 17ms, 렌더 434초(약 3.5배). 등록된 실제 음원은 0개이며, 다운로드는 파일별 승인이 필요합니다. OFL 폰트 5종은 2026-10-19 승인·Git 포함(config/fonts-lock.json). 자막 갤러리: reports/unit5-caption-gallery.jpg. 단위 4 기대 화면 예: reports/unit4-expected-frame-synthetic.jpg. Whisper 모델 ggml-large-v3-turbo는 2026-10-19 승인·설치(.tools/whisper, SHA-256 확인). 사용자 요청 시에만 시작. 설계: docs/superpowers/specs/2026-10-19-production-harness-design.md.
 
 원본 처리·ASR·음원 다운로드·권리 확인·취향·사람 청취·장시간/4K·업로드는 NOT_RUN입니다.

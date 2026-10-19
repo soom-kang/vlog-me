@@ -152,6 +152,50 @@
         "remotion-upgrade/agents/openai.yaml": "3f3bc995d3531cfb5a714fd8f951954e118909b749217cc8418a235326d003cb",
         "remotion-upgrade/assets/remotion-icon.svg": "5007669bd0555b0f4565b4e7176fa191310ab0039b2ed09d867a9270f5b0ce58"
       }
+    },
+    {
+      "name": "vlog-workflow",
+      "source": "vlog-me project (written in this repository)",
+      "ref": null,
+      "version": "1",
+      "scope": "project-custom",
+      "path": ".claude/skills/vlog-workflow",
+      "files": {
+        "SKILL.md": "a01cb586e7657f6475e0e43ac0f30d427a7ce55e70a5779011ebb2e791280036"
+      }
+    },
+    {
+      "name": "vlog-scout",
+      "source": "vlog-me project (written in this repository)",
+      "ref": null,
+      "version": "1",
+      "scope": "project-custom",
+      "path": ".claude/skills/vlog-scout",
+      "files": {
+        "SKILL.md": "1707502f043ad3bca9485d948d48a57ce68dfb528a02f5700dcdc5c56cb86e03"
+      }
+    },
+    {
+      "name": "k-variety-caption",
+      "source": "vlog-me project (written in this repository)",
+      "ref": null,
+      "version": "1",
+      "scope": "project-custom",
+      "path": ".claude/skills/k-variety-caption",
+      "files": {
+        "SKILL.md": "b917cea8c22b7a67bccadaee2946fd223d305fc6bed60f7622cc10c3c85bdcba"
+      }
+    },
+    {
+      "name": "vlog-sound",
+      "source": "vlog-me project (written in this repository)",
+      "ref": null,
+      "version": "1",
+      "scope": "project-custom",
+      "path": ".claude/skills/vlog-sound",
+      "files": {
+        "SKILL.md": "3cc671628c24c18348db0d0522aa13d2ee36f370278b21a9932d61387c0f5316"
+      }
     }
   ]
 }

@@ -2,46 +2,75 @@
 
 ## 허용 범위
 
-현재 단계는 `setup_synthetic_only`입니다. Claude Code 주 세션과 공식 Remotion Skill을 사용하며 Custom Skill·subagent·외부 coordinator는 없습니다. 설계의 전체 제작 pipeline이 구현된 상태는 아닙니다.
+phase는 두 가지이며 동시에 쓸 수 없습니다.
+- `setup_synthetic_only`(현재 기본값): 합성 run만 만들고 렌더합니다. 실제 원본은 열지 않습니다.
+- `production`: `source_roots`에 적은 `sources/<여행>/`만 읽습니다. 사용자가 채팅으로 요청할 때만 `/vlog-workflow` 절차로 전환합니다.
+
+Claude Code 주 세션이 프로젝트 Skill(`/vlog-workflow`, `vlog-scout`, `k-variety-caption`, `vlog-sound`)과 공식 Remotion Skill로 진행합니다. subagent나 외부 coordinator는 쓰지 않습니다.
 
 | 구간 | 구현 상태 |
 | --- | --- |
-| 도구 점검·Skill 무결성·지침·인수인계 | 구현 |
-| 합성 asset 생성·inventory·timeline·기본 caption·믹스·렌더 QA | 구현 |
-| 상태 저장·hash 검증·실패/partial 보존·재개 | 합성 run에 한해 구현 |
-| production 범위 검증·`prod-*` run·`sources/` 경로·timeline v2 검증·원본 보호 hook | 구현(`scripts/production.py`); phase 전환 전이라 실행 진입점 없음 |
-| 원본 ingest: inventory·hash·VFR/HDR/회전 감지·CFR 1080p SDR proxy·HEIC→JPG | 구현(`scripts/ingest.py`), 합성 fixture로만 검증. 실제 원본은 phase 전환 후 |
-
-`python3 scripts/ingest.py run --source-root sources/<여행>`은 새 `prod-*` run을 만들고 원본을 읽기만 합니다. 처리하지 못한 파일은 이유와 함께 `sources.json`의 `skipped`에 남고, HDR proxy는 `color_review: needed`로 표시됩니다. 촬영 시각은 UTC로 정규화하며, 시간대 정보가 없는 사진은 이 Mac의 시간대로 해석합니다.
-| 분석: 한국어 전사(whisper.cpp `ggml-large-v3-turbo`)·소리 이벤트·정적·장면 전환·contact sheet·클립 요약 | 구현(`scripts/analyze.py`), 합성 fixture로만 검증 |
-| 후보 카드·기대 화면·선택 기록 | 구현(`scripts/review.py`, `renderer/src/production/`), 합성 fixture로만 검증 |
-| 자막 preset 레지스트리·번들 폰트·글자 수/비율 검사 | 구현(`renderer/src/production/presets.json`, [자막 가이드](caption-style.md)) |
+| 도구 점검·Skill/폰트 무결성·지침·인수인계 | 구현 |
+| 합성 asset 생성·timeline·믹스·렌더 QA·상태 보존·재개 | 구현(합성 run) |
+| production 범위 검증·`prod-*` run·`sources/` 경로·timeline v2·원본 보호 hook | 구현(`scripts/production.py`) |
+| 원본 ingest: inventory·hash·VFR/HDR/회전 감지·CFR 1080p SDR proxy·HEIC→JPG | 구현(`scripts/ingest.py`), 합성 fixture로만 검증 |
+| 분석: 한국어 전사(whisper.cpp `ggml-large-v3-turbo`)·소리 이벤트·정적·장면 전환·contact sheet·요약 | 구현(`scripts/analyze.py`), 합성 fixture로만 검증 |
+| 후보 카드·기대 화면·선택 기록 | 구현(`scripts/review.py`), 합성 fixture로만 검증 |
+| 자막 preset·번들 폰트·글자 수/비율 검사 | 구현([자막 가이드](caption-style.md)) |
+| 음원 등록·hash·loudness 측정·사용 판정 | 구현(`scripts/audio_library.py`). 등록된 실제 음원 0개 |
+| 무료 음원 탐색·다운로드 | 절차만 문서화([사운드 가이드](sound-guide.md)). 플래그와 파일별 사용자 승인 필요 |
 | 조립·롱폼 렌더 | 구현(`scripts/assemble.py`, `scripts/render_prod.py`), 합성 2분 영상으로만 검증 |
+| 권리 사실 확인 | Claude가 공식 근거를 확인해 기록. no-claim 보증이 아님 |
+| 게시·Content ID 검사 | 미구현·권한 없음 |
 
-조립과 렌더는 다음 순서입니다.
-1. `python3 scripts/assemble.py --run-id prod-...`가 채택한 후보를 촬영 순서(또는 `selection.json`의 `order`)로 이어 `timeline.json`(v2)을 만듭니다. `자막 수정`이 남아 있으면 거부하므로 리뷰를 다시 만들고 다시 선택합니다. 이전 timeline은 `timeline.prev-*.json`으로 남습니다. 확인할 점은 `assemble-report.md`에 적힙니다.
-2. Claude가 `timeline.json`을 직접 고칠 수 있습니다. 렌더할 때마다 다시 검증합니다.
-3. `python3 scripts/render_prod.py --run-id prod-...`는 config의 `production_render: true`가 있어야 실행됩니다. 영상은 `chunk_seconds`(기본 300초) 구간마다 소리 없이 렌더하고, 소리는 전체를 한 번에 WAV로 렌더한 뒤 약 -14 LUFS·true peak -1.5 dBTP로 맞춰 합칩니다.
+## Production 흐름
+
+### 1. Ingest
+
+`python3 scripts/ingest.py run --source-root sources/<여행>`은 새 `prod-*` run을 만들고 원본을 읽기만 합니다.
+- 처리하지 못한 파일은 이유와 함께 `sources.json`의 `skipped`에 남습니다.
+- HDR proxy는 `color_review: needed`로 표시됩니다.
+- 촬영 시각은 UTC로 정규화합니다. 시간대 정보가 없는 사진은 이 Mac의 시간대로 해석합니다.
+
+### 2. Analyze
+
+`python3 scripts/analyze.py --run-id prod-...`는 ingest가 끝난 run의 proxy만 읽습니다.
+- `asr_model`을 config에 적으면 `.tools/whisper/<모델>`이 있어야 합니다. 없으면 실패하므로, 모델이 없을 때는 `asr_model`을 `null`로 두고 소리·화면 신호만 씁니다.
+- Claude는 `analysis/index.md`와 클립별 `summary.md`부터 읽고, 필요한 구간만 contact sheet로 확인합니다.
+- `reaction`은 대사 밖의 큰 소리라는 신호일 뿐, 웃음이라는 판정이 아닙니다.
+- Whisper는 음악·정적 구간에서 없는 대사를 지어낼 수 있습니다(예: 자막 제작자 문구). 알려진 문구이거나 정적과 대부분 겹치는 대사는 `의심`으로 표시되고 웃음 후보 판정에서 빠집니다. 휴리스틱이므로 화면과 함께 확인합니다.
+- 실패하면 이전 시도를 `analysis.failed-*`로 남기고 다시 실행할 수 있습니다.
+
+### 3. 후보 리뷰와 선택
+
+1. Claude가 `work/<run>/candidates.json`을 씁니다. 형식과 예시는 `vlog-scout` Skill에 있습니다.
+2. `python3 scripts/review.py build --run-id prod-...`가 새 `review/vN/`에 원본 프레임 4장, 자막을 합성한 기대 화면, 요청한 후보의 960×540 미리보기를 만듭니다. 이전 버전은 덮어쓰지 않습니다. 선택·조립·렌더 뒤에도 후보를 고쳐 다시 만들 수 있습니다.
+3. 사용자는 `open work/<run>/review/vN/index.html`로 페이지를 열고 채팅으로 답합니다.
+4. Claude가 답을 `selection.json`으로 옮기고 `review.py select`로 기록합니다. 리뷰 뒤에 `candidates.json`이 바뀌면 선택을 거부하므로 다시 build합니다.
+
+등록된 음원을 지정한 효과음·BGM은 미리보기 소리에 들어가고, BGM은 대사 구간에서 자동으로 12 dB 낮아집니다. 음원을 지정하지 않은 항목은 계획만 표시합니다.
+
+### 4. 조립과 렌더
+
+1. `python3 scripts/assemble.py --run-id prod-...`가 채택한 후보를 촬영 순서(또는 `selection.json`의 `order`)로 이어 `timeline.json`(v2)을 만듭니다.
+   - `자막 수정`이 남아 있으면 거부합니다.
+   - 다시 조립하면 이전 timeline(직접 고친 내용 포함)은 `timeline.prev-*.json`으로 밀려납니다.
+   - 확인할 점은 `assemble-report.md`에 적힙니다.
+2. Claude가 `timeline.json`을 직접 고칠 수 있습니다. `python3 scripts/render_prod.py --run-id prod-... --check`로 렌더 없이 검증합니다.
+3. `python3 scripts/render_prod.py --run-id prod-...`는 config의 `production_render: true`가 있어야 실행됩니다.
+   - 영상은 `chunk_seconds`(기본 300초) 구간마다 소리 없이 렌더합니다.
+   - 소리는 전체를 한 번에 WAV로 렌더한 뒤 약 -14 LUFS, true peak -1.5 dBTP로 맞춰 합칩니다.
+   - 실행 제한 시간은 `timeout_seconds`와 영상 길이의 6배+10분 중 큰 값입니다.
 4. 결과는 새 `render/vN/`에 `final.mp4`, `verify.json`, `credits.md`로 남습니다. 프레임 수, 길이, 소리 길이, decode, 음량, true peak 검사를 통과해야 `final.mp4`가 생깁니다.
 5. 중간에 실패하면 같은 명령을 다시 실행합니다. 입력이 같으면 끝난 구간은 재사용합니다. 렌더 중 멈춘 구간은 `*.failed-*.mp4`로 남기고 한 번 더 시도합니다.
 
 합성 검증에서 영상 디코딩이 간헐적으로 멈추는 delayRender timeout을 두 번 관찰했습니다(합성 렌더 139프레임, 롱폼 2903프레임). 원인은 확정하지 못했고, 롱폼 렌더러는 구간 재시도와 재개로 대응합니다.
 
-후보 리뷰 흐름은 다음과 같습니다.
-1. Claude가 `analysis/index.md`와 클립 요약을 읽고 `work/<run>/candidates.json`을 씁니다. 후보마다 `id`(c01), `title`, `tag`(fun/mood), `source`, `range`(원본 초), `reason`, `evidence`, `dialogue`, `key_moment`(편집 후 초), `preview`(true/false), `plan`(`cuts`, `speed`, `zoom`, `captions`, `sfx`, `bgm`, `notes`, 사진은 `photo_seconds`)을 담습니다.
-2. `python3 scripts/review.py build --run-id prod-...`가 새 `review/vN/`에 원본 프레임 4장, 자막을 합성한 기대 화면, 요청한 후보의 960×540 미리보기를 만듭니다. 이전 버전은 덮어쓰지 않습니다.
-3. 사용자는 `open work/<run>/review/vN/index.html`로 페이지를 열고 채팅으로 `c01 채택`, `c03 자막 수정: …`, `c05 제외`처럼 답합니다.
-4. Claude가 답을 `selection.json`(`decisions`: 후보마다 `adopt`·`caption_edit`·`drop`, 수정이면 `note`)으로 옮기고 `review.py select`로 기록합니다. 리뷰 뒤에 `candidates.json`이 바뀌면 선택을 거부하므로 다시 build합니다.
-
-등록된 음원을 지정한 효과음·BGM은 미리보기 소리에 들어가고, BGM은 대사 구간에서 자동으로 12 dB 낮아집니다. 음원을 지정하지 않은 항목은 계획만 표시합니다. 자세한 기준은 [사운드 가이드](sound-guide.md)에 있습니다.
-
-`python3 scripts/analyze.py --run-id prod-...`는 ingest가 끝난 run의 proxy만 읽습니다. Claude는 `analysis/index.md`와 클립별 `summary.md`부터 읽고, 필요한 구간만 contact sheet로 확인합니다. `reaction`은 대사 밖의 큰 소리라는 신호일 뿐 웃음이라는 판정이 아닙니다. Whisper는 음악·정적 구간에서 없는 대사(예: 자막 제작자 문구)를 지어낼 수 있습니다. 알려진 문구이거나 정적과 대부분 겹치는 대사는 `의심`으로 표시되고 웃음 후보 판정에서 빠집니다. 이 표시는 휴리스틱이므로 후보를 고를 때 화면과 함께 확인합니다. 실패하면 이전 시도를 `analysis.failed-*`로 남기고 다시 실행할 수 있습니다.
-| 음원 등록·hash·loudness 측정·사용 판정(`audio_library.py`) | 구현. 등록된 실제 음원 0개 |
-| 무료 음원 탐색·다운로드 | 절차만 문서화. production config의 `audio_search`·`audio_downloads`와 파일별 사용자 승인 필요 |
-| 권리 사실 확인 | Claude가 공식 근거를 확인해 기록. 판정은 no-claim 보증이 아님 |
-| 게시·Content ID 검사 | 미구현·권한 없음 |
-
 ## 시작과 상태
+
+실제 제작은 Claude Code에서 `/vlog-workflow`로 시작합니다. 이 Skill이 현재 상태를 읽고 다음 단계와 사용자 확인 지점을 안내합니다.
+
+## 합성 검증(setup)의 계약
 
 `./init.sh`로 로컬 상태를 확인합니다. root feature tracker는 구현 진행 상태이며 제작 run의 `state.json`과 역할이 다릅니다. root notes는 다음 작업과 근거 위치를 안내합니다.
 
@@ -73,9 +102,7 @@
 - exit `130`: Ctrl-C로 중단. 보존한 state를 확인합니다. CLI SIGTERM은 exit `1`과 `paused` state를 남깁니다.
 - `not_checked` / `NOT_RUN`: 플랫폼·사람 청취·ASR 등의 미검증. 기술 검사로 자동 승격하지 않습니다.
 
-## 이후 실제 제작
-
-원본 처리 범위가 허용된 뒤 유형·이야기·톤·source root·제공할 자료 범위·budget을 brief에 정하고 production ingestion과 ASR을 구현·검증합니다. 합성 manifest에 원본을 복사해 넣어 우회하지 않습니다.
+합성 manifest에 원본을 복사해 넣어 production 절차를 우회하지 않습니다.
 
 ## 미리보기 전용 실행
 

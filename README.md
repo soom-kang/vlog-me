@@ -1,6 +1,6 @@
 # vlog-me
 
-Claude Code 하나에서 기존 Skills와 프로젝트 harness를 사용해 롱폼 브이로그를 제작하기 위한 로컬 환경입니다. 현재 구현 범위는 **환경 구성과 합성 입력 검증**입니다.
+Claude Code 하나에서 Skills와 프로젝트 harness를 사용해 롱폼 여행 브이로그(재미 60 · 감성 40, 자막 예능 80 · 감성 20)를 편집하는 로컬 환경입니다. ingest부터 후보 리뷰, 조립, 롱폼 렌더까지 구현했고 **합성 영상으로만 검증**했습니다. 실제 영상은 `/vlog-workflow`로 시작하며, 첫 sample 방법은 [로드맵](docs/roadmap.md)에 있습니다.
 
 ## 시작
 
@@ -17,7 +17,8 @@ Claude Code가 열리면 연결된 문서의 프롬프트를 붙여 넣습니다
 
 ## 현재 가능한 작업
 
-- 프로젝트 도구와 공식 Skill 사본의 무결성 검사
+- 프로젝트 Skill: `/vlog-workflow`(진입), `vlog-scout`(후보), `k-variety-caption`(자막), `vlog-sound`(사운드)
+- 프로젝트 도구, 공식·프로젝트 Skill, 번들 폰트의 무결성 검사
 - 직접 생성한 영상·사진·테스트 톤의 inventory와 hash 확인
 - 단일 timeline으로 영상·사진·한국어 기본 caption·원음/BGM/SFX 테스트 톤 합성
 - gain envelope를 통한 fade·ducking, 출력 decode·길이·stream·loudness 검사

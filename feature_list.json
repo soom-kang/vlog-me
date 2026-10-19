@@ -133,6 +133,16 @@
       ],
       "status": "completed",
       "evidence": "tests/test_longform.py; scripts/smoke-longform.sh: 2-min synthetic, 3720 frames, 5 chunks, -14.96 LUFS, TP -1.43, max A/V offset 17 ms, 434 s render. Intermittent delayRender stalls observed twice; mitigated with retry/resume, root cause unknown"
+    },
+    {
+      "id": "project-skills",
+      "name": "Project Skills and harness wiring (unit 8)",
+      "description": "/vlog-workflow entry (user-invoked) plus vlog-scout, k-variety-caption and vlog-sound; hash-locked; structure tests; independent review fixes (render --check, re-review after render, length-scaled render timeout, scope rule rewrite)",
+      "dependencies": [
+        "longform-render"
+      ],
+      "status": "completed",
+      "evidence": "tests/test_skills.py; Claude Code listed vlog-scout/k-variety-caption/vlog-sound as available in-session (vlog-workflow hidden by design); live end-to-end Skill use on real footage NOT_RUN"
     }
   ]
 }

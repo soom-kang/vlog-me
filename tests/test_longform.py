@@ -212,6 +212,27 @@ class RenderTests(LongformFixture):
         self.assertEqual(sorted(p.name for p in (self.run / "render").iterdir()), ["v1"])
         self.assertFalse((self.run / "render/v1/final.mp4").exists())
 
+    def test_check_validates_without_rendering(self):
+        with patch.object(render_prod, "run_command", side_effect=AssertionError("No rendering")):
+            result = render_prod.check(self.run_id)
+        self.assertEqual((result["status"], result["duration_seconds"]), ("PASS", 5.5))
+        timeline = common.read_json(self.run / "timeline.json")
+        timeline["captions"][0]["preset"] = "pop"
+        common.write_json(self.run / "timeline.json", timeline, replace=True)
+        with self.assertRaisesRegex(ValueError, "preset"):
+            render_prod.check(self.run_id)
+
+    def test_rendered_run_can_be_reviewed_again(self):
+        self.config_with(production_render=True)
+        self.render(FakeRender(165))
+        with patch.object(review, "run_command", side_effect=self.media):
+            self.assertEqual(review.build(self.run_id)["review_version"], 2)
+
+    def test_timeout_grows_with_length(self):
+        profile = {"timeout_seconds": 3600}
+        self.assertEqual(render_prod.node_timeout(profile, 30 * 60), 3600)
+        self.assertEqual(render_prod.node_timeout(profile, 30 * 60 * 20), 20 * 60 * 6 + 600)
+
     def test_chunk_plan_covers_every_frame(self):
         chunks = render_prod.chunk_plan(5401, 60)
         self.assertEqual([(c["start"], c["end"]) for c in chunks], [(0, 1800), (1800, 3600), (3600, 5400), (5400, 5401)])
