@@ -8,6 +8,8 @@ MERGE_GAP = 15
 SILENT_DB = -60
 SFX_PER_MINUTE = 8
 SAME_SFX_GAP_SECONDS = 3
+MUTE_DB = -80
+MUTE_FADE = 4
 
 
 def merge(intervals, gap=MERGE_GAP):
@@ -43,6 +45,46 @@ def duck_envelope(duration, speech, base_db=BGM_BASE_DB, depth_db=DUCK_DEPTH_DB,
         for frame in [f for f, db in points.items() if start < f < end and db != duck_db and 0 < f < last]:
             del points[frame]
     return [[frame, points[frame]] for frame in sorted(points)]
+
+
+def mute_envelope(duration, mutes, base_db=0, fade=MUTE_FADE):
+    """Gain points for an original-sound cue that dips to silence over `mutes` ([start, end) frames).
+
+    Short linear fades keep the cut from clicking, so a muted voice disappears under the BGM.
+    """
+    last = duration - 1
+    spans = merge([[max(0, s), min(last, e)] for s, e in mutes if e > 0 and s < last], gap=2 * fade)
+    if last < 1 or not spans:
+        return [[0, base_db], [max(last, 1), base_db]] if last >= 1 else [[0, base_db]]
+
+    def level(frame):
+        db = base_db
+        for start, end in spans:
+            if start <= frame <= end:
+                return MUTE_DB
+            if start - fade < frame < start:
+                db = min(db, base_db + (MUTE_DB - base_db) * (frame - (start - fade)) / fade)
+            if end < frame < end + fade:
+                db = min(db, MUTE_DB + (base_db - MUTE_DB) * (frame - end) / fade)
+        return round(db, 2)
+
+    frames = {0, last}
+    for start, end in spans:
+        frames |= {f for f in (start - fade, start, end, end + fade) if 0 <= f <= last}
+    return [[frame, level(frame)] for frame in sorted(frames)]
+
+
+def map_mutes(cuts, speed, mutes, fps=30):
+    """Per-cut [start, end) frame ranges, relative to each cut, for source-time mute ranges."""
+    per_cut = []
+    for cut_in, cut_out in cuts:
+        ranges = []
+        for start, end in mutes:
+            a, b = max(cut_in, start), min(cut_out, end)
+            if b > a:
+                ranges.append([round((a - cut_in) / speed * fps), round((b - cut_in) / speed * fps)])
+        per_cut.append(ranges)
+    return per_cut
 
 
 def map_speech(cuts, speed, segments, fps=30):

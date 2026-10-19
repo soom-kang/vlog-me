@@ -2,7 +2,10 @@
 
 ## Current Objective
 
-Claude Code 단독·기존 Skills 우선 기반 환경의 Studio agent·편집 문제를 해결했습니다. native Studio 대신 완료된 합성 영상만 재생하는 읽기 전용 뷰어를 사용합니다. 최신 근거는 reports/preview-only-review.md입니다.
+첫 실제 sample(`sources/vietnam-20260527/`)을 후보 리뷰까지 진행했습니다. run `prod-20261019-075246-e19437c2`는 `reviewed/pending`이며 사용자 선택을 기다립니다. 근거는 reports/first-sample-review-2026-10-19.md입니다.
+
+- phase: production (`config/project.json`), `.claude/settings.json`의 `sources/` 읽기 deny 해제(쓰기 deny·hook 유지)
+- 최종 렌더 완료(`rendered/succeeded`): `work/prod-20261019-075246-e19437c2/render/v3/final.mp4` (56.9초, -14.16 LUFS, -2.1 dBTP). 노을 BGM은 Mixkit Serene View(Arulo). 크레딧 `render/v3/credits.md`. 렌더·음원 플래그는 모두 false. v1·v2는 보존
 
 ## Startup
 
@@ -36,12 +39,13 @@ live --refresh는 제거되어 exit 2로 종료합니다. pending run은 Claude 
 
 ## Changes in This Turn
 
-- scripts/studio.py: 읽기 전용 viewer로 교체.
-- renderer/package.json: studio alias를 같은 helper로 변경; dependency/lock 변경 없음.
-- tests/test_studio.py: 제거한 native Studio 동작 대신 preview·실패·HTTP 경계 검사.
-- README.md·CLAUDE.md·docs/workflow.md·feature tracker·진행/인수인계·reports 갱신.
-- official Skill·config·renderer 구현·원본 설계·이전 artifact는 보존했습니다.
+- config/project.json·.claude/settings.json: production 전환(위 참고)
+- scripts/analyze.py: contact sheet `fps` 필터에 `eof_action=pass`(1초 미만 클립 실패 수정). 첫 실패 분석은 `analysis.failed-20261019-075815/`로 보존
+- work/prod-20261019-075246-e19437c2/: ingest·analyze·candidates.json·review v1–v3
+- feature_list.json(first-real-sample, in_progress)·progress.md·reports/first-sample-review-2026-10-19.md·reports/README.md
 
 ## Next Permitted Action
 
-현재 결과를 설명하거나 합성 fixture를 검증할 수 있습니다. production 계약(단위 1)은 구현했고 phase는 바꾸지 않았습니다. 단위 2(Ingest), 단위 3(Analyze), 단위 4(후보 카드·기대 화면), 단위 5(자막 preset·번들 폰트), 단위 6(사운드), 단위 7(조립·롱폼 렌더)은 합성 fixture로 검증했고, 단위 8로 프로젝트 Skill(`/vlog-workflow`, `vlog-scout`, `k-variety-caption`, `vlog-sound`)을 추가했습니다(`./scripts/smoke-media.sh`). Whisper 모델은 `.tools/whisper/ggml-large-v3-turbo.bin`입니다. 자막은 [자막 가이드](docs/caption-style.md)를 따릅니다. 사운드는 [사운드 가이드](docs/sound-guide.md)를 따릅니다. 렌더는 `production_render: true`가 있어야 실행됩니다. 다음은 첫 실제 sample이며(`/vlog-workflow`, [로드맵](docs/roadmap.md) 참고), 사용자가 명시적으로 요청할 때만 시작합니다. 원본 보호 hook(`.claude/hooks/protect_sources.py`)이 `sources/` 쓰기를 막습니다. 원본 접근·음원 다운로드·실제 본편 렌더·업로드를 시작하지 않습니다. 범위 밖 native Remotion Studio 명령으로 우회하지 않습니다. commit·push·전역 설정 변경도 명시 요청 없이 수행하지 않습니다(이 폴더는 Git 저장소입니다).
+다음은 사용자 시청 결과 반영입니다. 자막·음량 같은 작은 수정은 timeline.json → `render_prod.py --check` → 렌더(`production_render: true` 동의 필요). 장면을 넣거나 빼려면 리뷰부터 다시 합니다. 무음 26.5초 해결에는 음원 등록 또는 승인된 다운로드가 필요합니다. 원칙: 남자 출연자의 목소리·등장 장면·동행 암시는 모두 편집합니다(사용자 지시). 자막 수정이 있으면 `k-variety-caption`으로 고치고 리뷰를 다시 만듭니다. 조립(`assemble.py`)·렌더(`production_render: true` 필요)·음원 탐색/다운로드(`audio_search`/`audio_downloads`)는 사용자가 각각 요청할 때만 시작합니다. 대사 자막은 전사 기반이라 사람 청취 확인이 필요합니다.
+
+현재 config가 production이므로 합성 scope 테스트 16개(test_contracts·test_recovery·test_studio)는 scope 거부로 실패합니다. 합성 검증이나 전체 테스트는 config/project.json과 .claude/settings.json을 git의 setup 설정으로 되돌린 뒤 실행합니다(두 phase는 동시에 쓸 수 없음). 알려진 개선 후보: 사진 contact sheet 번호 어긋남·마지막 묶음 누락, 세로 사진 좌우 여백, doctor의 `asr: NOT_INSTALLED` 판정. commit·push는 요청 시에만 합니다.

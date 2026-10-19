@@ -48,13 +48,14 @@ def ordered(candidates, decisions, entries, order=None):
 
 
 def build_timeline(run, kept, entries, library):
-    clips, audio, captions, bgm_spans, speech, warnings = [], [], [], [], [], []
+    clips, audio, captions, overlays, bgm_spans, speech, warnings = [], [], [], [], [], [], []
     cursor = 0
     for candidate in kept:
         entry, plan, cid = entries[candidate["source"]], candidate["plan"], candidate["id"]
         start = cursor
         if entry["kind"] == "video":
             speed = plan.get("speed", 1)
+            mutes = sound.map_mutes(plan["cuts"], speed, plan.get("mute", []))
             for index, (cut_in, cut_out) in enumerate(plan["cuts"]):
                 frames = max(1, round((cut_out - cut_in) * FPS / speed))
                 clip = {"id": f"{cid}-k{index}", "source": entry["id"], "from": cursor, "duration": frames,
@@ -64,10 +65,13 @@ def build_timeline(run, kept, entries, library):
                 if entry.get("has_audio", True):
                     db = plan.get("original_gain_db", 0)
                     audio.append({"id": f"{cid}-o{index}", "kind": "original", "clip": clip["id"], "from": cursor,
-                                  "duration": frames, "gain_db": [[0, db], [frames - 1, db]] if frames > 1 else [[0, db]]})
+                                  "duration": frames, "gain_db": sound.mute_envelope(frames, mutes[index], base_db=db)})
                 cursor += frames
-            speech += [[start + a, start + b] for a, b in
-                       sound.map_speech(plan["cuts"], speed, review.speech_segments(run, entry))]
+            # Muted lines no longer sound, so the BGM should not duck under them.
+            silenced = plan.get("original_gain_db", 0) <= sound.SILENT_DB
+            talk = [] if silenced else [s for s in review.speech_segments(run, entry)
+                                        if not any(a <= (s["start"] + s["end"]) / 2 < b for a, b in plan.get("mute", []))]
+            speech += [[start + a, start + b] for a, b in sound.map_speech(plan["cuts"], speed, talk)]
         else:
             frames = round(plan.get("photo_seconds", 3.0) * FPS)
             clips.append({"id": f"{cid}-k0", "source": entry["id"], "from": cursor, "duration": frames,
@@ -79,6 +83,11 @@ def build_timeline(run, kept, entries, library):
                              "preset": production.validate_caption_text(caption, False), "text": caption["text"],
                              "position": caption.get("position", "bottom"), "speaker": caption.get("speaker"),
                              "from": min(at, cursor - 1), "duration": max(1, min(round(caption["duration"] * FPS), cursor - at))})
+        for index, insert in enumerate(plan.get("inserts", [])):
+            at = start + round(insert["at"] * FPS)
+            overlays.append({"id": f"{cid}-p{index}", "source": insert["photo"], "from": min(at, cursor - 1),
+                             "duration": max(1, min(round(insert["duration"] * FPS), cursor - at)),
+                             "position": insert.get("position", "right"), "tilt": insert.get("tilt", 0)})
         for index, sfx in enumerate(plan.get("sfx", [])):
             if not sfx.get("asset"):
                 warnings.append(f"{cid}: 효과음 '{sfx['name']}'에 음원이 없어 넣지 않았습니다")
@@ -107,7 +116,7 @@ def build_timeline(run, kept, entries, library):
         audio.append({"id": f"bgm-{index}", "kind": "bgm", "source": span["asset"], "from": span["start"], "duration": frames,
                       "in": 0, "gain_db": sound.duck_envelope(frames, talk, base_db=span["gain_db"])})
     timeline = {"schema_version": 2, "purpose": "production", "fps": FPS, "width": 1920, "height": 1080,
-                "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions}
+                "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions, "overlays": overlays}
     warnings += sound.sfx_warnings([{"asset": c["source"], "from": c["from"]} for c in audio if c["kind"] == "sfx"])
     return timeline, warnings
 

@@ -23,6 +23,8 @@ VARIETY_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"
 MOOD_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "mood"}
 CAPTION_POSITIONS = {"bottom", "top", "center", "upper_left", "upper_right", "lower_left", "lower_right"}
 AUDIO_KINDS = {"original", "bgm", "sfx"}
+OVERLAY_POSITIONS = {"left", "right"}
+OVERLAY_MAX_TILT = 10
 
 
 def _is_flag(value):
@@ -139,10 +141,13 @@ def validate_timeline_v2(timeline, sources):
     if timeline.get("fps") != 30 or (timeline.get("width"), timeline.get("height")) != (1920, 1080):
         raise ValueError("Production renderer supports 1920x1080 CFR 30 only")
     clips, audio, captions = timeline.get("clips", []), timeline.get("audio", []), timeline.get("captions", [])
+    overlays = timeline.get("overlays", [])
     if not clips:
         raise ValueError("Empty timeline")
+    if not isinstance(overlays, list):
+        raise ValueError("Overlays must be a list")
     ids = set()
-    for cue in clips + audio + captions:
+    for cue in clips + audio + captions + overlays:
         cue_id = cue.get("id")
         if not isinstance(cue_id, str) or not cue_id or cue_id in ids:
             raise ValueError("Duplicate or missing cue ID")
@@ -206,6 +211,17 @@ def validate_timeline_v2(timeline, sources):
     for caption in captions:
         _interval(caption, cursor)
         validate_caption_text(caption)
+    for overlay in overlays:
+        # Photo inserts float over the running video; they never replace a clip.
+        _interval(overlay, cursor)
+        source = sources.get(overlay.get("source"))
+        if not source or source.get("kind") != "image":
+            raise ValueError("Overlays must show a photo source")
+        if overlay.get("position") not in OVERLAY_POSITIONS:
+            raise ValueError("Overlay position must be left or right")
+        tilt = overlay.get("tilt", 0)
+        if isinstance(tilt, bool) or not isinstance(tilt, (int, float)) or abs(tilt) > OVERLAY_MAX_TILT:
+            raise ValueError(f"Overlay tilt must be within ±{OVERLAY_MAX_TILT} degrees")
     return cursor
 
 

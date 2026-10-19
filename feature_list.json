@@ -143,6 +143,16 @@
       ],
       "status": "completed",
       "evidence": "tests/test_skills.py; Claude Code listed vlog-scout/k-variety-caption/vlog-sound as available in-session (vlog-workflow hidden by design); live end-to-end Skill use on real footage NOT_RUN"
+    },
+    {
+      "id": "first-real-sample",
+      "name": "First real sample: vietnam-20260527 up to candidate review",
+      "description": "Production phase for sources/vietnam-20260527: ingest, analyze, candidates (male companion fully edited out per user), selection, assemble and render of a 45 s first sample. Fixes: short-clip contact sheet, true-peak limiter",
+      "dependencies": [
+        "project-skills"
+      ],
+      "status": "in_progress",
+      "evidence": "reports/first-sample-review-2026-10-19.md; render/v3/verify.json (8/8, -14.16 LUFS, -2.1 dBTP); tests/test_inserts.py; 118 tests PASS on setup-config copy; typecheck/lint PASS; human viewing/listening NOT_RUN"
     }
   ]
 }

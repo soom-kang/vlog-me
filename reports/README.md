@@ -4,6 +4,7 @@
 
 ## 현재 기준
 
+- [first-sample-review-2026-10-19.md](first-sample-review-2026-10-19.md): 첫 실제 sample(vietnam-20260527) 후보 리뷰까지의 진행·제한
 - [preview-only-review.md](preview-only-review.md): 현재 시작·미리보기 동작, 검증, 제한
 - [project-review-2026-10-19.md](project-review-2026-10-19.md): 실제 제작 목표 기준의 적대적 리뷰와 개선 계획
 - `unit4-expected-frame-synthetic.jpg`: 단위 4 기대 화면 still 예시(합성 영상, 단위 5 이전의 시스템 폰트)

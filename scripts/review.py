@@ -27,6 +27,7 @@ CANDIDATE_ID = r"c\d{2,3}"
 DECISIONS = {"adopt", "caption_edit", "drop"}
 MIN_CUT = 0.3
 PHOTO_SECONDS = (1.0, 10.0)
+INSERT_MIN = 0.5
 KIND_LABELS = {"variety": "예능", "situation": "상황", "sfx_text": "효과 글자", "inner_voice": "속마음",
                "dialogue": "대사", "mood": "감성", "place": "장소"}
 
@@ -102,6 +103,23 @@ def validate_candidates(data, entries):
             _number(plan.get("photo_seconds", 3.0), *PHOTO_SECONDS, f"{cid}: photo_seconds")
         length = edited_seconds(c, entry)
         _number(c.get("key_moment"), 0, length, f"{cid}: key_moment")
+        for insert in plan.get("inserts", []):
+            photo = entries.get(insert.get("photo")) if isinstance(insert, dict) else None
+            if not photo or photo["kind"] != "photo":
+                raise ValueError(f"{cid}: inserts need a photo source")
+            at = _number(insert.get("at"), 0, length - INSERT_MIN, f"{cid}: insert at")
+            _number(insert.get("duration"), INSERT_MIN, length - at + 0.01, f"{cid}: insert duration")
+            if insert.get("position", "right") not in production.OVERLAY_POSITIONS:
+                raise ValueError(f"{cid}: insert position must be left or right")
+            _number(insert.get("tilt", 0), -production.OVERLAY_MAX_TILT, production.OVERLAY_MAX_TILT, f"{cid}: insert tilt")
+        mutes = plan.get("mute", [])
+        if mutes and entry["kind"] != "video":
+            raise ValueError(f"{cid}: only video candidates can mute original sound")
+        for mute in mutes:
+            if not isinstance(mute, list) or len(mute) != 2:
+                raise ValueError(f"{cid}: mute ranges are [start, end] source seconds")
+            low = _number(mute[0], c["range"][0], c["range"][1], f"{cid}: mute start")
+            _number(mute[1], low + 0.05, c["range"][1], f"{cid}: mute end")
         for caption in plan.get("captions", []):
             try:
                 production.validate_caption_text(caption, require_preset=False)
@@ -190,14 +208,17 @@ def audio_cues(candidate, entry, total, staged, speech):
     return cues
 
 
-def render_props(candidate, entry, staged=None, speech=()):
+def render_props(candidate, entry, staged=None, speech=(), photos=None):
     """Frame-exact props for the Remotion CandidatePreview composition."""
     plan = candidate["plan"]
     if entry["kind"] == "video":
         speed = plan.get("speed", 1)
+        mutes = sound.map_mutes(plan["cuts"], speed, plan.get("mute", []))
         segments = [{"src": entry["proxy"], "trimBefore": round(start * FPS),
                      "frames": max(1, round((end - start) * FPS / speed)), "playbackRate": speed}
                     for start, end in plan["cuts"]]
+        for segment, ranges in zip(segments, mutes):
+            segment["gain"] = sound.mute_envelope(segment["frames"], ranges, base_db=plan.get("original_gain_db", 0))
         kind = "video"
     else:
         segments = [{"src": entry["proxy"], "trimBefore": 0, "frames": round(plan.get("photo_seconds", 3.0) * FPS),
@@ -211,7 +232,13 @@ def render_props(candidate, entry, staged=None, speech=()):
                          "text": caption["text"], "position": caption.get("position", "bottom"),
                          "speaker": caption.get("speaker"), "from": start,
                          "duration": max(1, min(round(caption["duration"] * FPS), total - start))})
-    return {"kind": kind, "segments": segments, "zoom": plan.get("zoom", 1), "captions": captions,
+    overlays = []
+    for index, insert in enumerate(plan.get("inserts", [])):
+        start = min(round(insert["at"] * FPS), total - 1)
+        overlays.append({"id": f"ins-{index}", "src": (photos or {})[insert["photo"]], "from": start,
+                         "duration": max(1, min(round(insert["duration"] * FPS), total - start)),
+                         "position": insert.get("position", "right"), "tilt": insert.get("tilt", 0)})
+    return {"kind": kind, "segments": segments, "zoom": plan.get("zoom", 1), "captions": captions, "overlays": overlays,
             "audio": audio_cues(candidate, entry, total, staged or {}, list(speech)),
             "durationInFrames": total, "keyFrame": min(round(candidate["key_moment"] * FPS), total - 1)}
 
@@ -245,6 +272,9 @@ def card_html(candidate, entry, folder):
                     (f" · {e(bgm['note'])}" if bgm.get("note") else ""))
     elif bgm:
         edit.append(f"BGM {e(bgm)} (음원 미지정, 계획만)")
+    edit += [f"사진 띄우기 {e(i['photo'])} {i['at']:.1f}s부터 {i['duration']:.1f}초 · {'오른쪽' if i.get('position', 'right') == 'right' else '왼쪽'}"
+             for i in plan.get("inserts", [])]
+    edit += [f"원음 음소거 {clock(a)}–{clock(b)}" for a, b in plan.get("mute", [])]
     warnings = sound.sfx_warnings([{"asset": s.get("asset") or s["name"], "from": round(s["at"] * FPS)} for s in plan.get("sfx", [])])
     edit += [f"주의: {e(w)}" for w in warnings]
     edit += [e(n) for n in plan.get("notes", [])]
@@ -344,7 +374,8 @@ def build(run_id):
                                      "-i", str(proxy), "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "4", out], timeout=timeout)
                     else:
                         run_command(["sips", "-Z", "480", str(proxy), "--out", out], timeout=timeout)
-                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry)),
+                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry),
+                                                                             {k: v["proxy"] for k, v in entries.items()}),
                              "preview": bool(candidate.get("preview"))})
             write_json(folder / "render-input.json", {"run_id": run_id, "version": version, "jobs": jobs})
             run_command(["node", str(common.ROOT / "renderer/scripts/review.mjs"), run_id, str(version), str(run)], timeout=timeout)

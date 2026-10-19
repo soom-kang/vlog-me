@@ -14,15 +14,12 @@
       "Read(.env)",
       "Read(.env.*)",
       "Read(raw/**)",
-      "Read(sources/**)",
       "Edit(raw/**)",
       "Edit(sources/**)",
       "Write(raw/**)",
       "Write(sources/**)",
       "Bash(* raw/*)",
       "Bash(* ./raw/*)",
-      "Bash(* sources/*)",
-      "Bash(* ./sources/*)",
       "Bash(git push *)"
     ]
   },

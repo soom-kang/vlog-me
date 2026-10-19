@@ -50,6 +50,11 @@ Claude Code 주 세션이 프로젝트 Skill(`/vlog-workflow`, `vlog-scout`, `k-
 
 등록된 음원을 지정한 효과음·BGM은 미리보기 소리에 들어가고, BGM은 대사 구간에서 자동으로 12 dB 낮아집니다. 음원을 지정하지 않은 항목은 계획만 표시합니다.
 
+후보 `plan`에는 다음도 쓸 수 있습니다. 둘 다 리뷰 미리보기와 timeline에 반영됩니다.
+- `inserts`: 영상 위에 사진을 띄웁니다. 예: `[{"photo": "p053", "at": 1.6, "duration": 5.2, "position": "right", "tilt": 4}]`. 위치는 `left`/`right`, 기울기는 ±10도 안입니다. timeline에서는 `overlays`가 됩니다.
+- `mute`: 원본 기준 초 구간의 원음을 짧은 페이드와 함께 끕니다. 예: `[[78.7, 79.7]]`. 끈 구간의 전사는 BGM ducking 기준에서 빠집니다.
+- `original_gain_db: -80`처럼 원음을 통째로 끄면 그 후보에서는 BGM이 대사 때문에 낮아지지 않습니다.
+
 ### 4. 조립과 렌더
 
 1. `python3 scripts/assemble.py --run-id prod-...`가 채택한 후보를 촬영 순서(또는 `selection.json`의 `order`)로 이어 `timeline.json`(v2)을 만듭니다.

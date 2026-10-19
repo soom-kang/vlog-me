@@ -77,7 +77,9 @@ def finish(folder, timeline, timeout):
     measured = loudness(mix)
     normalize = (f"loudnorm=I={TARGET_LUFS}:TP={TARGET_TP}:LRA=11:measured_I={measured['input_i']}:"
                  f"measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:"
-                 f"measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true")
+                 f"measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true,"
+                 # quiet, peaky field audio makes loudnorm fall back to dynamic mode; cap peaks before AAC overshoot
+                 "alimiter=limit=0.75:attack=5:release=50:level=disabled")
     partial = safe_path(folder, "final.partial.mp4")
     if partial.exists():
         raise ValueError("Existing final.partial.mp4 requires inspection; no automatic overwrite")

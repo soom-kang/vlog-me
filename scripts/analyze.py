@@ -148,7 +148,7 @@ def analyze_clip(run, entry, model, timeout):
     cuts = parse_scenes(run_command(["ffmpeg", "-hide_banner", "-nostdin", "-i", str(proxy), "-an", "-vf",
                                      "scdet=threshold=10", "-f", "null", "-"], timeout=timeout).stderr)
     run_command(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-i", str(proxy), "-an", "-vf",
-                 f"fps=1/{SHEET_INTERVAL},scale=320:-2,tile={SHEET_GRID[0]}x{SHEET_GRID[1]}", "-q:v", "4",
+                 f"fps=1/{SHEET_INTERVAL}:eof_action=pass,scale=320:-2,tile={SHEET_GRID[0]}x{SHEET_GRID[1]}", "-q:v", "4",
                  str(folder / "sheet-%03d.jpg")], timeout=timeout)
     sheets = sorted(p.name for p in folder.glob("sheet-*.jpg"))
     write_json(folder / "transcript.json", {"status": transcript_status, "segments": segments})

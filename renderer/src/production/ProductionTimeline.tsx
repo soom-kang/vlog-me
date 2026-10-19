@@ -2,6 +2,7 @@ import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCu
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from '../gain.mjs';
 import {Caption, type CaptionCue} from './Captions';
+import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
 
 // Renders timeline v2 (scripts/production.py validates it before every render).
 type Clip = {id: string; source: string; from: number; duration: number; in?: number; speed?: number; zoom?: number;
@@ -11,7 +12,7 @@ type AudioCue = {id: string; kind: string; clip?: string; source?: string; from:
 type Asset = {src: string; kind: 'video' | 'image' | 'audio'};
 export type ProductionProps = {
   timeline: {fps: number; width: number; height: number; duration_frames: number; clips: Clip[]; audio: AudioCue[];
-    captions: CaptionCue[]};
+    captions: CaptionCue[]; overlays?: (PhotoInsertCue & {source: string})[]};
   assets: Record<string, Asset>;
 };
 
@@ -58,6 +59,11 @@ export const ProductionTimeline = ({timeline, assets}: ProductionProps) => {
           </Sequence>
         );
       })}
+      {(timeline.overlays ?? []).map((cue) => (
+        <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
+          <PhotoInsert cue={cue} src={assets[cue.source].src} />
+        </Sequence>
+      ))}
       {timeline.captions.map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
           <Caption cue={cue} />

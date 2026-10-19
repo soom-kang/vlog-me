@@ -3,8 +3,10 @@
 ## Current State
 
 - Last Updated: 2026-10-19 Asia/Seoul
-- Active Feature: none; 단위 1(production 계약)·단위 2(Ingest)·단위 3(Analyze)·단위 4(후보 카드·기대 화면)·단위 5(자막 preset·번들 폰트)·단위 6(사운드)·단위 7(조립·롱폼 렌더)·단위 8(프로젝트 Skill) 완료(합성 fixture 검증), phase는 setup_synthetic_only 유지
-- Scope: setup_synthetic_only; production agent는 Claude Code
+- Active Feature: first-real-sample. `sources/vietnam-20260527/`로 첫 실제 sample을 진행 중이며 최종 렌더 완료(`render/v3/final.mp4`, 56.9초, QA PASS). 노을 BGM은 Mixkit Serene View로 교체(다운로드 1건, 사용자 위임). 사용자 시청 대기. 근거: reports/first-sample-review-2026-10-19.md
+- 단위 1–8은 완료(합성 fixture 검증)
+- Scope: production (source_roots: sources/vietnam-20260527). audio_search·audio_downloads·production_render false. 합성 run·합성 scope 테스트는 setup 설정으로 되돌린 뒤 실행
+- 이번 변경: scripts/analyze.py contact sheet `eof_action=pass`(1초 미만 클립 분석 실패 수정), scripts/render_prod.py loudnorm 뒤 alimiter(조용한 현장음에서 true peak QA 실패 수정), 후보 `inserts`(사진 오버레이)·`mute`(원음 구간 음소거) 기능과 tests/test_inserts.py
 - Repository: Git 저장소(main). commit·push는 명시 요청 시에만
 
 ## Completed
