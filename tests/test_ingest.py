@@ -174,7 +174,7 @@ class IngestUnitTests(unittest.TestCase):
         self.assertEqual(ingest.status(state["run_id"])["status"], "stale")
 
 
-@unittest.skipUnless(os.environ.get("VLOG_MEDIA_TESTS") == "1", "set VLOG_MEDIA_TESTS=1 (scripts/smoke-ingest.sh)")
+@unittest.skipUnless(os.environ.get("VLOG_MEDIA_TESTS") == "1", "set VLOG_MEDIA_TESTS=1 (scripts/smoke-media.sh)")
 class IngestMediaTests(unittest.TestCase):
     """Generates synthetic HDR/VFR/rotated/silent clips and photos with FFmpeg and sips; no real media."""
 

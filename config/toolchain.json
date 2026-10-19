@@ -41,6 +41,14 @@
   },
   "skill_lock": "config/skills-lock.json",
   "scope": "project-local; no other project dependency",
-  "asr": "not_installed",
+  "asr": {
+    "engine": "whisper.cpp (whisper-cli, Homebrew)",
+    "model": "ggml-large-v3-turbo.bin",
+    "path": ".tools/whisper/ggml-large-v3-turbo.bin",
+    "source": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
+    "bytes": 1624555275,
+    "sha256": "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+    "approved": "2026-10-19 by user in chat"
+  },
   "audio_library": "empty"
 }

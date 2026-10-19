@@ -82,7 +82,7 @@
         "production-contract"
       ],
       "status": "completed",
-      "evidence": "tests/test_ingest.py; scripts/smoke-ingest.sh PASS 2026-10-19 (synthetic fixtures only; real HDR color not reviewed)"
+      "evidence": "tests/test_ingest.py; scripts/smoke-media.sh PASS 2026-10-19 (synthetic fixtures only; real HDR color not reviewed)"
     },
     {
       "id": "production-analyze",
@@ -91,8 +91,8 @@
       "dependencies": [
         "production-ingest"
       ],
-      "status": "not-started",
-      "evidence": "See docs/roadmap.md"
+      "status": "completed",
+      "evidence": "tests/test_analyze.py; scripts/smoke-media.sh (synthetic fixtures incl. Korean TTS); real dialogue/laugh quality not yet sampled"
     },
     {
       "id": "candidate-review",

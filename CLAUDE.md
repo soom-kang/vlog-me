@@ -32,7 +32,7 @@ An earlier terminal `./init.sh` does not export its environment to the parent sh
 ./scripts/smoke-render.sh
 ```
 
-`./scripts/smoke-ingest.sh` checks ingest on generated HDR/VFR/rotated/silent clips and HEIC photos in a temporary root. The second command above creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
+`./scripts/smoke-media.sh` checks ingest and analysis (signals, contact sheets, Korean TTS transcription when the local Whisper model exists) on generated media in a temporary root. The second command above creates a new synthetic run, renders, decodes and measures it. It needs localhost port and browser permissions. No missing dependencies are downloaded automatically.
 
 ```bash
 python3 scripts/synthetic.py status --run-id synthetic-RUN-ID

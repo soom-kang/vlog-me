@@ -35,6 +35,10 @@ def validate_production_config(config):
     for key in ["asr_local", "audio_search", "audio_downloads", "production_render"]:
         if not _is_flag(config.get(key)):
             raise ValueError(f"Production flag {key} must be true or false")
+    model = config.get("asr_model")
+    if model is not None and (not config["asr_local"] or not isinstance(model, str)
+                              or not re.fullmatch(r"ggml-[A-Za-z0-9._-]+\.bin", model)):
+        raise ValueError("asr_model must be a local ggml-*.bin file name and requires asr_local")
     roots = config.get("source_roots")
     if not isinstance(roots, list) or not roots or len(set(roots)) != len(roots):
         raise ValueError("Production requires at least one unique source root")

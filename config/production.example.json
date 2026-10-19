@@ -16,6 +16,7 @@
   "external_processing": false,
   "upload": false,
   "asr_local": true,
+  "asr_model": null,
   "audio_search": false,
   "audio_downloads": false,
   "production_render": false,
