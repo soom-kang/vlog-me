@@ -43,7 +43,7 @@
 
 - exit `0`: 해당 command 범위의 성공. `status`의 JSON 상태도 확인해야 합니다.
 - exit `1`: 도구·계약·경로·상태 검사 또는 렌더 실패. 기록과 남은 artifact를 확인합니다.
-- argparse exit `2`: 인자 형식 오류. 다른 방식으로 원본 접근 제한을 우회하지 않습니다.
+- argparse exit `2`: 인자 형식 오류 또는 제거된 옵션(`--refresh`) 사용. 다른 방식으로 원본 접근 제한을 우회하지 않습니다.
 - exit `130`: Ctrl-C로 중단. 보존한 state를 확인합니다. CLI SIGTERM은 exit `1`과 `paused` state를 남깁니다.
 - `not_checked` / `NOT_RUN`: 플랫폼·사람 청취·ASR 등의 미검증. 기술 검사로 자동 승격하지 않습니다.
 
@@ -59,6 +59,6 @@
 
 허용 경로는 `/`와 `/preview.mp4`, 허용 동작은 GET·HEAD뿐입니다. 영상의 byte range 요청은 탐색을 위해 지원합니다. agent·편집·설치·render·전사·WebSocket·디렉터리 탐색 경로는 없으며 쓰기 요청을 거부합니다. 페이지는 JavaScript 없이 native video controls만 사용합니다. 외부 Host·Origin과 protocol upgrade도 거부합니다. 외부 서비스 배포용 서버는 아닙니다.
 
-viewer는 state·props·출력을 수정하지 않습니다. 이미 연 화면은 시작 당시 저장본이므로 canonical timeline 변경을 실시간 반영하지 않습니다. 새 pending 합성 run을 Claude Code에서 수정하고 렌더한 뒤 새 완료 run을 엽니다. 이전 --refresh는 명시적 오류로 종료하며 과거 props·owner 파일을 삭제하거나 채택하지 않습니다. 확인 후 Ctrl-C로 서버를 종료합니다.
+viewer는 state·props·출력을 수정하지 않습니다. 이미 연 화면은 시작 당시 저장본이므로 canonical timeline 변경을 실시간 반영하지 않습니다. 새 pending 합성 run을 Claude Code에서 수정하고 렌더한 뒤 새 완료 run을 엽니다. 이전 --refresh는 안내 메시지와 함께 exit 2로 종료하며 과거 props·owner 파일을 삭제하거나 채택하지 않습니다. 확인 후 Ctrl-C로 서버를 종료합니다.
 
 현재 사실은 [미리보기 전환 보고서](../reports/preview-only-review.md), [이전 적대적 검토](../reports/adversarial-review.md), config/toolchain.json을 우선합니다. 기존 설계는 목표 구조를 설명하며 미구현 기능의 실행 지시가 아닙니다.

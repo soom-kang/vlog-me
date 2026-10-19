@@ -1,10 +1,28 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(./init.sh)",
+      "Bash(./scripts/doctor.sh)",
+      "Bash(python3 scripts/synthetic.py status *)",
+      "Bash(python3 scripts/validate.py *)",
+      "Bash(python3 scripts/inventory.py *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
     "deny": [
       "Read(.env)",
       "Read(.env.*)",
       "Read(raw/**)",
       "Read(sources/**)",
+      "Edit(raw/**)",
+      "Edit(sources/**)",
+      "Write(raw/**)",
+      "Write(sources/**)",
+      "Bash(* raw/*)",
+      "Bash(* ./raw/*)",
+      "Bash(* sources/*)",
+      "Bash(* ./sources/*)",
       "Bash(git push *)"
     ]
   }

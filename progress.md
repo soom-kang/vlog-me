@@ -3,9 +3,9 @@
 ## Current State
 
 - Last Updated: 2026-10-19 Asia/Seoul
-- Active Feature: none; preview-only-viewer 완료
+- Active Feature: none; project-review-docs 완료
 - Scope: setup_synthetic_only; production agent는 Claude Code
-- Repository: Git 미초기화
+- Repository: Git 저장소(main). commit·push는 명시 요청 시에만
 
 ## Completed
 
@@ -32,10 +32,12 @@
 
 - Custom Skill·subagent·automation·dependency 추가 없음.
 - 유형·톤은 제작 prompt에서 결정하고 목표 길이는 null.
-- live --refresh 제거. 새 run을 Claude Code에서 수정·렌더한 후 완료 영상을 미리보기.
+- live --refresh 제거(안내 메시지와 exit 2). 새 run을 Claude Code에서 수정·렌더한 후 완료 영상을 미리보기.
 - 뷰어는 128 MiB 이하의 검증된 합성 snapshot만 재생하며 state·props·영상을 변경하지 않음.
 - 검증용 서버·탭 종료. 실패·partial·lock·stale은 보존.
 
 ## Deferred
+
+다음 후보: [로드맵](docs/roadmap.md) 단계 1(범위 전환 계약). 사용자 요청 시에만 시작. 리뷰: reports/project-review-2026-10-19.md.
 
 원본 처리·ASR·음원 다운로드·권리 확인·취향·사람 청취·장시간/4K·업로드는 NOT_RUN입니다.

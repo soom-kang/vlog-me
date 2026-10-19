@@ -53,6 +53,16 @@
       ],
       "status": "completed",
       "evidence": "reports/preview-only-review.md"
+    },
+    {
+      "id": "project-review-docs",
+      "name": "Goal-based adversarial review and doc/permission cleanup",
+      "description": "Review against the real vlog goal; fix doc contradictions, add roadmap, report index and permission patterns. No behavior change.",
+      "dependencies": [
+        "preview-only-viewer"
+      ],
+      "status": "completed",
+      "evidence": "reports/project-review-2026-10-19.md"
     }
   ]
 }

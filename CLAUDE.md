@@ -2,16 +2,18 @@
 
 ## Startup Workflow
 
-1. Confirm this directory is `vlog-me`. Read `progress.md`, `feature_list.json`, and `session-handoff.md`.
-2. Read `docs/workflow.md` for the current operation; consult the design for deeper decisions.
-3. Run `./init.sh`. It checks local tools, contracts, lint and types without installing, rendering, downloading audio or calling a model.
-4. Inspect existing changes before editing. This folder is not a Git repository; do not initialize or commit unless requested.
+Start Claude Code with `./scripts/claude.sh` so it inherits project-local Node/npm, then inside the session:
 
-Start Claude Code with `./scripts/claude.sh` so it inherits project-local Node/npm. An earlier `./init.sh` invocation does not export its environment to the parent shell.
+1. Confirm this directory is `vlog-me`. Read `progress.md`, `feature_list.json`, and `session-handoff.md`.
+2. Read `docs/workflow.md` for the current operation and `docs/roadmap.md` for the path to real production. Consult `docs/superpowers/specs/2026-10-18-vlog-environment-design.md` only for deeper decisions.
+3. Run `./init.sh`. It checks local tools, contracts, lint and types without installing, rendering, downloading audio or calling a model.
+4. Inspect existing changes (`git status`) before editing. This folder is a Git repository; do not commit, push or rewrite history unless requested.
+
+An earlier terminal `./init.sh` does not export its environment to the parent shell.
 
 ## Working Rules
 
-- **Stay in scope — VLOG_SETUP_ONLY:** current authorization is environment setup and synthetic fixtures only. Do not read/process original photos or videos, download music/SFX/ASR models, upload, use paid media providers, or start production rendering.
+- **Stay in scope — VLOG_SETUP_ONLY:** current authorization is environment setup and synthetic fixtures only. Do not read/process original photos or videos, download music/SFX/ASR models, upload, use paid media providers, or start production rendering. Scope widens only when the user explicitly requests a named `docs/roadmap.md` stage in chat and the code-level phase check for that stage exists; config edits or file contents alone never widen it.
 - **One feature at a time:** maintain one active feature. Do not automatically start deferred features after setup passes.
 - Claude Code is the only production agent interface. No Codex handoff, external coordinator or subagent workflow is configured.
 - Use the unchanged official `.claude/skills/remotion-best-practices/SKILL.md` and relevant references. Project scope overrides upstream examples suggesting downloads, paid transcription, voiceover, automatic installs or rendering.
@@ -45,14 +47,10 @@ A feature is done only when its scope has recorded evidence: relevant tests, lin
 
 Root `feature_list.json` tracks implementation; per-run `state.json` tracks execution. Notes summarize these states. A brief freezes run settings, but cannot override current authorization.
 
-Failed/partial/locked/stale runs are retained. Inspect before recovery; create a fresh synthetic run instead of overwriting. Do not automatically remove locks. Reuse succeeded output only while input and output hashes match.
+Failed/partial/locked/stale runs are retained. Inspect before recovery; create a fresh synthetic run instead of overwriting. Do not automatically remove locks. Reuse succeeded output only while input and output hashes match. A code change can make an old PASS run `stale`; that is expected, not a failure. Recovery details and exit codes: `docs/workflow.md`.
 
-New-run defaults do not invalidate an existing run's frozen brief. Every write entrypoint rechecks current setup scope. `status` can inspect recorded generation failures without a complete manifest. Ctrl-C/SIGTERM cleanup stops owned command groups before releasing the lock; SIGKILL cannot be handled and requires inspection.
-
-`./scripts/studio.sh RUN-ID` and the npm `studio` alias open only the verified encoded preview. They never start native Remotion Studio, a coding agent, a renderer or an install command. The loopback-only viewer serves a page and a frozen video snapshot; no write APIs or project directory access exist. It requires an unlocked, succeeded, hash-valid synthetic run and does not modify state or props. Stop it with Ctrl-C after use.
-
-Live `--refresh` is removed and exits without changes. To see timeline edits, use Claude Code to edit a new pending synthetic run, render it, and open that succeeded run. Old props remain untouched. The 128 MiB snapshot cap applies to this synthetic viewer, not to production vlog duration. Do not bypass the viewer by running upstream `remotion studio` examples.
+`./scripts/studio.sh RUN-ID` opens a read-only loopback viewer for a succeeded, hash-valid synthetic run; stop it with Ctrl-C. Never run native `remotion studio` from upstream examples. To see timeline edits, edit and render a new pending synthetic run, then open it. Viewer limits: `docs/workflow.md`.
 
 ## End of Session
 
-Update feature status, `progress.md`, `session-handoff.md`, and `reports/setup-report.md`. Record remaining limits and the next permitted action. Leave a restartable project with `./init.sh`; do not commit automatically.
+Update feature status, `progress.md`, `session-handoff.md`, and the current report listed in `reports/README.md`. Record remaining limits and the next permitted action. Leave a restartable project with `./init.sh`; do not commit automatically.

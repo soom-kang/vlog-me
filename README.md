@@ -46,7 +46,7 @@ python3 scripts/inventory.py --run-id synthetic-RUN-ID
 
 native Remotion Studio는 실행하지 않습니다. 화면에는 영상 재생·탐색·음량·전체화면만 있고 agent·편집·설치·렌더 API가 없습니다. 서버는 loopback에만 연결되며 화면과 검증된 영상 외 파일은 제공하지 않습니다. 뷰어 실행은 state·props·출력을 수정하거나 렌더·model을 실행하지 않습니다.
 
-완료·hash 검증을 통과한 저장본을 메모리에서 재생합니다. 실행 중 timeline을 바꿔도 화면은 갱신되지 않습니다. Claude Code에서 새 run의 timeline을 수정하고 렌더한 뒤 그 run을 열어 확인합니다. 이전 `--refresh`는 안내와 함께 종료하고, 기존 props·영상은 그대로 보존합니다. 현재 합성 뷰어의 메모리 한도는 영상 파일 128 MiB이며 본편 길이 제한이 아닙니다.
+완료·hash 검증을 통과한 저장본을 메모리에서 재생합니다. 실행 중 timeline을 바꿔도 화면은 갱신되지 않습니다. Claude Code에서 새 run의 timeline을 수정하고 렌더한 뒤 그 run을 열어 확인합니다. 이전 `--refresh`는 안내 메시지와 함께 exit 2로 종료하고, 기존 props·영상은 그대로 보존합니다. 현재 합성 뷰어의 메모리 한도는 영상 파일 128 MiB이며 본편 길이 제한이 아닙니다.
 
 ## 도구와 재설치
 
@@ -60,6 +60,7 @@ native Remotion Studio는 실행하지 않습니다. 화면에는 영상 재생�
 
 - [Claude Code 시작 방법과 첫 작업용 프롬프트](docs/getting-started.md)
 - [작업 절차와 계약](docs/workflow.md)
+- [실제 제작까지의 로드맵](docs/roadmap.md)
 - [편집·사운드 기준](docs/editorial-guide.md)
 - [구축 검증 보고서](reports/setup-report.md)
 - [미리보기 전용 전환 검증](reports/preview-only-review.md)
@@ -67,4 +68,4 @@ native Remotion Studio는 실행하지 않습니다. 화면에는 영상 재생�
 - [환경 설계](docs/superpowers/specs/2026-10-18-vlog-environment-design.md)
 - [다음 세션 인수인계](session-handoff.md)
 
-Git 초기화·commit·push는 하지 않았습니다. 향후 Git 사용 시 `.gitignore`가 원본·음원·의존성·파생 미디어를 제외합니다.
+Git 저장소로 관리합니다. commit·push는 명시적으로 요청할 때만 합니다. `.gitignore`가 원본·음원·의존성·파생 미디어를 제외합니다.

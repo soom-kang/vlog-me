@@ -32,6 +32,7 @@ vlog-me의 첫 작업을 시작해줘. 이번 작업은 환경 점검과 현재 
 1. CLAUDE.md, progress.md, feature_list.json,
    session-handoff.md, docs/workflow.md를 읽고 현재 범위를 파악해.
    최신 검증 근거는 reports/preview-only-review.md를 확인해.
+   실제 제작까지의 단계는 docs/roadmap.md에서 확인해.
 
 2. config/project.json에서 다음 조건을 확인해:
    - agent_runtime: claude-code
@@ -53,6 +54,7 @@ vlog-me의 첫 작업을 시작해줘. 이번 작업은 환경 점검과 현재 
    python3 scripts/synthetic.py status --run-id RUN-ID
    명령으로 저장된 상태를 조회해.
    stale이나 실패가 나오면 기록만 보고하고 복구·재렌더하지 마.
+   코드 변경 이후의 과거 PASS run은 stale이 정상이므로 FAIL로 분류하지 마.
 
 결과는 한국어로 간결하게 정리해:
 - 검사별 PASS / FAIL / NOT_RUN / BLOCKED와 근거
@@ -68,7 +70,7 @@ vlog-me의 첫 작업을 시작해줘. 이번 작업은 환경 점검과 현재 
 ## 3. 점검 결과 확인
 
 - 실제 실행한 검사와 과거 보고서의 결과를 구분해 확인합니다.
-- 실패·누락·stale이 있으면 원인과 필요한 조치부터 확인합니다. 자동 복구나 재렌더는 첫 작업에 포함하지 않습니다.
+- 실패·누락이 있으면 원인과 필요한 조치부터 확인합니다. 코드가 바뀐 뒤 과거 run의 `stale`은 정상이며 실패가 아닙니다. 자동 복구나 재렌더는 첫 작업에 포함하지 않습니다.
 - 점검이 통과해도 원본 처리·음원 다운로드·제작 작업을 시작할 권한이 생기는 것은 아닙니다. 다음 작업은 별도 요청으로 정합니다.
 
 `init.sh`는 로컬 검사 중 임시 테스트 파일·컴파일 cache를 만들 수 있습니다. 미디어 생성·렌더·음원 다운로드·model 호출은 하지 않습니다.

@@ -8,11 +8,10 @@ Claude Code 단독·기존 Skills 우선 기반 환경의 Studio agent·편집 �
 
 ```bash
 cd /Users/soom.kang/Desktop/work/2.services/vlog-me
-./init.sh
 ./scripts/claude.sh
 ```
 
-CLAUDE.md·progress.md·feature_list.json을 읽고 현재 요청 범위만 수행합니다. init.sh는 설치·원본 처리·음원 다운로드·model 호출을 하지 않습니다.
+`init.sh`는 Claude Code 안에서 실행합니다([시작 안내](docs/getting-started.md)). CLAUDE.md·progress.md·feature_list.json을 읽고 현재 요청 범위만 수행합니다. init.sh는 설치·원본 처리·음원 다운로드·model 호출을 하지 않습니다.
 
 ## Preview and Recovery
 
@@ -45,4 +44,4 @@ live --refresh는 제거되어 exit 2로 종료합니다. pending run은 Claude 
 
 ## Next Permitted Action
 
-현재 결과를 설명하거나 합성 fixture를 검증할 수 있습니다. 원본 접근·음원 다운로드·실제 본편 렌더·업로드를 시작하지 않습니다. 범위 밖 native Remotion Studio 명령으로 우회하지 않습니다. Git init·commit·push·전역 설정 변경도 수행하지 않습니다.
+현재 결과를 설명하거나 합성 fixture를 검증할 수 있습니다. 실제 제작으로 가는 다음 단계는 [로드맵](docs/roadmap.md) 단계 1이며, 사용자가 명시적으로 요청할 때만 시작합니다. 원본 접근·음원 다운로드·실제 본편 렌더·업로드를 시작하지 않습니다. 범위 밖 native Remotion Studio 명령으로 우회하지 않습니다. commit·push·전역 설정 변경도 명시 요청 없이 수행하지 않습니다(이 폴더는 Git 저장소입니다).
