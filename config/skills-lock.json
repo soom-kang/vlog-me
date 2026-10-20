@@ -172,7 +172,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/vlog-scout",
       "files": {
-        "SKILL.md": "1707502f043ad3bca9485d948d48a57ce68dfb528a02f5700dcdc5c56cb86e03"
+        "SKILL.md": "26bdcbcde1f8c5e33603de3ee396fdd824f5fce3b21a6e495012b97e85ca0f20"
       }
     },
     {
@@ -183,7 +183,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/k-variety-caption",
       "files": {
-        "SKILL.md": "b917cea8c22b7a67bccadaee2946fd223d305fc6bed60f7622cc10c3c85bdcba"
+        "SKILL.md": "903ef89c9682ec664774344682732fef5078ab7459d2fee5117b475feb3d3009"
       }
     },
     {
@@ -194,7 +194,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/vlog-sound",
       "files": {
-        "SKILL.md": "3cc671628c24c18348db0d0522aa13d2ee36f370278b21a9932d61387c0f5316"
+        "SKILL.md": "a87022b03bbf04ae62825e4859ce7ace40cc7d2aee200b4edd02397a485728c9"
       }
     }
   ]

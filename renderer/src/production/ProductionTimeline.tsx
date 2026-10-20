@@ -2,7 +2,9 @@ import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCu
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from '../gain.mjs';
 import {Caption, type CaptionCue} from './Captions';
+import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
 import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
+import {PhotoStack, type PhotoStackCue} from './PhotoStack';
 
 // Renders timeline v2 (scripts/production.py validates it before every render).
 type Clip = {id: string; source: string; from: number; duration: number; in?: number; speed?: number; zoom?: number;
@@ -12,7 +14,8 @@ type AudioCue = {id: string; kind: string; clip?: string; source?: string; from:
 type Asset = {src: string; kind: 'video' | 'image' | 'audio'};
 export type ProductionProps = {
   timeline: {fps: number; width: number; height: number; duration_frames: number; clips: Clip[]; audio: AudioCue[];
-    captions: CaptionCue[]; overlays?: (PhotoInsertCue & {source: string})[]};
+    captions: CaptionCue[]; effects?: EffectCue[];
+    overlays?: ((PhotoInsertCue & {style?: undefined; source: string}) | (PhotoStackCue & {style: 'stack'; sources: string[]}))[]};
   assets: Record<string, Asset>;
 };
 
@@ -40,12 +43,21 @@ const ClipVisual = ({clip, asset}: {clip: Clip; asset: Asset}) => {
 };
 
 export const ProductionTimeline = ({timeline, assets}: ProductionProps) => {
+  const frame = useCurrentFrame();
   const clips = new Map(timeline.clips.map((clip) => [clip.id, clip]));
+  const effects = timeline.effects ?? [];
   return (
     <AbsoluteFill style={{backgroundColor: 'black'}}>
-      {timeline.clips.map((clip) => (
-        <Sequence key={clip.id} from={clip.from} durationInFrames={clip.duration} name={clip.id}>
-          <ClipVisual clip={clip} asset={assets[clip.source]} />
+      <AbsoluteFill style={{transform: effectTransform(frame, effects)}}>
+        {timeline.clips.map((clip) => (
+          <Sequence key={clip.id} from={clip.from} durationInFrames={clip.duration} name={clip.id}>
+            <ClipVisual clip={clip} asset={assets[clip.source]} />
+          </Sequence>
+        ))}
+      </AbsoluteFill>
+      {effects.map((cue) => (
+        <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
+          <EffectOverlay cue={cue} />
         </Sequence>
       ))}
       {timeline.audio.map((cue) => {
@@ -61,7 +73,9 @@ export const ProductionTimeline = ({timeline, assets}: ProductionProps) => {
       })}
       {(timeline.overlays ?? []).map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
-          <PhotoInsert cue={cue} src={assets[cue.source].src} />
+          {cue.style === 'stack'
+            ? <PhotoStack cue={cue} srcs={cue.sources.map((name) => assets[name].src)} />
+            : <PhotoInsert cue={cue} src={assets[cue.source].src} />}
         </Sequence>
       ))}
       {timeline.captions.map((cue) => (

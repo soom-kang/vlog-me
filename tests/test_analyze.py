@@ -1,5 +1,7 @@
 """Analyze contracts. Unit tests use fake commands; media tests run only with VLOG_MEDIA_TESTS=1."""
+import array
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -32,6 +34,11 @@ WHISPER = {"transcription": [
     {"offsets": {"from": 5000, "to": 6000}, "text": " 진짜?", "tokens": []}]}
 
 
+_noise = [((i * 7919) % 200) - 100 for i in range(8000)]
+_tone = [int(6000 * math.sin(2 * math.pi * 220 * i / 8000)) for i in range(8000)]
+VOICE_SAMPLES = array.array("h", _noise + _tone).tobytes()
+
+
 class FakeAnalysis(FakeMedia):
     """Extends the ingest fake with analysis outputs."""
 
@@ -41,6 +48,10 @@ class FakeAnalysis(FakeMedia):
 
     def __call__(self, command, **kwargs):
         tool, joined = Path(command[0]).name, " ".join(command)
+        if tool == "ffmpeg" and "s16le" in command:
+            # Raw 8 kHz audio for the voicing track: 1 s of quiet noise, then 1 s of a 220 Hz voice-like tone.
+            self.calls.append(command)
+            return subprocess.CompletedProcess(command, 0, VOICE_SAMPLES, b"")
         if "analysis" not in joined and not any(f in joined for f in ["ebur128", "silencedetect", "scdet"]):
             return super().__call__(command, **kwargs)
         self.calls.append(command)

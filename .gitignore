@@ -17,4 +17,4 @@ sources/
 .env.*
 *.local.json
 .claude/settings.local.json
-assets
+/assets/

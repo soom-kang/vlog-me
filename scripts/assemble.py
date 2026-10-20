@@ -8,9 +8,11 @@ edits must be resolved (rebuild the review and select again) before assembling.
 import argparse
 from datetime import datetime, timezone
 import json
+import re
 import signal
 
 import audio_library
+import caption_sync
 import common
 from common import digest, read_json, run_lock, safe_path, write_json
 import ingest
@@ -48,10 +50,13 @@ def ordered(candidates, decisions, entries, order=None):
 
 
 def build_timeline(run, kept, entries, library):
-    clips, audio, captions, overlays, bgm_spans, speech, warnings = [], [], [], [], [], [], []
+    clips, audio, captions, overlays, effects, bgm_spans, speech, warnings = [], [], [], [], [], [], [], []
     cursor = 0
-    for candidate in kept:
-        entry, plan, cid = entries[candidate["source"]], candidate["plan"], candidate["id"]
+    for authored in kept:
+        entry = entries[authored["source"]]
+        candidate, _ = caption_sync.sync_candidate(authored, entry, caption_sync.load_words(run, entry),
+                                                   caption_sync.load_voicing(run, entry))
+        plan, cid = candidate["plan"], candidate["id"]
         start = cursor
         if entry["kind"] == "video":
             speed = plan.get("speed", 1)
@@ -81,13 +86,30 @@ def build_timeline(run, kept, entries, library):
             at = start + round(caption["at"] * FPS)
             captions.append({"id": f"{cid}-t{index}", "kind": caption["kind"],
                              "preset": production.validate_caption_text(caption, False), "text": caption["text"],
-                             "position": caption.get("position", "bottom"), "speaker": caption.get("speaker"),
+                             "position": caption.get("position", "bottom"), "speaker": caption.get("speaker"), "sub": caption.get("sub"),
                              "from": min(at, cursor - 1), "duration": max(1, min(round(caption["duration"] * FPS), cursor - at))})
         for index, insert in enumerate(plan.get("inserts", [])):
-            at = start + round(insert["at"] * FPS)
-            overlays.append({"id": f"{cid}-p{index}", "source": insert["photo"], "from": min(at, cursor - 1),
-                             "duration": max(1, min(round(insert["duration"] * FPS), cursor - at)),
-                             "position": insert.get("position", "right"), "tilt": insert.get("tilt", 0)})
+            at = min(start + round(insert["at"] * FPS), cursor - 1)
+            cue = {"id": f"{cid}-p{index}", "from": at, "duration": max(1, min(round(insert["duration"] * FPS), cursor - at))}
+            if "photos" in insert:
+                step = review.stack_interval(insert)
+                cue |= {"style": "stack", "sources": insert["photos"], "interval": step, "position": insert.get("position", "center")}
+                if insert.get("sfx"):
+                    # One shutter per photo as it lands; only registered, usable audio reaches this point.
+                    for shot in range(len(insert["photos"])):
+                        shot_at = at + shot * step
+                        if shot_at >= cursor - 1:
+                            break
+                        frames = max(2, min(library[insert["sfx"]]["frames"], cursor - shot_at))
+                        audio.append({"id": f"{cid}-p{index}-s{shot}", "kind": "sfx", "source": insert["sfx"], "from": shot_at,
+                                      "duration": frames, "in": 0, "gain_db": [[0, -10], [frames - 1, -10]]})
+            else:
+                cue |= {"source": insert["photo"], "position": insert.get("position", "right"), "tilt": insert.get("tilt", 0)}
+            overlays.append(cue)
+        for index, fx in enumerate(plan.get("effects", [])):
+            at = min(start + round(fx["at"] * FPS), cursor - 1)
+            effects.append({"id": f"{cid}-f{index}", "type": fx["type"], "from": at,
+                            "duration": max(1, min(round(fx["duration"] * FPS), cursor - at)), "strength": fx.get("strength", 1)})
         for index, sfx in enumerate(plan.get("sfx", [])):
             if not sfx.get("asset"):
                 warnings.append(f"{cid}: 효과음 '{sfx['name']}'에 음원이 없어 넣지 않았습니다")
@@ -116,8 +138,12 @@ def build_timeline(run, kept, entries, library):
         audio.append({"id": f"bgm-{index}", "kind": "bgm", "source": span["asset"], "from": span["start"], "duration": frames,
                       "in": 0, "gain_db": sound.duck_envelope(frames, talk, base_db=span["gain_db"])})
     timeline = {"schema_version": 2, "purpose": "production", "fps": FPS, "width": 1920, "height": 1080,
-                "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions, "overlays": overlays}
-    warnings += sound.sfx_warnings([{"asset": c["source"], "from": c["from"]} for c in audio if c["kind"] == "sfx"])
+                "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions, "overlays": overlays,
+                "effects": effects}
+    # Photo-stack shutters are one intentional burst, not separate effects, so they skip the density/repeat advice.
+    warnings += sound.sfx_warnings([{"asset": c["source"], "from": c["from"]} for c in audio
+                                    if c["kind"] == "sfx" and not re.search(r"-p\d+-s\d+$", c["id"])])
+    warnings += production.preset_warnings(captions)
     return timeline, warnings
 
 

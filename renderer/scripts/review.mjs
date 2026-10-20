@@ -1,6 +1,6 @@
 import {bundle} from '@remotion/bundler';
 import {renderMedia, renderStill, selectComposition} from '@remotion/renderer';
-import {existsSync, readFileSync, realpathSync} from 'node:fs';
+import {existsSync, readFileSync, realpathSync, renameSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
@@ -31,15 +31,35 @@ const serveUrl = await bundle({entryPoint: path.join(root, 'renderer/src/index.t
 const common = {serveUrl, browserExecutable, chromeMode: 'chrome-for-testing', logLevel: 'warn',
   onBrowserDownload: () => {throw new Error('Automatic browser downloads are disabled');}};
 
+// Media decoding occasionally stalls a frame (delayRender timeout). Keep the failed file and try once more,
+// the same way render-prod.mjs does for long-form chunks.
+const FRAME_TIMEOUT_MS = 120000;
+const withRetry = async (label, output, render) => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await render();
+    } catch (error) {
+      if (existsSync(output)) renameSync(output, output.replace(/(\.[a-z0-9]+)$/, `.failed-${Date.now()}$1`));
+      console.log(JSON.stringify({failed: label, attempt, error: String(error).slice(0, 300)}));
+      if (attempt >= 2) throw error;
+    }
+  }
+};
+
 for (const job of jobs) {
   const inputProps = job.props;
   const composition = await selectComposition({...common, id: 'CandidatePreview', inputProps});
   const out = path.join(folder, job.id);
-  await renderStill({...common, composition, inputProps, frame: job.props.keyFrame, imageFormat: 'jpeg', jpegQuality: 88,
-    output: path.join(out, 'expected.jpg'), overwrite: false});
+  if (job.still !== false) {
+    const still = path.join(out, 'expected.jpg');
+    await withRetry(`${job.id}:still`, still, () => renderStill({...common, composition, inputProps, frame: job.props.keyFrame,
+      imageFormat: 'jpeg', jpegQuality: 88, output: still, overwrite: false, timeoutInMilliseconds: FRAME_TIMEOUT_MS}));
+  }
   if (job.preview) {
-    await renderMedia({...common, composition, inputProps, codec: 'h264', audioCodec: 'aac', pixelFormat: 'yuv420p',
-      scale: 0.5, concurrency: 4, overwrite: false, outputLocation: path.join(out, 'preview.mp4')});
+    const clip = path.join(out, 'preview.mp4');
+    await withRetry(`${job.id}:preview`, clip, () => renderMedia({...common, composition, inputProps, codec: 'h264', audioCodec: 'aac',
+      pixelFormat: 'yuv420p', scale: 0.5, concurrency: 4, overwrite: false, outputLocation: clip,
+      timeoutInMilliseconds: FRAME_TIMEOUT_MS}));
   }
   console.log(JSON.stringify({rendered: job.id, preview: job.preview}));
 }

@@ -2,13 +2,16 @@ import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCu
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from '../gain.mjs';
 import {Caption, type CaptionCue} from './Captions';
+import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
 import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
+import {PhotoStack, type PhotoStackCue} from './PhotoStack';
 
 type Segment = {src: string; trimBefore: number; frames: number; playbackRate: number; gain?: number[][]};
 type AudioCue = {id: string; src: string; from: number; duration: number; gain: number[][]};
 export type CandidateProps = {
   kind: 'video' | 'image'; segments: Segment[]; zoom: number; captions: CaptionCue[]; audio?: AudioCue[];
-  overlays?: (PhotoInsertCue & {src: string})[];
+  overlays?: ((PhotoInsertCue & {style?: undefined; src: string}) | (PhotoStackCue & {style: 'stack'; srcs: string[]}))[];
+  effects?: EffectCue[];
   durationInFrames: number; keyFrame: number;
 };
 
@@ -19,10 +22,13 @@ const Zoomed = ({zoom, durationInFrames, children}: {zoom: number; durationInFra
   return <AbsoluteFill style={{transform: `scale(${scale})`}}>{children}</AbsoluteFill>;
 };
 
-export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], overlays = [], durationInFrames}: CandidateProps) => {
+export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], overlays = [], effects = [],
+  durationInFrames}: CandidateProps) => {
+  const frame = useCurrentFrame();
   let offset = 0;
   return (
     <AbsoluteFill style={{backgroundColor: 'black'}}>
+      <AbsoluteFill style={{transform: effectTransform(frame, effects)}}>
       {segments.map((segment, index) => {
         const from = offset;
         offset += segment.frames;
@@ -42,6 +48,12 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
           </Sequence>
         );
       })}
+      </AbsoluteFill>
+      {effects.map((cue) => (
+        <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
+          <EffectOverlay cue={cue} />
+        </Sequence>
+      ))}
       {audio.map((cue) => (
         // Library BGM/SFX from run/audio; the BGM envelope already ducks under speech.
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
@@ -50,7 +62,7 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
       ))}
       {overlays.map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
-          <PhotoInsert cue={cue} src={cue.src} />
+          {cue.style === 'stack' ? <PhotoStack cue={cue} srcs={cue.srcs} /> : <PhotoInsert cue={cue} src={cue.src} />}
         </Sequence>
       ))}
       {captions.map((cue) => (
@@ -62,7 +74,7 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
   );
 };
 
-const EMPTY: CandidateProps = {kind: 'image', segments: [], zoom: 1, captions: [], audio: [], overlays: [], durationInFrames: 30,
+const EMPTY: CandidateProps = {kind: 'image', segments: [], zoom: 1, captions: [], audio: [], overlays: [], effects: [], durationInFrames: 30,
   keyFrame: 0};
 
 export const CandidateComposition = () => (

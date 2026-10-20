@@ -64,9 +64,10 @@ def write_json(path, data, replace=False):
         Path(temporary).unlink(missing_ok=True)
 
 
-def run_command(command, timeout=120):
+def run_command(command, timeout=120, binary=False):
+    """Run a command in its own process group. `binary=True` returns stdout as bytes (e.g. raw audio)."""
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               text=True, start_new_session=True)
+                               text=not binary, start_new_session=True)
     try:
         stdout, stderr = process.communicate(timeout=timeout)
     except BaseException as exc:
@@ -86,6 +87,8 @@ def run_command(command, timeout=120):
         if isinstance(exc, subprocess.TimeoutExpired):
             raise RuntimeError(f"{Path(command[0]).name} exceeded {timeout}s; owned process group stopped") from exc
         raise
+    if binary:
+        stderr = stderr.decode("utf-8", "replace")
     if process.returncode:
         diagnostic = stderr if len(stderr) < 2200 else stderr[:1600] + "\n...\n" + stderr[-500:]
         raise RuntimeError(f"{Path(command[0]).name} exited {process.returncode}: {diagnostic}")

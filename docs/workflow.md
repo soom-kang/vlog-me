@@ -39,6 +39,7 @@ Claude Code 주 세션이 프로젝트 Skill(`/vlog-workflow`, `vlog-scout`, `k-
 - Claude는 `analysis/index.md`와 클립별 `summary.md`부터 읽고, 필요한 구간만 contact sheet로 확인합니다.
 - `reaction`은 대사 밖의 큰 소리라는 신호일 뿐, 웃음이라는 판정이 아닙니다.
 - Whisper는 음악·정적 구간에서 없는 대사를 지어낼 수 있습니다(예: 자막 제작자 문구). 알려진 문구이거나 정적과 대부분 겹치는 대사는 `의심`으로 표시되고 웃음 후보 판정에서 빠집니다. 휴리스틱이므로 화면과 함께 확인합니다.
+- 소리가 있는 클립은 단어 단위 전사(`words.json`)와 목소리 구간(`voicing.json`)도 만듭니다. 대사 자막 타이밍에 씁니다. 이전 run에는 `--add-words`로 추가합니다.
 - 실패하면 이전 시도를 `analysis.failed-*`로 남기고 다시 실행할 수 있습니다.
 
 ### 3. 후보 리뷰와 선택

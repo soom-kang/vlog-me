@@ -23,8 +23,10 @@ REGISTRY = production.CAPTION_REGISTRY
 class PresetRegistryTests(unittest.TestCase):
     def test_renderer_implements_exactly_the_registered_presets(self):
         source = (PROJECT_ROOT / "renderer/src/production/Captions.tsx").read_text(encoding="utf-8")
-        body = source.split("const PRESETS", 1)[1].split("\n};", 1)[0]
-        implemented = set(re.findall(r"^  '?([a-z][a-z-]*)'?: \(", body, re.M))
+        implemented = set()
+        for block in ["const STYLES", "const LAYOUTS"]:
+            body = source.split(block, 1)[1].split("\n};", 1)[0]
+            implemented |= set(re.findall(r"^  '?([a-z][a-z-]*)'?: [a-zA-Z(]", body, re.M))
         registered = {preset for spec in REGISTRY["kinds"].values() for preset in spec["presets"]}
         self.assertEqual(implemented, registered)
 

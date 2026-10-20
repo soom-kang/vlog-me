@@ -24,6 +24,9 @@ MOOD_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] =
 CAPTION_POSITIONS = {"bottom", "top", "center", "upper_left", "upper_right", "lower_left", "lower_right"}
 AUDIO_KINDS = {"original", "bgm", "sfx"}
 OVERLAY_POSITIONS = {"left", "right"}
+STACK_POSITIONS = {"left", "right", "center"}
+STACK_PHOTOS = (2, 12)
+EFFECT_TYPES = {"punch_zoom", "shake", "flash", "speedlines"}
 OVERLAY_MAX_TILT = 10
 
 
@@ -108,7 +111,30 @@ def validate_caption_text(caption, require_preset=True):
         raise ValueError(f"{caption['kind']} captions allow {CAPTION_REGISTRY['max_lines']} lines of {spec['max_chars']} characters")
     if caption.get("position", "bottom") not in CAPTION_POSITIONS:
         raise ValueError("Unknown caption position")
+    sub = caption.get("sub")
+    if sub is not None and (not isinstance(sub, str) or not sub.strip() or len(sub) > CAPTION_REGISTRY["max_sub_chars"]):
+        raise ValueError(f"Caption sub line must be 1..{CAPTION_REGISTRY['max_sub_chars']} characters")
+    if caption.get("sync", "speech") not in {"speech", "manual"}:
+        raise ValueError("Caption sync must be speech or manual")
     return preset
+
+
+def preset_warnings(captions):
+    """Variation advice: the same preset many times in a row, or one preset carrying a whole kind."""
+    limit = CAPTION_REGISTRY["max_same_preset_in_a_row"]
+    warnings, run, previous = [], 0, None
+    ordered = sorted(captions, key=lambda c: c.get("from", c.get("at", 0)))
+    for caption in ordered:
+        preset = caption.get("preset") or CAPTION_REGISTRY["kinds"][caption["kind"]]["presets"][0]
+        run = run + 1 if preset == previous else 1
+        if run == limit + 1:
+            warnings.append(f"'{preset}' 자막이 {limit + 1}번 이상 연달아 나옵니다. 같은 kind의 다른 preset을 섞어 보세요")
+        previous = preset
+    for kind, spec in CAPTION_REGISTRY["kinds"].items():
+        used = [c.get("preset") or spec["presets"][0] for c in ordered if c["kind"] == kind]
+        if len(used) >= 4 and len(set(used)) == 1 and len(spec["presets"]) > 1:
+            warnings.append(f"{kind} 자막 {len(used)}개가 모두 '{used[0]}'입니다. 다른 preset: {', '.join(p for p in spec['presets'] if p != used[0])}")
+    return warnings
 
 
 def _interval(cue, limit=None):
@@ -147,7 +173,10 @@ def validate_timeline_v2(timeline, sources):
     if not isinstance(overlays, list):
         raise ValueError("Overlays must be a list")
     ids = set()
-    for cue in clips + audio + captions + overlays:
+    effects = timeline.get("effects", [])
+    if not isinstance(effects, list):
+        raise ValueError("effects must be a list")
+    for cue in clips + audio + captions + overlays + effects:
         cue_id = cue.get("id")
         if not isinstance(cue_id, str) or not cue_id or cue_id in ids:
             raise ValueError("Duplicate or missing cue ID")
@@ -214,6 +243,19 @@ def validate_timeline_v2(timeline, sources):
     for overlay in overlays:
         # Photo inserts float over the running video; they never replace a clip.
         _interval(overlay, cursor)
+        if overlay.get("style") == "stack":
+            # A burst of photos dropping onto a pile, e.g. for "사진 엄청 찍음" moments.
+            names = overlay.get("sources")
+            if not isinstance(names, list) or not STACK_PHOTOS[0] <= len(names) <= STACK_PHOTOS[1]:
+                raise ValueError(f"Photo stacks need {STACK_PHOTOS[0]}..{STACK_PHOTOS[1]} photos")
+            if any(sources.get(n, {}).get("kind") != "image" for n in names):
+                raise ValueError("Photo stacks must show photo sources")
+            step = overlay.get("interval")
+            if type(step) is not int or not 3 <= step <= 45:
+                raise ValueError("Photo stack interval must be 3..45 frames")
+            if overlay.get("position") not in STACK_POSITIONS:
+                raise ValueError("Photo stack position must be left, right or center")
+            continue
         source = sources.get(overlay.get("source"))
         if not source or source.get("kind") != "image":
             raise ValueError("Overlays must show a photo source")
@@ -222,6 +264,13 @@ def validate_timeline_v2(timeline, sources):
         tilt = overlay.get("tilt", 0)
         if isinstance(tilt, bool) or not isinstance(tilt, (int, float)) or abs(tilt) > OVERLAY_MAX_TILT:
             raise ValueError(f"Overlay tilt must be within ±{OVERLAY_MAX_TILT} degrees")
+    for effect in effects:
+        _interval(effect, cursor)
+        if effect.get("type") not in EFFECT_TYPES:
+            raise ValueError(f"Effect type must be one of {sorted(EFFECT_TYPES)}")
+        strength = effect.get("strength", 1)
+        if isinstance(strength, bool) or not isinstance(strength, (int, float)) or not 0.5 <= strength <= 2:
+            raise ValueError("Effect strength must be 0.5..2")
     return cursor
 
 

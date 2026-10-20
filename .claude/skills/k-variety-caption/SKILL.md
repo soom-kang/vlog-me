@@ -9,7 +9,7 @@ description: vlog-me 후보나 timeline에 예능 80 · 감성 20 스타일의 �
 
 ## 쓰는 순서
 
-1. 장면의 웃음 구조를 먼저 적습니다: setup(무슨 상황) → payoff(반전) → reaction(반응).
+1. 장면의 웃음 구조를 먼저 적습니다: setup(무슨 상황) → payoff(반전) → reaction(반응). 사물 의인화, 내레이터 해설, 자막 연쇄 같은 예능 화법과 효과(`effects`)를 함께 고려합니다(가이드의 "예능 화법").
 2. 자막을 그 시간에 맞춰 배치합니다.
    - setup: `situation`(사실만). 예: `같은 골목 3바퀴째`
    - payoff 순간: `sfx_text` 하나. 예: `띠용?!`
@@ -26,6 +26,9 @@ description: vlog-me 후보나 timeline에 예능 80 · 감성 20 스타일의 �
 - [ ] `dialogue`는 전사·화면으로 확인한 실제 대사뿐. `의심` 구간은 쓰지 않음
 - [ ] 외모·체형·말투 조롱 없음. 같이 여행한 사람이 보고 웃을 수 있는 수위
 - [ ] 위치가 얼굴과 대사 자막을 가리지 않음(기대 화면 still로 확인)
+- [ ] preset을 장면 성격에 맞게 바꿔 씀(같은 preset 3연속 금지, 상단 박스는 색·모양 variation)
+- [ ] 대사 자막 타이밍은 리뷰 카드의 "발화에 맞춤" 결과를 확인. `주의`가 뜨면 직접 고침
+- [ ] 감성 자막은 `editorial`·`letter-fade`·`film-line`·`place-editorial`과 `sub`로 정돈된 미감을 줌
 
 ## 좋은 예와 나쁜 예
 

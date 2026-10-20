@@ -1,8 +1,8 @@
 # 자막 스타일 가이드 (예능 80 · 감성 20)
 
-후보 카드(`candidates.json`)와 timeline v2의 자막을 쓸 때 따르는 기준입니다. 목표는 **소소한 재미가 중심인 여행 브이로그**입니다. 감성은 숨 고르는 구간에만 씁니다. 실제 영상으로 취향을 맞춘 preset은 아직 없으므로 첫 sample 리뷰에서 사용자와 조정합니다.
+후보 카드(`candidates.json`)와 timeline v2의 자막을 쓸 때 따르는 기준입니다. 목표는 **소소한 재미가 중심인 여행 브이로그**입니다. 감성 구간은 짧지만, 넣을 때는 공을 들여 아름답게 만듭니다. 2026-10-19 첫 sample에 대한 사용자 피드백을 반영했습니다(아래 "첫 sample 피드백").
 
-preset 목록과 글자 수 제한의 원본은 `renderer/src/production/presets.json`입니다. 렌더러와 Python 검증기가 같은 파일을 읽습니다. 모양은 [preset 갤러리](../reports/unit5-caption-gallery.jpg)에서 확인합니다.
+preset 목록과 글자 수 제한의 원본은 `renderer/src/production/presets.json`입니다. 렌더러와 Python 검증기가 같은 파일을 읽습니다. 모양은 [preset 갤러리](../reports/caption-gallery.jpg)에서 확인합니다(`node renderer/scripts/gallery.mjs reports/caption-gallery.jpg`로 다시 생성).
 
 ## 80 · 20의 의미
 
@@ -15,15 +15,16 @@ preset 목록과 글자 수 제한의 원본은 `renderer/src/production/presets
 
 | kind | 언제 쓰나 | preset | 한 줄 최대 글자 |
 | --- | --- | --- | --- |
-| `variety` | 장면을 한마디로 받아치는 편집자 멘트 | `pop`(기본), `shout`(크게 놀람), `punch`(툭 치는 반전) | 18 |
-| `situation` | 상황 설명. 시청자가 놓친 맥락 | `box-yellow`(기본), `box-dark` | 28 |
-| `sfx_text` | 효과음을 글자로. 효과음 cue와 같이 쓸 수 있음 | `tilt-red`(기본), `tilt-blue`, `burst` | 8 |
-| `inner_voice` | 인물의 속마음 추정. 괄호로 감쌈 | `bracket`(기본), `whisper` | 24 |
-| `dialogue` | 실제로 말한 대사 | `dialogue` | 32 |
-| `mood` | 풍경·여운 구간의 짧은 문장 | `serif-fade`(기본), `serif-low` | 26 |
-| `place` | 장소·시간 표시 | `place-card` | 20 |
+| `variety` | 장면을 한마디로 받아치는 편집자 멘트 | `pop`(기본), `shout`(크게 놀람), `punch`(툭 치는 반전), `drop`(위에서 떨어짐), `shake`(흔들림) | 18 |
+| `situation` | 상황 설명. 시청자가 놓친 맥락. 상단 타이틀 | `box-yellow`(기본), `box-dark`, `box-pink`, `box-mint`, `box-sky`, `ribbon`(띠), `sticker`(스티커), `stamp`(도장), `bubble`(말풍선) | 28 |
+| `sfx_text` | 효과음을 글자로. 효과음 cue와 같이 쓸 수 있음 | `tilt-red`(기본), `tilt-blue`, `burst`, `whoosh`(옆에서 날아듦), `pen-sfx`(손글씨) | 8 |
+| `inner_voice` | 인물의 속마음 추정. 괄호로 감쌈 | `bracket`(기본), `whisper`, `thought`(생각 구름), `pen-note`(손글씨 메모) | 24 |
+| `dialogue` | 실제로 말한 대사 | `dialogue`, `dialogue-box`(반투명 상자) | 32 |
+| `mood` | 풍경·여운 구간의 문장 | `serif-fade`(기본), `serif-low`, `editorial`(큰 세리프+영문 부제), `letter-fade`(한 글자씩), `film-line`(위아래 선), `pen-script`(손글씨) | 26 |
+| `place` | 장소·시간 표시 | `place-card`, `place-editorial`(큰 영문 지명+한글) | 20 |
 
 - 모든 자막은 최대 2줄입니다. 줄바꿈은 `\n`으로 직접 넣습니다.
+- `sub`(36자 이하)는 보조 문장입니다. `editorial`·`film-line`은 그 아래 작은 영문 이탤릭/대문자로, `place-editorial`은 큰 영문 지명으로 씁니다. 예: `"text": "노을이 지는 시간", "sub": "golden hour"`
 - `preset`을 생략하면 kind의 기본 preset을 씁니다(후보 카드만 해당). timeline v2에서는 반드시 적습니다.
 - 위치는 `bottom`(기본), `top`, `center`, `upper_left`, `upper_right`, `lower_left`, `lower_right` 중에서 고릅니다. 얼굴과 대사 자막을 가리지 않는 쪽을 고릅니다.
 
@@ -36,6 +37,39 @@ preset 목록과 글자 수 제한의 원본은 `renderer/src/production/presets
 - **감성은 담백하게.** 예: `그래도 바람은 좋았다`, `이 길은 처음이었다`. 형용사를 쌓지 않습니다.
 - 한 화면에 동시에 보이는 예능 자막은 3개까지로 합니다.
 - 웃음 setup(상황)→payoff(반전)→reaction(리액션) 순서가 보이게 시간을 나눕니다. payoff 전에 결말을 자막으로 먼저 말하지 않습니다.
+
+## 타이밍
+
+- **대사 자막은 자동으로 맞춥니다.** 단어 단위 전사(`analysis/<id>/words.json`)로 어느 말인지 찾고, 실제 목소리 구간(`voicing.json`, 50ms 간격 음높이 주기성)에 맞춰 목소리 시작 0.15초 전에 나타나고 끝난 뒤 0.3초에 사라집니다. 거리 소음이 큰 영상에서는 Whisper 시각이 2초가량 어긋날 수 있어서, 목소리 구간을 기준으로 삼습니다. 작성한 `at`·`duration`은 대략이면 됩니다.
+- 컷을 넘어 이어지는 말은 자막도 다음 컷까지 이어집니다. 오래된 run에는 `python3 scripts/analyze.py --run-id <run> --add-words`로 단어 시각과 목소리 구간을 추가합니다.
+- 다른 kind도 말에 붙여야 하면 `"sync": "speech"`를 넣고 `text`를 그 말과 같게 씁니다. 손으로 정한 시각을 지키려면 `"sync": "manual"`을 넣습니다.
+- 리뷰 카드에 "자막 타이밍 … → 발화 …에 맞춤"이 보입니다. 전사에서 찾지 못한 대사는 `주의`로 표시되니 직접 시각을 고칩니다.
+- 예능 자막은 해당 순간(리액션 시작, 반전 프레임)보다 늦지 않게 넣고, 다음 장면이 시작되기 전에 빠지게 합니다.
+
+## variation
+
+- 같은 preset이 3번 이상 연달아 나오거나 한 kind의 자막 4개 이상이 모두 같은 preset이면 리뷰 페이지와 조립 보고서에 경고가 나옵니다.
+- 상단 상황 박스는 장면 성격에 맞춰 바꿉니다. 정보는 `box-yellow`·`box-sky`, 귀여움은 `box-pink`·`sticker`, 판정·결론은 `stamp`, 장면 전환은 `ribbon`, 누군가의 한마디는 `bubble`을 씁니다.
+- 효과음도 같은 소리를 반복하지 않습니다([사운드 가이드](sound-guide.md)).
+
+## 예능 화법 (재미를 더 살리는 방법)
+
+- **사물·자연 의인화:** 바람·음식·간판이 말하는 것처럼 씁니다. 예: 바람 `(바람: 오늘 주인공은 나야)`
+- **내레이터 해설:** 다큐 내레이션처럼 과장되게 상황을 설명합니다. 예: `situation` 바람과의 사투 3초째
+- **자막 연쇄:** setup → payoff → reaction을 2–4개 자막으로 나눠 박자를 만듭니다.
+- **효과와 함께:** 반전 순간에 `punch_zoom`·`shake`·`flash`·`speedlines` 효과와 효과 글자를 같이 둡니다.
+- 예시: 바람에 머리카락이 얼굴을 덮는 장면
+  1. `situation`(`ribbon`) "푸꾸옥 바람 특보 발령"
+  2. 머리카락이 덮이는 순간 `speedlines` + `sfx_text`(`whoosh`) "휘이잉"
+  3. 얼굴이 안 보일 때 `punch_zoom` + `variety`(`shake`) "앞이 안 보여요"
+  4. `inner_voice`(`thought`) "(바람: 미안 일부러 그랬어)"
+
+## 감성 자막을 아름답게
+
+- 감성 구간은 길이보다 밀도가 중요합니다. 한 장면에 한 문장, 3–5초 머뭅니다.
+- `editorial`·`letter-fade`·`film-line`·`place-editorial`처럼 여백과 글자 간격이 있는 preset을 씁니다. 한글 문장 아래 짧은 영문(`sub`)을 두면 정돈된 느낌이 납니다.
+- 문장은 담백하게, 느낌표와 이모티콘은 쓰지 않습니다. 예: `오늘의 바다는 조금 늦게 저물었다` / `slow sunset`
+- 감성 자막은 화면 가운데나 아래쪽 여백에 두고, 인물의 얼굴과 하늘선을 가리지 않습니다.
 
 ## 하지 않는 것
 

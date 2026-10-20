@@ -49,6 +49,8 @@ class FakeMedia:
             payload = stream_probe(1920, 1080) if "proxy" in target else self.sources[name]
             return subprocess.CompletedProcess(command, 0, json.dumps(payload), "")
         if tool == "ffmpeg":
+            if target == "-":
+                raise AssertionError(f"Unrouted ffmpeg stdout command in fake: {command}")
             Path(target).write_text("fake proxy")
         elif tool == "avconvert":
             Path(command[command.index("--output") + 1]).write_text("fake sdr")

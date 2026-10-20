@@ -163,6 +163,16 @@
       ],
       "status": "completed",
       "evidence": "tests/test_phase_configs.py; ./init.sh PASS (124 tests) in production and in setup (temporary swap, restored byte-identical); smoke-media PASS in production; smoke-render PASS in setup"
+    },
+    {
+      "id": "sample-feedback-1",
+      "name": "First-sample feedback: caption timing, variation, comedy, mood aesthetics, photo stacks, music audition",
+      "description": "Word-level Whisper pass and automatic dialogue caption timing; 33 caption presets with sub lines and variation warnings; punch_zoom/shake/flash/speedlines effects; photo stack inserts with shutter sounds; BGM audition variants on review cards; 2 more OFL fonts; 15 Mixkit SFX and 3 Mixkit BGM registered after approval; voicing-based caption snapping (Whisper alone was ~2 s off on street audio)",
+      "dependencies": [
+        "phase-aware-harness"
+      ],
+      "status": "completed",
+      "evidence": "tests/test_feedback_features.py; reports/caption-gallery.jpg; reports/first-sample-review-2026-10-19.md (render/v4 QA PASS); human viewing NOT_RUN"
     }
   ]
 }

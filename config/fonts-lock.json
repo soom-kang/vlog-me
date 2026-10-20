@@ -1,5 +1,5 @@
 {
-  "verified_on": "2026-10-19",
+  "verified_on": "2026-10-20",
   "approved": "user in chat, committed to Git",
   "path": "renderer/assets/fonts",
   "fonts": [
@@ -46,6 +46,25 @@
       "files": {
         "nanumgothic/NanumGothic-ExtraBold.ttf": "5c4568e5295a8c52bc30e7efa1ea6d2de43556268ef42daba93540a1ece691ae",
         "nanumgothic/OFL.txt": "eeacf16032901d0ed0456876ec77b8f0fda6b3fecec7d972f8543eb602e6c30f"
+      }
+    },
+    {
+      "family": "Nanum Pen Script",
+      "license": "SIL Open Font License 1.1",
+      "source": "https://github.com/google/fonts/tree/main/ofl/nanumpenscript",
+      "files": {
+        "nanumpenscript/NanumPenScript-Regular.ttf": "6f0d1ab29c7894010dc88831fb7a0a51edb79136e450344183de5b1a8b52bd43",
+        "nanumpenscript/OFL.txt": "eeacf16032901d0ed0456876ec77b8f0fda6b3fecec7d972f8543eb602e6c30f"
+      }
+    },
+    {
+      "family": "Cormorant Garamond",
+      "license": "SIL Open Font License 1.1",
+      "source": "https://github.com/google/fonts/tree/main/ofl/cormorantgaramond",
+      "files": {
+        "cormorantgaramond/CormorantGaramond-Variable.ttf": "b20b7d9626dd956b2c5e558692ad328b1f19e3275e2782db4fa07670d83f35e0",
+        "cormorantgaramond/CormorantGaramond-Italic-Variable.ttf": "0f48ea6abb2084537854f7174c470991a463b13036309e3b50a81511611c530d",
+        "cormorantgaramond/OFL.txt": "60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956"
       }
     }
   ]

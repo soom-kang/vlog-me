@@ -6,6 +6,7 @@ hints, silences, scene cuts and 2-second contact sheets. Everything is summarize
 analysis/<id>/summary.md and analysis/index.md. Proxies are read; originals are never opened.
 """
 import argparse
+import array
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -116,16 +117,111 @@ def model_path(config):
     return path
 
 
-def transcribe(proxy, folder, model, timeout):
+def parse_words(payload):
+    """Word-level pass (-ml 1 -sow): one entry per word with its own start/end, used to time captions."""
+    words = []
+    for item in payload.get("transcription", []):
+        text = item.get("text", "").strip()
+        start, end = item["offsets"]["from"] / 1000, item["offsets"]["to"] / 1000
+        if text and end > start:
+            words.append({"text": text, "start": round(start, 3), "end": round(end, 3)})
+    return words
+
+
+VOICE_HOP = 0.05
+
+
+def voicing_scores(samples, rate=8000, hop=400, window=640, low_hz=140, high_hz=450):
+    """Per-hop periodicity (0..1) of the speaking-pitch band. Street noise scores low, voiced speech high."""
+    scores = []
+    lo, hi = rate // high_hz, rate // low_hz
+    for start in range(0, max(0, len(samples) - window), hop):
+        frame = samples[start:start + window]
+        mean = sum(frame) / window
+        frame = [v - mean for v in frame]
+        energy = sum(v * v for v in frame)
+        if energy <= 0:
+            scores.append(0.0)
+            continue
+        best = 0.0
+        for lag in range(lo, hi, 2):
+            corr = sum(frame[i] * frame[i + lag] for i in range(0, window - lag, 2))
+            best = max(best, corr / (energy / 2))
+        scores.append(round(max(0.0, min(1.0, best)), 2))
+    return scores
+
+
+def voicing_track(proxy, folder, timeout):
+    """analysis/<id>/voicing.json: periodicity every 50 ms, used to snap captions to real speech."""
+    raw = run_command(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-i", str(proxy), "-vn",
+                       "-af", "highpass=f=90,lowpass=f=1000", "-ar", "8000", "-ac", "1", "-f", "s16le", "-"],
+                      timeout=timeout, binary=True).stdout
+    samples = array.array("h")
+    samples.frombytes(raw[: len(raw) // 2 * 2])
+    write_json(folder / "voicing.json", {"hop_seconds": VOICE_HOP, "scores": voicing_scores(samples)})
+
+
+def extract_wav(proxy, folder, timeout):
     wav = safe_path(folder, "audio-16k.wav")
     run_command(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-i", str(proxy),
                  "-vn", "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(wav)], timeout=timeout)
+    return wav
+
+
+def word_pass(wav, folder, model, timeout):
+    run_command(["whisper-cli", "-m", str(model), "-l", "ko", "-t", "8", "-np", "-oj", "-ml", "1", "-sow",
+                 "-of", str(folder / "whisper-words"), "-f", str(wav)], timeout=timeout)
+    words = parse_words(read_json(safe_path(folder, "whisper-words.json", True)))
+    write_json(folder / "words.json", {"source": "whisper.cpp -ml 1 -sow", "words": words})
+    return words
+
+
+def transcribe(proxy, folder, model, timeout):
+    wav = extract_wav(proxy, folder, timeout)
     try:
         run_command(["whisper-cli", "-m", str(model), "-l", "ko", "-t", "8", "-np", "-ojf",
                      "-of", str(folder / "whisper"), "-f", str(wav)], timeout=timeout)
-        return parse_transcript(read_json(safe_path(folder, "whisper.json", True)))
+        segments = parse_transcript(read_json(safe_path(folder, "whisper.json", True)))
+        word_pass(wav, folder, model, timeout)
+        return segments
     finally:
         wav.unlink(missing_ok=True)
+
+
+def add_words(run_id):
+    """Add analysis/<id>/words.json to an already analyzed run without redoing the analysis.
+
+    Older runs only have segment times, which can be off by a second; captions need word timing.
+    Existing words.json files are kept.
+    """
+    config = production.require_production_scope()
+    run = production.production_run_path(run_id)
+    model = model_path(config)
+    if model is None:
+        raise ValueError("Word timing needs the configured Whisper model")
+    added = []
+    with run_lock(run):
+        state = ingest.status(run_id)
+        if state.get("stage") in {"ingest", "ingested", "analyze"}:
+            raise ValueError("Run the full analysis first")
+        for entry in read_json(safe_path(run, "sources.json", True))["entries"]:
+            folder = run / "analysis" / entry["id"]
+            if entry["kind"] != "video" or not entry.get("has_audio"):
+                continue
+            timeout = config["production_profile"]["timeout_seconds"]
+            proxy = safe_path(run, entry["proxy"], True)
+            if not (folder / "voicing.json").exists():
+                voicing_track(proxy, folder, timeout)
+                added.append(f"{entry['id']}:voicing")
+            if (folder / "words.json").exists() or read_json(safe_path(folder, "transcript.json", True)).get("status") != "done":
+                continue
+            wav = extract_wav(proxy, folder, timeout)
+            try:
+                word_pass(wav, folder, model, timeout)
+            finally:
+                wav.unlink(missing_ok=True)
+            added.append(f"{entry['id']}:words")
+    return {"run_id": run_id, "words_added": added}
 
 
 def analyze_clip(run, entry, model, timeout):
@@ -138,6 +234,7 @@ def analyze_clip(run, entry, model, timeout):
         if model:
             segments = transcribe(proxy, folder, model, timeout)
             transcript_status = "done"
+        voicing_track(proxy, folder, timeout)
         quiet = run_command(["ffmpeg", "-hide_banner", "-nostdin", "-i", str(proxy), "-vn", "-af",
                              "silencedetect=noise=-35dB:d=2", "-f", "null", "-"], timeout=timeout).stderr
         silences = parse_silences(quiet)
@@ -250,9 +347,10 @@ def main():
     signal.signal(signal.SIGTERM, interrupted)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--add-words", action="store_true", help="add word timing to an analyzed run")
     args = parser.parse_args()
     try:
-        print(json.dumps(analyze(args.run_id), indent=2, ensure_ascii=False))
+        print(json.dumps(add_words(args.run_id) if args.add_words else analyze(args.run_id), indent=2, ensure_ascii=False))
     except KeyboardInterrupt:
         parser.exit(130, "PAUSED: interrupted; inspect retained run state\n")
     except Exception as exc:

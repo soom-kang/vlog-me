@@ -51,6 +51,12 @@ description: 분석이 끝난 vlog-me run에서 재밌는 장면(fun)과 감성 
 - `range`·`cuts`는 원본(proxy) 기준 초입니다. `key_moment`·자막 `at`·효과음 `at`은 편집 후 기준 초입니다.
 - `key_moment`에는 기대 화면 still로 보여줄 가장 웃긴(또는 아름다운) 순간을 둡니다.
 - `preview: true`는 상위 5개 정도와 움직임이 중요한 후보에만 둡니다. 렌더 시간이 듭니다.
+- 연출 필드(편집 후 기준 초):
+  - `effects`: `[{"type": "punch_zoom"|"shake"|"flash"|"speedlines", "at": 4.5, "duration": 0.6, "strength": 1}]` 반전·리액션 순간에 씁니다.
+  - `inserts`: 사진 한 장은 `{"photo": "p053", "at": 1.0, "duration": 3.0, "position": "right"}`. "사진 엄청 찍음" 같은 장면은 `{"photos": ["p053", "p054", "p061"], "at": 1.0, "duration": 3.5, "interval": 0.3, "position": "center", "sfx": "sfx-shutter"}`처럼 여러 장을 셔터음과 함께 쌓습니다.
+  - `bgm_options`: 비교할 BGM 2–4곡(`vlog-sound` 참고)
+  - 자막 `sub`(감성 보조 문장), `sync`(`speech`/`manual`): [자막 가이드](../../../docs/caption-style.md)의 타이밍 절
+- 대사 자막의 시각은 리뷰 때 단어 단위 전사로 자동 보정됩니다. 오래된 run에 `words.json`이 없으면 먼저 `python3 scripts/analyze.py --run-id <run> --add-words`를 실행합니다.
 - 자막은 `k-variety-caption`, 음원은 `vlog-sound`를 따릅니다.
 - 예시의 `sfx-boing`·`bgm-walk`는 형식 예시입니다. `asset`에는 `python3 scripts/audio_library.py check`에서 `usable: true`인 ID만 씁니다.
 - 쓸 수 있는 음원이 없으면 효과음은 `{"name": "띠용", "at": 4.5}`처럼 `asset`을 빼고, BGM은 `"bgm": "가볍게 걷는 템포"`처럼 문자열로 계획만 적습니다.

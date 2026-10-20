@@ -7,7 +7,8 @@ const SAMPLES: Record<string, string> = {
   variety: '결국 원점', situation: '같은 골목 3바퀴째', sfx_text: '띠용?!', inner_voice: '(기억력 테스트 실패)',
   dialogue: '여기 아까 왔던 데 아니야?', mood: '그래도 바람은 좋았다', place: '제주 · 협재 해변',
 };
-const POSITION: Record<string, string> = {situation: 'upper_left', sfx_text: 'upper_right', place: 'lower_left'};
+const SUBS: Record<string, string> = {mood: 'golden hour', place: 'PHU QUOC'};
+const POSITION: Record<string, string> = {situation: 'upper_left', sfx_text: 'upper_right', place: 'lower_left', mood: 'center'};
 const BACKGROUNDS = ['#4a6d7c', '#7c5a4a', '#4f7c4a', '#6b4a7c'];
 
 const cells = Object.entries(registry.kinds).flatMap(([kind, spec]) =>
@@ -23,7 +24,7 @@ export const CaptionGallery = () => (
         transform: `scale(${SCALE})`, transformOrigin: 'top left', background: BACKGROUNDS[(index + Math.floor(index / COLUMNS)) % BACKGROUNDS.length]}}>
         <Sequence from={0} durationInFrames={90} layout="none">
           <Caption cue={{id: cell.preset, kind: cell.kind, preset: cell.preset, text: SAMPLES[cell.kind],
-            position: POSITION[cell.kind] ?? 'bottom', speaker: null, from: 0, duration: 90}} />
+            position: POSITION[cell.kind] ?? 'bottom', speaker: null, sub: SUBS[cell.kind] ?? null, from: 0, duration: 90}} />
         </Sequence>
         <div style={{position: 'absolute', right: 40, top: 960, fontSize: 48, color: 'rgba(255,255,255,0.7)',
           fontFamily: 'sans-serif'}}>{`${cell.group} · ${cell.kind} · ${cell.preset}`}</div>

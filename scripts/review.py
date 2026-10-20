@@ -7,6 +7,7 @@ review/vN/ folder with a static index.html (no scripts) that opens straight from
 `select` validates selection.json written from the user's chat answer and records it.
 """
 import argparse
+import copy
 import html
 import json
 import math
@@ -16,6 +17,7 @@ import shutil
 import signal
 
 import audio_library
+import caption_sync
 import common
 from common import digest, read_json, run_command, run_lock, safe_path, write_json
 import ingest
@@ -104,7 +106,22 @@ def validate_candidates(data, entries):
         length = edited_seconds(c, entry)
         _number(c.get("key_moment"), 0, length, f"{cid}: key_moment")
         for insert in plan.get("inserts", []):
-            photo = entries.get(insert.get("photo")) if isinstance(insert, dict) else None
+            if not isinstance(insert, dict):
+                raise ValueError(f"{cid}: inserts are objects")
+            if "photos" in insert:
+                names = insert["photos"]
+                if (not isinstance(names, list) or not production.STACK_PHOTOS[0] <= len(names) <= production.STACK_PHOTOS[1]
+                        or any(entries.get(n, {}).get("kind") != "photo" for n in names)):
+                    raise ValueError(f"{cid}: a photo stack needs {production.STACK_PHOTOS[0]}..{production.STACK_PHOTOS[1]} photo sources")
+                _number(insert.get("interval", 0.35), 0.1, 1.5, f"{cid}: stack interval")
+                if insert.get("position", "center") not in production.STACK_POSITIONS:
+                    raise ValueError(f"{cid}: stack position must be left, right or center")
+                if insert.get("sfx") is not None and not str(insert["sfx"]).startswith("sfx-"):
+                    raise ValueError(f"{cid}: stack sfx must be a registered sfx-* ID")
+                at = _number(insert.get("at"), 0, length - INSERT_MIN, f"{cid}: insert at")
+                _number(insert.get("duration"), INSERT_MIN, length - at + 0.01, f"{cid}: insert duration")
+                continue
+            photo = entries.get(insert.get("photo"))
             if not photo or photo["kind"] != "photo":
                 raise ValueError(f"{cid}: inserts need a photo source")
             at = _number(insert.get("at"), 0, length - INSERT_MIN, f"{cid}: insert at")
@@ -112,6 +129,12 @@ def validate_candidates(data, entries):
             if insert.get("position", "right") not in production.OVERLAY_POSITIONS:
                 raise ValueError(f"{cid}: insert position must be left or right")
             _number(insert.get("tilt", 0), -production.OVERLAY_MAX_TILT, production.OVERLAY_MAX_TILT, f"{cid}: insert tilt")
+        for effect in plan.get("effects", []):
+            if not isinstance(effect, dict) or effect.get("type") not in production.EFFECT_TYPES:
+                raise ValueError(f"{cid}: effect type must be one of {sorted(production.EFFECT_TYPES)}")
+            at = _number(effect.get("at"), 0, length - 0.1, f"{cid}: effect at")
+            _number(effect.get("duration"), 0.1, length - at + 0.01, f"{cid}: effect duration")
+            _number(effect.get("strength", 1), 0.5, 2, f"{cid}: effect strength")
         mutes = plan.get("mute", [])
         if mutes and entry["kind"] != "video":
             raise ValueError(f"{cid}: only video candidates can mute original sound")
@@ -134,6 +157,11 @@ def validate_candidates(data, entries):
             if "asset" in sfx and not re.fullmatch(audio_library.ASSET_ID, str(sfx["asset"])) or str(sfx.get("asset", "sfx-")).startswith("bgm-"):
                 raise ValueError(f"{cid}: sfx asset must be a registered sfx-* ID")
             _number(sfx.get("gain_db", -6), -40, 0, f"{cid}: sfx gain_db")
+        options = plan.get("bgm_options")
+        if options is not None and (not isinstance(options, list) or not 2 <= len(options) <= 4 or len(set(options)) != len(options)
+                                    or not all(isinstance(o, str) and re.fullmatch(audio_library.ASSET_ID, o) and o.startswith("bgm-")
+                                               for o in options)):
+            raise ValueError(f"{cid}: bgm_options lists 2..4 different bgm-* IDs to compare")
         bgm = plan.get("bgm")
         if isinstance(bgm, dict):
             if not re.fullmatch(audio_library.ASSET_ID, str(bgm.get("asset"))) or not bgm["asset"].startswith("bgm-"):
@@ -151,6 +179,8 @@ def used_audio(candidates):
     for candidate in candidates:
         plan = candidate["plan"]
         ids |= {s["asset"] for s in plan.get("sfx", []) if s.get("asset")}
+        ids |= {i["sfx"] for i in plan.get("inserts", []) if i.get("sfx")}
+        ids |= set(plan.get("bgm_options", []))
         if isinstance(plan.get("bgm"), dict):
             ids.add(plan["bgm"]["asset"])
     return sorted(ids)
@@ -205,7 +235,22 @@ def audio_cues(candidate, entry, total, staged, speech):
         db = sfx.get("gain_db", -6)
         cues.append({"id": f"sfx-{index}", "src": staged[sfx["asset"]]["src"], "from": start, "duration": frames,
                      "gain": [[0, db], [frames - 1, db]]})
+    for index, insert in enumerate(plan.get("inserts", [])):
+        if not insert.get("sfx") or "photos" not in insert:
+            continue
+        step, at = stack_interval(insert), round(insert["at"] * FPS)
+        for shot in range(len(insert["photos"])):
+            shot_at = at + shot * step
+            if shot_at >= total - 1:
+                break
+            frames = max(2, min(staged[insert["sfx"]]["frames"], total - shot_at))
+            cues.append({"id": f"stack-{index}-{shot}", "src": staged[insert["sfx"]]["src"], "from": shot_at,
+                         "duration": frames, "gain": [[0, -10], [frames - 1, -10]]})
     return cues
+
+
+def stack_interval(insert):
+    return max(3, min(45, round(insert.get("interval", 0.35) * FPS)))
 
 
 def render_props(candidate, entry, staged=None, speech=(), photos=None):
@@ -230,15 +275,23 @@ def render_props(candidate, entry, staged=None, speech=(), photos=None):
         start = min(round(caption["at"] * FPS), total - 1)
         captions.append({"id": f"cap-{index}", "kind": caption["kind"], "preset": production.validate_caption_text(caption, False),
                          "text": caption["text"], "position": caption.get("position", "bottom"),
-                         "speaker": caption.get("speaker"), "from": start,
+                         "speaker": caption.get("speaker"), "sub": caption.get("sub"), "from": start,
                          "duration": max(1, min(round(caption["duration"] * FPS), total - start))})
     overlays = []
     for index, insert in enumerate(plan.get("inserts", [])):
         start = min(round(insert["at"] * FPS), total - 1)
-        overlays.append({"id": f"ins-{index}", "src": (photos or {})[insert["photo"]], "from": start,
-                         "duration": max(1, min(round(insert["duration"] * FPS), total - start)),
-                         "position": insert.get("position", "right"), "tilt": insert.get("tilt", 0)})
+        cue = {"id": f"ins-{index}", "from": start, "duration": max(1, min(round(insert["duration"] * FPS), total - start))}
+        if "photos" in insert:
+            cue |= {"style": "stack", "srcs": [(photos or {})[n] for n in insert["photos"]],
+                    "interval": stack_interval(insert), "position": insert.get("position", "center")}
+        else:
+            cue |= {"src": (photos or {})[insert["photo"]], "position": insert.get("position", "right"), "tilt": insert.get("tilt", 0)}
+        overlays.append(cue)
+    effects = [{"id": f"fx-{index}", "type": fx["type"], "from": min(round(fx["at"] * FPS), total - 1),
+                "duration": max(1, min(round(fx["duration"] * FPS), total - min(round(fx["at"] * FPS), total - 1))),
+                "strength": fx.get("strength", 1)} for index, fx in enumerate(plan.get("effects", []))]
     return {"kind": kind, "segments": segments, "zoom": plan.get("zoom", 1), "captions": captions, "overlays": overlays,
+            "effects": effects,
             "audio": audio_cues(candidate, entry, total, staged or {}, list(speech)),
             "durationInFrames": total, "keyFrame": min(round(candidate["key_moment"] * FPS), total - 1)}
 
@@ -248,7 +301,7 @@ def clock(seconds):
     return f"{int(seconds // 60):02d}:{seconds % 60:04.1f}"
 
 
-def card_html(candidate, entry, folder):
+def card_html(candidate, entry, folder, timing=()):
     e = html.escape
     cid = candidate["id"]
     plan = candidate["plan"]
@@ -272,14 +325,38 @@ def card_html(candidate, entry, folder):
                     (f" · {e(bgm['note'])}" if bgm.get("note") else ""))
     elif bgm:
         edit.append(f"BGM {e(bgm)} (음원 미지정, 계획만)")
-    edit += [f"사진 띄우기 {e(i['photo'])} {i['at']:.1f}s부터 {i['duration']:.1f}초 · {'오른쪽' if i.get('position', 'right') == 'right' else '왼쪽'}"
-             for i in plan.get("inserts", [])]
+    sides = {"right": "오른쪽", "left": "왼쪽", "center": "가운데"}
+    for i in plan.get("inserts", []):
+        if "photos" in i:
+            edit.append(f"사진 쌓기 {len(i['photos'])}장 {i['at']:.1f}s부터 {i.get('interval', 0.35):.2f}초 간격 · "
+                        f"{sides[i.get('position', 'center')]}" + (f" · 셔터 {e(i['sfx'])}" if i.get("sfx") else ""))
+        else:
+            edit.append(f"사진 띄우기 {e(i['photo'])} {i['at']:.1f}s부터 {i['duration']:.1f}초 · {sides[i.get('position', 'right')]}")
+    edit += [f"효과 {e(fx['type'])} {fx['at']:.1f}s · {fx['duration']:.1f}초" for fx in plan.get("effects", [])]
     edit += [f"원음 음소거 {clock(a)}–{clock(b)}" for a, b in plan.get("mute", [])]
     warnings = sound.sfx_warnings([{"asset": s.get("asset") or s["name"], "from": round(s["at"] * FPS)} for s in plan.get("sfx", [])])
     edit += [f"주의: {e(w)}" for w in warnings]
     edit += [e(n) for n in plan.get("notes", [])]
+    for note in timing:
+        first_line = e(note["text"].split("\n")[0])
+        if note["status"] == "synced":
+            how = "목소리 구간" if note.get("voiced") else "전사 시각(목소리 구간을 찾지 못함)"
+            edit.append(f"자막 타이밍 “{first_line}” {note['authored'][0]:.1f}s → {how} {note['spoken'][0]:.1f}–{note['spoken'][1]:.1f}s에 맞춤")
+        else:
+            edit.append(f"주의: 대사 자막 “{first_line}”을 전사에서 찾지 못해 작성한 시각을 그대로 씁니다")
     preview = (f'<video controls preload="metadata" src="{cid}/preview.mp4"></video>'
                if (folder / cid / "preview.mp4").is_file() else "")
+    options = plan.get("bgm_options", [])
+    if options:
+        library = {a["id"]: a for a in audio_library.load_library()["assets"]}
+        cells = []
+        for asset_id in options:
+            asset = library.get(asset_id, {})
+            origin = "추천 음원" if asset.get("origin") == "claude_search" else "저장된 음원"
+            clip = f"{cid}--{asset_id}/preview.mp4"
+            player = f'<video controls preload="none" src="{clip}"></video>' if (folder / clip).is_file() else ""
+            cells.append(f'<figure><figcaption>{e(origin)} · {e(asset.get("title", asset_id))} ({e(asset_id)})</figcaption>{player}</figure>')
+        preview += f'<h3>음악 비교: 같은 장면, 다른 BGM</h3><div class="audition">{"".join(cells)}</div>'
     dialogue = f'<p class="quote">“{e(candidate["dialogue"])}”</p>' if candidate.get("dialogue") else ""
     evidence = "".join(f"<li>{e(x)}</li>" for x in candidate.get("evidence", []))
     return f'''<article id="{cid}">
@@ -300,18 +377,22 @@ def source_times(candidate, entry):
     return [edited_to_source(candidate, t) for t in (0.0, max(0.0, key - 1.0), key, max(0.0, length - 0.05))]
 
 
-def page_html(run_id, version, candidates, entries, folder):
+def page_html(run_id, version, candidates, entries, folder, timing=None):
     groups = {}
     for candidate in candidates:
         groups.setdefault(candidate["source"], []).append(candidate)
     body = "".join(f'<h2>{e_id} · {html.escape(Path(entries[e_id]["original"]).name)}</h2>' +
-                   "".join(card_html(c, entries[e_id], folder) for c in items) for e_id, items in groups.items())
+                   "".join(card_html(c, entries[e_id], folder, (timing or {}).get(c["id"], ())) for c in items)
+                   for e_id, items in groups.items())
     fun = sum(c["tag"] == "fun" for c in candidates)
     share = production.caption_style_share({"captions": [x for c in candidates for x in c["plan"].get("captions", [])]})
     ratio = ("자막 비율: 스타일 자막 없음" if share["variety_share"] is None else
              f"자막 비율: 예능 {share['variety']} · 감성 {share['mood']} · 대사 {share['dialogue']} "
              f"(예능 {share['variety_share']:.0%}, 목표 {share['target']:.0%} 참고" +
              ("" if share["in_window"] else " · 목표 범위 밖") + ")")
+    variation = production.preset_warnings([x for c in candidates for x in c["plan"].get("captions", [])])
+    if variation:
+        ratio += " · 자막 variation: " + " / ".join(variation)
     return f'''<!doctype html>
 <html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>vlog-me · 후보 리뷰 v{version}</title>
@@ -327,7 +408,7 @@ header{{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12p
 .cols{{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}}@media (max-width:760px){{.cols{{grid-template-columns:1fr}}}}
 .frames{{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}}figure{{margin:0}}figure img{{width:100%;display:block;border-radius:4px}}
 figcaption{{font-size:12px;color:var(--muted)}}.expected,video{{width:100%;display:block;border-radius:8px;border:1px solid var(--line);margin-bottom:8px}}
-.quote{{margin:10px 0 0}}.why{{color:var(--muted);margin:6px 0 0}}.evidence{{font-size:13px;color:var(--muted);margin:4px 0 0;padding-left:18px}}
+.audition{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}.quote{{margin:10px 0 0}}.why{{color:var(--muted);margin:6px 0 0}}.evidence{{font-size:13px;color:var(--muted);margin:4px 0 0;padding-left:18px}}
 ul{{font-size:14px;padding-left:18px;margin:6px 0 0}}footer{{margin-top:12px;font-size:13px;color:var(--muted)}}code{{font-size:12px}}
 </style><main><h1>후보 리뷰 v{version}</h1>
 <p style="color:var(--muted);margin:0">{html.escape(run_id)} · 후보 {len(candidates)}개 (fun {fun} · mood {len(candidates) - fun}) · 기대 화면은 편집안대로 자막을 합성한 장면입니다. 등록된 음원을 지정한 BGM·효과음은 미리보기에 들어가고, 음원을 지정하지 않은 항목은 계획만 표시합니다.<br>{html.escape(ratio)}</p>
@@ -362,9 +443,13 @@ def build(run_id):
         state = {**previous, "stage": "review", "status": "running", "next_action": "wait for review rendering"}
         write_json(run / "state.json", state, replace=True)
         try:
-            jobs = []
-            for candidate in candidates:
-                entry = entries[candidate["source"]]
+            jobs, timed, timing = [], [], {}
+            for authored in candidates:
+                entry = entries[authored["source"]]
+                # Dialogue captions are re-timed to the spoken words; candidates.json keeps the authored values.
+                candidate, timing[authored["id"]] = caption_sync.sync_candidate(authored, entry, caption_sync.load_words(run, entry),
+                                                                                 caption_sync.load_voicing(run, entry))
+                timed.append(candidate)
                 (folder / candidate["id"]).mkdir()
                 proxy = safe_path(run, entry["proxy"], True)
                 for index, t in enumerate(source_times(candidate, entry), start=1):
@@ -374,16 +459,25 @@ def build(run_id):
                                      "-i", str(proxy), "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "4", out], timeout=timeout)
                     else:
                         run_command(["sips", "-Z", "480", str(proxy), "--out", out], timeout=timeout)
-                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry),
-                                                                             {k: v["proxy"] for k, v in entries.items()}),
+                photos = {k: v["proxy"] for k, v in entries.items()}
+                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry), photos),
                              "preview": bool(candidate.get("preview"))})
+                # Music audition: the same edit once per BGM option, compared by ear before choosing.
+                for asset_id in candidate["plan"].get("bgm_options", []):
+                    variant = copy.deepcopy(candidate)
+                    gain = candidate["plan"]["bgm"].get("gain_db", sound.BGM_BASE_DB) if isinstance(candidate["plan"].get("bgm"), dict) else sound.BGM_BASE_DB
+                    variant["plan"]["bgm"] = {"asset": asset_id, "gain_db": gain}
+                    (folder / f"{candidate['id']}--{asset_id}").mkdir()
+                    jobs.append({"id": f"{candidate['id']}--{asset_id}", "still": False, "preview": True,
+                                 "props": render_props(variant, entry, staged, speech_segments(run, entry), photos)})
             write_json(folder / "render-input.json", {"run_id": run_id, "version": version, "jobs": jobs})
             run_command(["node", str(common.ROOT / "renderer/scripts/review.mjs"), run_id, str(version), str(run)], timeout=timeout)
             for job in jobs:
-                safe_path(folder, f"{job['id']}/expected.jpg", True)
+                if job.get("still", True):
+                    safe_path(folder, f"{job['id']}/expected.jpg", True)
                 if job["preview"]:
                     safe_path(folder, f"{job['id']}/preview.mp4", True)
-            (folder / "index.html").write_text(page_html(run_id, version, candidates, entries, folder), encoding="utf-8")
+            (folder / "index.html").write_text(page_html(run_id, version, timed, entries, folder, timing), encoding="utf-8")
             production.require_production_scope()
             state.update(stage="reviewed", status="pending", review_version=version,
                          candidates_sha256=digest(candidates_path),

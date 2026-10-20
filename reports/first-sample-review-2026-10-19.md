@@ -161,3 +161,21 @@
 - `render/v3/final.mp4`: 1707프레임, 56.9초, -14.16 LUFS, -2.1 dBTP, 체크 8개 PASS, 200.9초 소요. 크레딧 첫 줄 "Music: Serene View - Arulo (Mixkit)"
 - 렌더 후 `production_render`·`audio_search`·`audio_downloads`를 모두 false로 돌림
 - 사람 시청·청취와 플랫폼 claim 확인은 NOT_RUN
+
+## 피드백 반영 렌더 (render/v4, 2026-10-20)
+
+사용자 피드백(2026-10-20): 마지막 대사 자막이 말보다 한참 먼저 나옴, 자막·효과음 variation 부족(특히 상단 노란 박스), 재미 연출 아쉬움(바람에 머리카락 장면), BGM은 추천+저장 곡을 비교해 고르고 싶음, 감성 자막의 미감 강화, "찰칵찰칵" 장면은 사진이 여러 장 쌓이게. 남자 출연자 편집은 자연스러움.
+
+| 피드백 | 원인·조치 | 결과 |
+| --- | --- | --- |
+| 대사 자막 타이밍 | 거리 소음 영상에서 Whisper 시각이 약 2초 어긋남(같은 말이 창에 따라 25.98·27.0·27.5초). 단어 단위 전사 + 목소리 구간(음높이 주기성)으로 자막을 실제 목소리에 맞춤 | 호텔 대사 3.7초 → 목소리 구간 5.8–8.3초(편집 기준). 컷을 넘는 말도 한 자막 |
+| variation | 자막 preset 14 → 33종(상단 박스 9종), 같은 preset 반복 경고 | 상단 박스: box-sky·sticker·ribbon·stamp 등으로 장면별 교체 |
+| 재미 연출 | 효과(punch_zoom·shake·flash·speedlines)와 예능 화법 가이드 | 머리카락 장면: "푸꾸옥 바람 특보 발령" → 휘이잉+speedlines → "앞이 안 보여요"+punch_zoom → "(바람: 일부러 그런 거 아님)" |
+| 감성 미감 | editorial·letter-fade·film-line·place-editorial preset, 영문 부제(`sub`), 폰트 2종 추가(Nanum Pen Script, Cormorant Garamond) | 오프닝 PHU QUOC, golden hour, before the night 등 |
+| 사진 쌓기 | `inserts[].photos` 사진 쌓기와 셔터음 | 그네 사진 8장(p165–p193, 여자 출연자만)이 0.28초 간격으로 쌓임 |
+| 음악 비교 | `bgm_options` 비교 미리보기(review v14) | 사용자 선택: 낮 Owies Ukulele, 엔딩 Clumsy Daddy |
+
+- 다운로드(사용자 승인): Mixkit 효과음 15개(약 5.2MB), Mixkit BGM 3곡(Owies Ukulele·Summer Fun·Clumsy Daddy, 약 12.5MB), OFL 폰트 2종(약 5.1MB, Gowun Dodum은 예상보다 커서 받지 않음). 이후 audio_search·audio_downloads·production_render는 false
+- 리뷰: v12는 c03 미리보기 delayRender 멈춤으로 실패해 보존. 리뷰 렌더러에 재시도를 넣고 v13·v14 생성(v13은 Whisper 시각만 사용, v14는 목소리 구간 사용). v15는 렌더용(미리보기 생략)
+- 렌더 `render/v4/final.mp4`: 1707프레임, 56.9초, -14.22 LUFS, -1.66 dBTP, QA 8개 PASS, 205초
+- 확인할 점: 예능 자막 65%(목표 80% 범위 밖, 억지로 늘리지 않음). Owies Ukulele는 원곡이 작아(-19 LUFS) BGM gain 상한 -6 dB에서 이전 곡보다 약 3 LU 작음. 사람 시청·청취는 NOT_RUN
