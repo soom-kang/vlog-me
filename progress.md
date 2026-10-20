@@ -5,7 +5,7 @@
 - Last Updated: 2026-10-19 Asia/Seoul
 - Active Feature: first-real-sample. `sources/vietnam-20260527/`로 첫 실제 sample을 진행 중이며 최종 렌더 완료(`render/v3/final.mp4`, 56.9초, QA PASS). 노을 BGM은 Mixkit Serene View로 교체(다운로드 1건, 사용자 위임). 사용자 시청 대기. 근거: reports/first-sample-review-2026-10-19.md
 - 단위 1–8은 완료(합성 fixture 검증)
-- 2026-10-20 첫 sample 피드백 반영 중: 대사 자막 단어 단위 자동 타이밍, 자막 preset 33종(상단 박스 9종, 감성 6종)과 반복 경고, 효과(punch_zoom·shake·flash·speedlines), 사진 쌓기, BGM 비교 미리보기. 폰트 2종(Nanum Pen Script, Cormorant Garamond)·Mixkit 효과음 15개·BGM 3곡을 승인 후 등록. 목소리 구간 기반 자막 타이밍도 추가했습니다. 사용자가 리뷰 v14에서 BGM(낮 Owies Ukulele, 엔딩 Clumsy Daddy)을 골라 `render/v4/final.mp4`(56.9초, QA PASS)를 만들었고, 사용자 시청 대기 중입니다.
+- 2026-10-20 첫 sample 피드백 반영 중: 대사 자막 단어 단위 자동 타이밍, 자막 preset 33종(상단 박스 9종, 감성 6종)과 반복 경고, 효과(punch_zoom·shake·flash·speedlines), 사진 쌓기, BGM 비교 미리보기. 폰트 2종(Nanum Pen Script, Cormorant Garamond)·Mixkit 효과음 15개·BGM 3곡을 승인 후 등록. 목소리 구간 기반 자막 타이밍도 추가했습니다. 사용자가 리뷰 v14에서 BGM(낮 Owies Ukulele, 엔딩 Clumsy Daddy)을 골라 `render/v4/final.mp4`(56.9초, QA PASS)를 만들었고, 사용자가 2026-10-20 승인했습니다("lgtm"). 다음은 여행 전체 본편입니다.
 - 2026-10-20 harness 수정: `./init.sh`가 production에서도 PASS(124개). doctor가 phase·전사 모델·등록 음원을 실제로 보고하고, 테스트는 live 설정 대신 `config/setup.example.json`과 임시 폴더를 씁니다. 합성 렌더(`smoke-render.sh`)는 setup phase 전용입니다.
 - Scope: production (source_roots: sources/vietnam-20260527). audio_search·audio_downloads·production_render false. 합성 run·합성 scope 테스트는 setup 설정으로 되돌린 뒤 실행
 - 이번 변경: scripts/analyze.py contact sheet `eof_action=pass`(1초 미만 클립 분석 실패 수정), scripts/render_prod.py loudnorm 뒤 alimiter(조용한 현장음에서 true peak QA 실패 수정), 후보 `inserts`(사진 오버레이)·`mute`(원음 구간 음소거) 기능과 tests/test_inserts.py

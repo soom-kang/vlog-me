@@ -178,4 +178,4 @@
 - 다운로드(사용자 승인): Mixkit 효과음 15개(약 5.2MB), Mixkit BGM 3곡(Owies Ukulele·Summer Fun·Clumsy Daddy, 약 12.5MB), OFL 폰트 2종(약 5.1MB, Gowun Dodum은 예상보다 커서 받지 않음). 이후 audio_search·audio_downloads·production_render는 false
 - 리뷰: v12는 c03 미리보기 delayRender 멈춤으로 실패해 보존. 리뷰 렌더러에 재시도를 넣고 v13·v14 생성(v13은 Whisper 시각만 사용, v14는 목소리 구간 사용). v15는 렌더용(미리보기 생략)
 - 렌더 `render/v4/final.mp4`: 1707프레임, 56.9초, -14.22 LUFS, -1.66 dBTP, QA 8개 PASS, 205초
-- 확인할 점: 예능 자막 65%(목표 80% 범위 밖, 억지로 늘리지 않음). Owies Ukulele는 원곡이 작아(-19 LUFS) BGM gain 상한 -6 dB에서 이전 곡보다 약 3 LU 작음. 사람 시청·청취는 NOT_RUN
+- 확인할 점: 예능 자막 65%(목표 80% 범위 밖, 억지로 늘리지 않음). Owies Ukulele는 원곡이 작아(-19 LUFS) BGM gain 상한 -6 dB에서 이전 곡보다 약 3 LU 작음. 사람 시청은 사용자 승인 2026-10-20("lgtm")
