@@ -1,6 +1,7 @@
 import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from '../gain.mjs';
+import {BlurBackdrop} from './BlurBackdrop';
 import {Caption, type CaptionCue} from './Captions';
 import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
 import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
@@ -8,7 +9,7 @@ import {PhotoStack, type PhotoStackCue} from './PhotoStack';
 
 // Renders timeline v2 (scripts/production.py validates it before every render).
 type Clip = {id: string; source: string; from: number; duration: number; in?: number; speed?: number; zoom?: number;
-  tag: string; transition?: string};
+  tag: string; transition?: string; aspect?: number};
 type AudioCue = {id: string; kind: string; clip?: string; source?: string; from: number; duration: number; in?: number;
   gain_db: number[][]};
 type Asset = {src: string; kind: 'video' | 'image' | 'audio'};
@@ -29,15 +30,21 @@ const ClipVisual = ({clip, asset}: {clip: Clip; asset: Asset}) => {
     // Photos drift slowly toward the planned zoom.
     const scale = interpolate(frame, [0, clip.duration], [1, zoom], {extrapolateRight: 'clamp'});
     return (
-      <AbsoluteFill style={{opacity, transform: `scale(${scale})`}}>
-        <Img src={staticFile(asset.src)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
+      <AbsoluteFill style={{opacity}}>
+        <BlurBackdrop kind="image" src={asset.src} />
+        <AbsoluteFill style={{transform: `scale(${scale})`}}>
+          <Img src={staticFile(asset.src)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
+        </AbsoluteFill>
       </AbsoluteFill>
     );
   }
   return (
-    <AbsoluteFill style={{opacity, transform: `scale(${zoom})`}}>
-      <Video src={staticFile(asset.src)} trimBefore={clip.in ?? 0} playbackRate={clip.speed ?? 1} muted
-        style={{width: '100%', height: '100%'}} objectFit="contain" />
+    <AbsoluteFill style={{opacity}}>
+      <BlurBackdrop kind="video" src={asset.src} aspect={clip.aspect} trimBefore={clip.in ?? 0} playbackRate={clip.speed ?? 1} />
+      <AbsoluteFill style={{transform: `scale(${zoom})`}}>
+        <Video src={staticFile(asset.src)} trimBefore={clip.in ?? 0} playbackRate={clip.speed ?? 1} muted
+          style={{width: '100%', height: '100%'}} objectFit="contain" />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

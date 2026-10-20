@@ -1,12 +1,13 @@
 import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from '../gain.mjs';
+import {BlurBackdrop} from './BlurBackdrop';
 import {Caption, type CaptionCue} from './Captions';
 import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
 import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
 import {PhotoStack, type PhotoStackCue} from './PhotoStack';
 
-type Segment = {src: string; trimBefore: number; frames: number; playbackRate: number; gain?: number[][]};
+type Segment = {src: string; trimBefore: number; frames: number; playbackRate: number; gain?: number[][]; aspect?: number};
 type AudioCue = {id: string; src: string; from: number; duration: number; gain: number[][]};
 export type CandidateProps = {
   kind: 'video' | 'image'; segments: Segment[]; zoom: number; captions: CaptionCue[]; audio?: AudioCue[];
@@ -35,15 +36,22 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
         return (
           <Sequence key={index} from={from} durationInFrames={segment.frames} name={`cut-${index}`}>
             {kind === 'video' ? (
-              <AbsoluteFill style={{transform: `scale(${zoom})`}}>
-                <Video src={staticFile(segment.src)} trimBefore={segment.trimBefore} playbackRate={segment.playbackRate}
-                  volume={segment.gain ? (f) => gainAt(f, segment.gain as number[][]) : 1}
-                  style={{width: '100%', height: '100%'}} objectFit="contain" />
-              </AbsoluteFill>
+              <>
+                <BlurBackdrop kind="video" src={segment.src} aspect={segment.aspect} trimBefore={segment.trimBefore}
+                  playbackRate={segment.playbackRate} />
+                <AbsoluteFill style={{transform: `scale(${zoom})`}}>
+                  <Video src={staticFile(segment.src)} trimBefore={segment.trimBefore} playbackRate={segment.playbackRate}
+                    volume={segment.gain ? (f) => gainAt(f, segment.gain as number[][]) : 1}
+                    style={{width: '100%', height: '100%'}} objectFit="contain" />
+                </AbsoluteFill>
+              </>
             ) : (
-              <Zoomed zoom={zoom} durationInFrames={durationInFrames}>
-                <Img src={staticFile(segment.src)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
-              </Zoomed>
+              <>
+                <BlurBackdrop kind="image" src={segment.src} />
+                <Zoomed zoom={zoom} durationInFrames={durationInFrames}>
+                  <Img src={staticFile(segment.src)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
+                </Zoomed>
+              </>
             )}
           </Sequence>
         );

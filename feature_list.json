@@ -173,6 +173,16 @@
       ],
       "status": "completed",
       "evidence": "tests/test_feedback_features.py; reports/caption-gallery.jpg; reports/first-sample-review-2026-10-19.md (render/v4 QA PASS); human viewing NOT_RUN"
+    },
+    {
+      "id": "main-edit-vietnam",
+      "name": "Main edit: Phu Quoc day (sources/vietnam-20260527)",
+      "description": "Full-folder candidates in the sample style; male performer and companion hints excluded",
+      "dependencies": [
+        "sample-feedback-1"
+      ],
+      "status": "in-progress",
+      "evidence": "work/prod-20261019-075246-e19437c2 review/v18 (17 candidates, ~87s); user adopted all 17 on 2026-10-20 (selected/pending); vertical clips use baked blur-fill proxies (review.filled, tests/test_feedback_features.py); assemble/render NOT_RUN, awaiting request"
     }
   ]
 }

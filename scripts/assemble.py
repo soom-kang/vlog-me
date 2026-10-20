@@ -65,6 +65,7 @@ def build_timeline(run, kept, entries, library):
                 frames = max(1, round((cut_out - cut_in) * FPS / speed))
                 clip = {"id": f"{cid}-k{index}", "source": entry["id"], "from": cursor, "duration": frames,
                         "in": round(cut_in * FPS), "speed": speed, "zoom": plan.get("zoom", 1), "tag": candidate["tag"],
+                        "aspect": review.display_aspect(entry),
                         "transition": plan.get("transition", "cut") if index == 0 else "cut"}
                 clips.append(clip)
                 if entry.get("has_audio", True):

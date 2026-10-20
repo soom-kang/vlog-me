@@ -181,6 +181,27 @@ class FeedbackRunTests(LongformFixture):
         self.assertEqual([a["from"] - shutters[0]["from"] for a in shutters], [0, 6])
         self.assertNotIn("sfx-shutter repeats", (self.run / "assemble-report.md").read_text(encoding="utf-8"))
 
+    def test_vertical_sources_carry_aspect_for_blurred_backdrop(self):
+        self.assertAlmostEqual(review.display_aspect({"display_size": [1080, 1920]}), 0.5625)
+        self.assertAlmostEqual(review.display_aspect({}), 16 / 9, places=3)
+        self.review_and_select(ADOPT_TWO, candidates=self.candidates())
+        assemble.assemble(self.run_id)
+        clip = common.read_json(self.run / "timeline.json")["clips"][1]
+        self.assertIn("aspect", clip)
+
+    def test_vertical_video_gets_a_blurred_fill_proxy(self):
+        self.assertIn("crop=608:1080:656:0", review.fill_filter(0.5625))
+        self.assertIn("crop=1920:822:0:129", review.fill_filter(2.3333))
+        entry = review.read_entries(self.run)["v001"]
+        self.assertIs(review.filled(self.run, entry), entry)
+        tall = entry | {"id": "v009", "display_size": [1080, 1920], "has_audio": True}
+        with patch.object(review, "run_command", side_effect=self.media):
+            filled = review.filled(self.run, tall)
+        self.assertEqual((filled["proxy"], filled["display_size"]), ("proxy/fill/v009.mp4", [16, 9]))
+        self.assertTrue((self.run / "proxy/fill/v009.mp4").is_file())
+        with patch.object(review, "run_command", side_effect=AssertionError("cached")):
+            self.assertEqual(review.filled(self.run, tall)["proxy"], "proxy/fill/v009.mp4")
+
     def test_bad_audition_and_stack_fields_rejected(self):
         entries = review.read_entries(self.run)
         for change in [lambda p: p.update(bgm_options=["bgm-walk"]), lambda p: p.update(bgm_options=["bgm-walk", "sfx-boing"]),

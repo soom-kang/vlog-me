@@ -9,6 +9,7 @@ review/vN/ folder with a static index.html (no scripts) that opens straight from
 import argparse
 import copy
 import html
+import os
 import json
 import math
 from pathlib import Path
@@ -249,6 +250,48 @@ def audio_cues(candidate, entry, total, staged, speech):
     return cues
 
 
+def display_aspect(entry):
+    # Picture aspect (width / height) after rotation; the renderer blurs a copy into any side bars.
+    width, height = entry.get("display_size") or [16, 9]
+    return round(width / height, 4) if height else 16 / 9
+
+
+WIDE = 16 / 9
+
+
+def fill_filter(aspect):
+    # Proxies are padded to 1920x1080. Replace the bars with a blurred, slightly darker copy of the picture.
+    if aspect < WIDE:
+        width = int(round(1080 * aspect / 2)) * 2
+        crop, background, foreground = f"crop={width}:1080:{(1920 - width) // 2}:0", "scale=1920:-2,crop=1920:1080", "scale=-2:1080"
+    else:
+        height = int(round(1920 / aspect / 2)) * 2
+        crop, background, foreground = f"crop=1920:{height}:0:{(1080 - height) // 2}", "scale=-2:1080,crop=1920:1080", "scale=1920:-2"
+    return (f"[0:v]{crop},split[a][b];[a]{background},boxblur=40:2,eq=brightness=-0.08:saturation=1.2[bg];"
+            f"[b]{foreground}[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1,format=yuv420p,"
+            "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv[v]")
+
+
+def filled(run, entry, timeout=3600):
+    """Entry whose proxy has blurred fill instead of black bars (vertical or very wide clips). Cached in proxy/fill/."""
+    if entry["kind"] != "video" or abs(display_aspect(entry) - WIDE) <= 0.05:
+        return entry
+    folder = run / "proxy" / "fill"
+    folder.mkdir(exist_ok=True)
+    final = safe_path(folder, f"{entry['id']}.mp4")
+    if not final.exists():
+        partial = safe_path(folder, f"{entry['id']}.partial.mp4")
+        if partial.exists():
+            raise ValueError(f"Existing {partial.name} requires inspection; no automatic overwrite")
+        command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-i", str(safe_path(run, entry["proxy"], True)),
+                   "-filter_complex", fill_filter(display_aspect(entry)), "-map", "[v]", "-c:v", "h264_videotoolbox", "-b:v", "12M"]
+        command += ["-map", "0:a:0", "-c:a", "copy"] if entry.get("has_audio") else ["-an"]
+        run_command(command + ["-movflags", "+faststart", str(partial)], timeout=timeout)
+        os.link(partial, final)
+        partial.unlink()
+    return {**entry, "proxy": str(final.relative_to(run.absolute())), "display_size": [16, 9], "fill_of": entry["proxy"]}
+
+
 def stack_interval(insert):
     return max(3, min(45, round(insert.get("interval", 0.35) * FPS)))
 
@@ -259,7 +302,7 @@ def render_props(candidate, entry, staged=None, speech=(), photos=None):
     if entry["kind"] == "video":
         speed = plan.get("speed", 1)
         mutes = sound.map_mutes(plan["cuts"], speed, plan.get("mute", []))
-        segments = [{"src": entry["proxy"], "trimBefore": round(start * FPS),
+        segments = [{"src": entry["proxy"], "trimBefore": round(start * FPS), "aspect": display_aspect(entry),
                      "frames": max(1, round((end - start) * FPS / speed)), "playbackRate": speed}
                     for start, end in plan["cuts"]]
         for segment, ranges in zip(segments, mutes):
@@ -450,6 +493,7 @@ def build(run_id):
                 candidate, timing[authored["id"]] = caption_sync.sync_candidate(authored, entry, caption_sync.load_words(run, entry),
                                                                                  caption_sync.load_voicing(run, entry))
                 timed.append(candidate)
+                entry = filled(run, entry, timeout)
                 (folder / candidate["id"]).mkdir()
                 proxy = safe_path(run, entry["proxy"], True)
                 for index, t in enumerate(source_times(candidate, entry), start=1):

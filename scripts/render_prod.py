@@ -35,7 +35,10 @@ def chunk_plan(duration_frames, chunk_seconds):
 
 def render_props(run, timeline, entries, staged):
     assets = {}
+    used = {clip["source"] for clip in timeline["clips"]}
     for entry in entries.values():
+        if entry["id"] in used:
+            entry = review.filled(run, entry)
         assets[entry["id"]] = {"src": entry["proxy"], "kind": "video" if entry["kind"] == "video" else "image"}
     for asset_id, info in staged.items():
         assets[asset_id] = {"src": info["src"], "kind": "audio"}
