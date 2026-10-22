@@ -161,7 +161,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/vlog-workflow",
       "files": {
-        "SKILL.md": "4012dfa96875c675affc4954d2d4dbe97b6e99e7c3dabdc965c61f89d94d9573"
+        "SKILL.md": "e06e1b47879c053328810fa062c476c998dd38ca9900883477ac2d9e08e00a70"
       }
     },
     {
@@ -172,18 +172,18 @@
       "scope": "project-custom",
       "path": ".claude/skills/vlog-scout",
       "files": {
-        "SKILL.md": "26bdcbcde1f8c5e33603de3ee396fdd824f5fce3b21a6e495012b97e85ca0f20"
+        "SKILL.md": "dd64fdbb5159d3bc27535f21523155fd63b96b4f9d76d5ca06b265a3b64f1c0d"
       }
     },
     {
-      "name": "k-variety-caption",
+      "name": "k-mood-caption",
       "source": "vlog-me project (written in this repository)",
       "ref": null,
-      "version": "1",
+      "version": "2",
       "scope": "project-custom",
-      "path": ".claude/skills/k-variety-caption",
+      "path": ".claude/skills/k-mood-caption",
       "files": {
-        "SKILL.md": "903ef89c9682ec664774344682732fef5078ab7459d2fee5117b475feb3d3009"
+        "SKILL.md": "28433ff442e7348f01adcf19e4c8429e65c8e2ef289538a2d07e1f6d038615f1"
       }
     },
     {
@@ -194,7 +194,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/vlog-sound",
       "files": {
-        "SKILL.md": "a87022b03bbf04ae62825e4859ce7ace40cc7d2aee200b4edd02397a485728c9"
+        "SKILL.md": "f26bc92e9f82fe3bcd39411a54aafae0622541049bcb7a5d985ac1d19f969a57"
       }
     }
   ]

@@ -6,10 +6,10 @@ disable-model-invocation: true
 
 # vlog-workflow
 
-여행 영상·사진을 재미 60 · 감성 40의 YouTube 롱폼 브이로그로 편집하는 흐름을 이어 갑니다. 이 Skill은 순서와 확인 지점을 정합니다. 판단 기준은 아래 Skill과 문서에 있습니다.
+여행 영상·사진을 감성 90 · 예능 10의 YouTube 롱폼 브이로그로 편집하는 흐름을 이어 갑니다. 이 Skill은 순서와 확인 지점을 정합니다. 판단 기준은 아래 Skill과 문서에 있습니다.
 
 - 후보 선별: `vlog-scout`
-- 자막: `k-variety-caption`, [docs/caption-style.md](../../../docs/caption-style.md)
+- 자막: `k-mood-caption`, [docs/caption-style.md](../../../docs/caption-style.md)
 - 사운드: `vlog-sound`, [docs/sound-guide.md](../../../docs/sound-guide.md)
 - 명령과 실패 처리: [docs/workflow.md](../../../docs/workflow.md)
 
@@ -29,7 +29,7 @@ disable-model-invocation: true
 | ingested/pending | 분석 | `python3 scripts/analyze.py --run-id <run>` | 없음 |
 | analyzed/pending | 후보 선별과 카드 생성 | `vlog-scout`를 따라 `candidates.json` 작성 → `python3 scripts/review.py build --run-id <run>` | **필수.** 리뷰 페이지를 열어 달라고 안내하고 답을 기다림 |
 | reviewed/pending | 사용자 답을 `selection.json`으로 기록 | `python3 scripts/review.py select --run-id <run>` | 답이 모호하면 다시 질문 |
-| selected/pending, `caption_edit` 있음 | 자막 수정 → 리뷰 다시 생성 | `k-variety-caption` → `review.py build` → 다시 select | **필수** |
+| selected/pending, `caption_edit` 있음 | 자막 수정 → 리뷰 다시 생성 | `k-mood-caption` → `review.py build` → 다시 select | **필수** |
 | selected/pending | 조립 | `python3 scripts/assemble.py --run-id <run>` | `assemble-report.md`의 확인할 점 보고 |
 | assembled/pending | 렌더 | `python3 scripts/render_prod.py --run-id <run>` | 사용자가 렌더를 요청했을 때만. `production_render: true` 필요 |
 | render/failed·paused | 같은 명령으로 재개 | `render_prod.py` 다시 실행 | 실패 원인 보고 |

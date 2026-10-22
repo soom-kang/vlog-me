@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 import production
 
-CUSTOM = ["vlog-workflow", "vlog-scout", "k-variety-caption", "vlog-sound"]
+CUSTOM = ["vlog-workflow", "vlog-scout", "k-mood-caption", "vlog-sound"]
 
 
 def frontmatter(name):
@@ -54,10 +54,22 @@ class SkillTests(unittest.TestCase):
             production.validate_caption_text(caption, require_preset=False)
 
     def test_caption_skill_limits_match_registry(self):
-        body = frontmatter("k-variety-caption")[1]
+        body = frontmatter("k-mood-caption")[1]
         registry = production.CAPTION_REGISTRY["kinds"]
         self.assertIn(f"받아치기 {registry['variety']['max_chars']}자", body)
         self.assertIn(f"효과 글자 {registry['sfx_text']['max_chars']}자", body)
+        self.assertIn(f"내레이션 {registry['narration']['max_chars']}자", body)
+        self.assertIn(f"{registry['narration']['max_lines']}줄", body)
+
+    def test_no_stale_ratio_strings(self):
+        files = ["CLAUDE.md", "README.md", "docs/caption-style.md", "docs/workflow.md", "config/production.example.json"]
+        files += [f".claude/skills/{name}/SKILL.md" for name in CUSTOM]
+        for name in files:
+            body = (PROJECT_ROOT / name).read_text(encoding="utf-8")
+            for stale in ["예능 80", "variety 80", "fun 60", "재미 60", "k-variety-caption"]:
+                with self.subTest(file=name, stale=stale):
+                    self.assertNotIn(stale, body)
+
 
 
 if __name__ == "__main__":
