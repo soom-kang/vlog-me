@@ -175,8 +175,8 @@ def assemble(run_id):
         write_json(target, timeline)
         share = production.caption_style_share(timeline)
         report = [f"# 조립 결과 · {run_id}", "", f"- 길이 {duration / FPS:.1f}초 · 클립 {len(timeline['clips'])}개 · 후보 {len(kept)}개",
-                  f"- 자막: 예능 {share['variety']} · 감성 {share['mood']} · 대사 {share['dialogue']}"
-                  + (f" (예능 {share['variety_share']:.0%})" if share["variety_share"] is not None else ""),
+                  f"- 자막: 감성 {share['mood']} · 예능 {share['variety']} · 대사 {share['dialogue']}"
+                  + (f" (감성 {share['mood_share']:.0%})" if share["mood_share"] is not None else ""),
                   f"- 음원: {', '.join(sorted(library)) or '없음'}", "", "## 확인할 점"]
         report += [f"- {w}" for w in warnings] or ["- 없음"]
         (run / "assemble-report.md").write_text("\n".join(report) + "\n", encoding="utf-8")

@@ -182,9 +182,10 @@ class TimelineV2Tests(unittest.TestCase):
     def test_caption_share_is_reported_not_enforced(self):
         timeline, _ = edit_fixture()
         share = production.caption_style_share(timeline)
-        self.assertEqual((share["variety"], share["mood"], share["variety_share"]), (4, 1, 0.8))
+        self.assertEqual((share["mood"], share["variety"], share["mood_share"]), (1, 4, 0.2))
         timeline["captions"] = [dict(timeline["captions"][4], id=f"m{i}") for i in range(3)]
-        self.assertEqual(production.caption_style_share(timeline)["variety_share"], 0.0)
+        self.assertEqual(production.caption_style_share(timeline)["mood_share"], 1.0)
+        self.assertTrue(production.caption_style_share(timeline)["in_window"])
 
     def test_synthetic_v1_validator_still_rejects_production_timelines(self):
         timeline, _ = edit_fixture()

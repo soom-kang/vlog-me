@@ -1,4 +1,4 @@
-"""Caption preset registry, 80/20 reporting and bundled font integrity. Text fixtures only."""
+"""Caption preset registry, mood-first ratio reporting and bundled font integrity. Text fixtures only."""
 import json
 import os
 from pathlib import Path
@@ -33,7 +33,8 @@ class PresetRegistryTests(unittest.TestCase):
     def test_groups_cover_variety_mood_and_dialogue(self):
         groups = {spec["group"] for spec in REGISTRY["kinds"].values()}
         self.assertEqual(groups, {"variety", "mood", "dialogue"})
-        self.assertEqual(REGISTRY["target_variety_share"], 0.8)
+        self.assertEqual(REGISTRY["target_mood_share"], 0.9)
+        self.assertNotIn("target_variety_share", REGISTRY)
 
     def test_caption_text_rules(self):
         self.assertEqual(production.validate_caption_text({"kind": "sfx_text", "text": "쾅"}, require_preset=False), "tilt-red")
@@ -51,16 +52,17 @@ class PresetRegistryTests(unittest.TestCase):
     def test_share_is_reported_against_the_window(self):
         def share(kinds):
             return production.caption_style_share({"captions": [{"kind": k} for k in kinds]})
-        self.assertTrue(share(["variety"] * 8 + ["mood"] * 2)["in_window"])
+        self.assertTrue(share(["mood"] * 9 + ["variety"])["in_window"])
         self.assertFalse(share(["variety"] * 5 + ["mood"] * 5)["in_window"])
+        self.assertTrue(share(["mood"] * 10)["in_window"])
         self.assertFalse(share(["variety"] * 10)["in_window"])
-        self.assertIsNone(share(["dialogue"])["variety_share"])
+        self.assertIsNone(share(["dialogue"])["mood_share"])
 
     def test_review_page_shows_caption_ratio(self):
         items = review.validate_candidates(candidates(), ENTRIES)
         with tempfile.TemporaryDirectory() as tmp:
             page = review.page_html("prod-x", 1, items, ENTRIES, Path(tmp))
-        self.assertIn("자막 비율: 예능 3 · 감성 1 · 대사 0 (예능 75%, 목표 80% 참고)", page)
+        self.assertIn("자막 비율: 감성 1 · 예능 3 · 대사 0 (감성 25%, 목표 90% 참고 · 목표 범위 밖)", page)
         data = candidates()
         data["candidates"][0]["plan"]["captions"][0]["preset"] = "serif-fade"
         with self.assertRaisesRegex(ValueError, "c01: Caption preset"):

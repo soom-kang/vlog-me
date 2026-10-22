@@ -1,6 +1,6 @@
 {
-  "target_variety_share": 0.8,
-  "share_window": [0.7, 0.9],
+  "target_mood_share": 0.9,
+  "share_window": [0.8, 1.0],
   "max_lines": 2,
   "max_sub_chars": 36,
   "max_same_preset_in_a_row": 2,

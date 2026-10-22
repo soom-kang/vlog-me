@@ -277,13 +277,13 @@ def validate_timeline_v2(timeline, sources):
 
 
 def caption_style_share(timeline):
-    """Report the variety/mood caption split. A guide for review, never an enforced quota."""
-    counts = {"variety": 0, "mood": 0, "dialogue": 0}
+    """Report the mood/variety caption split. A guide for review, never an enforced quota."""
+    counts = {"mood": 0, "variety": 0, "dialogue": 0}
     for caption in timeline.get("captions", []):
         kind = caption.get("kind")
-        counts["variety" if kind in VARIETY_CAPTIONS else "mood" if kind in MOOD_CAPTIONS else "dialogue"] += 1
-    styled = counts["variety"] + counts["mood"]
-    share = round(counts["variety"] / styled, 2) if styled else None
+        counts["mood" if kind in MOOD_CAPTIONS else "variety" if kind in VARIETY_CAPTIONS else "dialogue"] += 1
+    styled = counts["mood"] + counts["variety"]
+    mood = round(counts["mood"] / styled, 2) if styled else None
     low, high = CAPTION_REGISTRY["share_window"]
-    return {**counts, "variety_share": share, "target": CAPTION_REGISTRY["target_variety_share"],
-            "in_window": share is not None and low <= share <= high}
+    return {**counts, "mood_share": mood, "variety_share": None if mood is None else round(1 - mood, 2),
+            "target": CAPTION_REGISTRY["target_mood_share"], "in_window": mood is not None and low <= mood <= high}

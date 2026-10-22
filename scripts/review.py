@@ -512,9 +512,9 @@ def page_html(run_id, version, candidates, entries, folder, timing=None):
     fun = sum(c["tag"] == "fun" for c in candidates)
     male = [cid for cid, notes in (timing or {}).items() if any(n["status"] == "male_voice" for n in notes)]
     share = production.caption_style_share({"captions": [x for c in candidates for x in c["plan"].get("captions", [])]})
-    ratio = ("자막 비율: 스타일 자막 없음" if share["variety_share"] is None else
-             f"자막 비율: 예능 {share['variety']} · 감성 {share['mood']} · 대사 {share['dialogue']} "
-             f"(예능 {share['variety_share']:.0%}, 목표 {share['target']:.0%} 참고" +
+    ratio = ("자막 비율: 스타일 자막 없음" if share["mood_share"] is None else
+             f"자막 비율: 감성 {share['mood']} · 예능 {share['variety']} · 대사 {share['dialogue']} "
+             f"(감성 {share['mood_share']:.0%}, 목표 {share['target']:.0%} 참고" +
              ("" if share["in_window"] else " · 목표 범위 밖") + ")")
     variation = production.preset_warnings([x for c in candidates for x in c["plan"].get("captions", [])])
     if variation:
