@@ -6,7 +6,7 @@ phase는 두 가지이며 동시에 쓸 수 없습니다. setup 설정의 원본
 - `setup_synthetic_only`(현재 기본값): 합성 run만 만들고 렌더합니다. 실제 원본은 열지 않습니다.
 - `production`: `source_roots`에 적은 `sources/<여행>/`만 읽습니다. 사용자가 채팅으로 요청할 때만 `/vlog-workflow` 절차로 전환합니다.
 
-Claude Code 주 세션이 프로젝트 Skill(`/vlog-workflow`, `vlog-scout`, `k-variety-caption`, `vlog-sound`)과 공식 Remotion Skill로 진행합니다. production 흐름에서는 subagent나 외부 coordinator를 쓰지 않습니다. 코드 개발 작업에만 Orca 흐름([Orca 개발 흐름](orca.md))을 쓸 수 있습니다.
+Claude Code 주 세션이 프로젝트 Skill(`/vlog-workflow`, `vlog-scout`, `k-mood-caption`, `vlog-sound`)과 공식 Remotion Skill로 진행합니다. production 흐름에서는 subagent나 외부 coordinator를 쓰지 않습니다. 코드 개발 작업에만 Orca 흐름([Orca 개발 흐름](orca.md))을 쓸 수 있습니다.
 
 | 구간 | 구현 상태 |
 | --- | --- |

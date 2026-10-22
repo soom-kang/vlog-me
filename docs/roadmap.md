@@ -1,6 +1,6 @@
 # 실제 제작까지의 로드맵
 
-목표는 실제 여행 영상(mp4)과 아이폰 사진에서 재밌는 장면과 감성 장면을 골라 YouTube 롱폼 브이로그를 Claude Code 하나로 편집하는 것입니다. 내용은 재미 60 · 감성 40, 자막은 예능 80 · 감성 20입니다. 승인된 설계는 [production harness 설계](superpowers/specs/2026-10-19-production-harness-design.md)에 있습니다. 이 문서는 현재 위치와 다음 단위를 여는 방법만 정리합니다.
+목표는 실제 여행 영상(mp4)과 아이폰 사진에서 재밌는 장면과 감성 장면을 골라 YouTube 롱폼 브이로그를 Claude Code 하나로 편집하는 것입니다. 감성 90 · 예능 10을 지향하며 대사 없는 장면에는 내레이션 자막을 씁니다. 승인된 설계는 [production harness 설계](superpowers/specs/2026-10-19-production-harness-design.md)에 있습니다. 이 문서는 현재 위치와 다음 단위를 여는 방법만 정리합니다.
 
 ## 현재 위치 (2026-10-19)
 
@@ -39,7 +39,9 @@ production으로 바꾸려면 사용자가 채팅으로 명시적으로 요청�
 | 5. 예능 80 · 감성 20 자막 | preset 14종 레지스트리, OFL 한글 폰트 5종 번들, 글자 수·비율 검사, [자막 가이드](caption-style.md) | 완료(합성 fixture). 실제 영상에서 취향 조정 필요 |
 | 6. 사운드 | 음원 라이브러리 등록·검사(`audio_library.py`), YouTube 기준 사용 판정, 대사 ducking·효과음 밀도 규칙, 미리보기에 BGM·효과음 반영, [사운드 가이드](sound-guide.md) | 완료(합성 fixture). 실제 음원 0개, 청취 미실행 |
 | 7. 조립·롱폼 렌더 | 선택→timeline v2 조립(`assemble.py`), 구간별 무음 영상 렌더+전체 믹스 1회, 재개, -14 LUFS 정규화, 프레임·싱크·음량 QA(`render_prod.py`) | 완료(합성 2분, `./scripts/smoke-longform.sh`). 렌더 속도 실시간의 약 3.5배 |
-| 8. Skill·harness | `/vlog-workflow` 진입 Skill과 `vlog-scout`·`k-variety-caption`·`vlog-sound`, skills-lock 등록, 구조 테스트 | 완료. 실제 Claude 세션에서의 Skill 호출은 미실행 |
+| 8. Skill·harness | `/vlog-workflow` 진입 Skill과 `vlog-scout`·`k-mood-caption`·`vlog-sound`, skills-lock 등록, 구조 테스트 | 완료. 실제 Claude 세션에서의 Skill 호출은 미실행 |
+
+2026-10-22 `mood-vlog-style`: 감성 90 · 예능 10 전환, `narration` kind, `look`·`light_leak`·`dissolve`·`drift`를 추가합니다. 갤러리 렌더와 사용자 취향 확인은 병합 뒤 별도로 진행합니다.
 
 단위 2–4 직후 첫 sample을 검증합니다. 사용자가 고른 2–3분 클립 2–3개를 씁니다. 사용자가 미리 웃긴 지점을 메모해 두고 Claude 후보와 비교합니다. 자동 후보가 메모를 대부분 놓치면 사용자 메모를 1차 입력으로 바꿉니다.
 
@@ -58,7 +60,7 @@ production으로 바꾸려면 사용자가 채팅으로 명시적으로 요청�
 이 sample에서 확인할 것:
 - Claude 후보가 사용자 메모와 얼마나 겹치는지
 - HDR proxy의 색감, 오디오 싱크
-- 자막 preset의 취향(크기, 색, 말투)과 예능 80 · 감성 20의 체감
+- 자막 preset의 취향(크기, 색, 말투)과 감성 90 · 예능 10과 내레이션 자막의 체감
 
 ## 용어
 

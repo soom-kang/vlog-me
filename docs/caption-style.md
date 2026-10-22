@@ -1,44 +1,63 @@
-# 자막 스타일 가이드 (예능 80 · 감성 20)
+# 자막 스타일 가이드 (감성 90 · 예능 10)
 
-후보 카드(`candidates.json`)와 timeline v2의 자막을 쓸 때 따르는 기준입니다. 목표는 **소소한 재미가 중심인 여행 브이로그**입니다. 감성 구간은 짧지만, 넣을 때는 공을 들여 아름답게 만듭니다. 2026-10-19 첫 sample에 대한 사용자 피드백을 반영했습니다(아래 "첫 sample 피드백").
+후보 카드(`candidates.json`)와 timeline v2의 자막을 쓸 때 따르는 기준입니다. 목표는 **풍경과 일상의 결을 보여주는 감성 브이로그**입니다. 예능은 강조할 순간에만 살짝 넣습니다. 2026-10-22에 승인된 방향이며, 첫 sample의 대사 타이밍·겹침 피드백은 아래에 유지합니다.
 
-preset 목록과 글자 수 제한의 원본은 `renderer/src/production/presets.json`입니다. 렌더러와 Python 검증기가 같은 파일을 읽습니다. 모양은 [preset 갤러리](../reports/caption-gallery.jpg)에서 확인합니다(`node renderer/scripts/gallery.mjs reports/caption-gallery.jpg`로 다시 생성).
+preset과 제한의 원본은 `renderer/src/production/presets.json`입니다. 렌더러와 Python 검증기가 같은 파일을 읽습니다. [새 자막 갤러리](../reports/caption-gallery-v2.jpg)와 [화면 톤 갤러리](../reports/look-gallery.jpg)는 **병합 뒤 사용자 동의를 받아 생성할 예정**입니다. 기존 `caption-gallery.jpg`는 보존합니다. 이 개발 작업에서는 렌더하지 않습니다.
 
-## 80 · 20의 의미
+```bash
+node renderer/scripts/gallery.mjs reports/caption-gallery-v2.jpg
+node renderer/scripts/gallery.mjs reports/look-gallery.jpg LookGallery
+```
 
-- 예능 계열(`variety`·`situation`·`sfx_text`·`inner_voice`)이 스타일 자막의 약 80%, 감성 계열(`mood`·`place`)이 약 20%입니다.
-- `dialogue`(실제 대사)는 비율 계산에서 뺍니다.
-- 리뷰 페이지 머리에 비율이 표시됩니다. 70–90% 밖이면 `목표 범위 밖`으로 표시되지만 거부하지는 않습니다. 장면이 요구하면 범위를 벗어나도 됩니다.
-- 비율을 맞추려고 자막을 억지로 늘리지 않습니다. 웃기지 않은 장면에 예능 자막을 붙이는 것이 비율 미달보다 나쁩니다.
+## 90 · 10의 의미
+
+- 감성 계열(`mood`·`narration`·`place`)이 스타일 자막의 약 90%, 예능 계열(`variety`·`situation`·`sfx_text`·`inner_voice`)이 약 10%입니다.
+- `dialogue`(실제 대사)는 비율 계산에서 뺍니다. 스타일 자막이 없으면 비율도 없습니다.
+- 리뷰 페이지는 감성 80–100%를 범위 안으로 표시합니다. 감성 100%도 괜찮습니다. 범위 밖이어도 검증을 거부하지 않습니다.
+- 비율은 편집 참고값이며 시간 quota가 아닙니다. 웃긴 순간이 실제로 있을 때만 예능 자막을 넣습니다. 웃기지 않은 장면에 예능 자막을 붙이는 것이 비율 미달보다 나쁩니다.
+
+## 레퍼런스 관찰 요약
+
+- **확인:** 오눅 관련 기사에는 잔잔한 생활소음과 일상의 감각이 인기 요인으로 적혀 있습니다.
+- **확인:** 강민경 관련 자료에는 리듬 컷·줌·강조할 말의 크기와 색을 바꾸는 예능 편집이 서술되어 있습니다. 여기서는 예능 10의 참고로 씁니다.
+- **추정:** 작은 명조, 하단 배치, 느린 페이드와 따뜻한 톤은 장르 관례를 바탕으로 고른 설계입니다. 두 채널의 실제 폰트·위치·효과를 확인한 결과가 아닙니다.
+- 출처와 관찰 범위는 [승인 계획 1절](superpowers/plans/2026-10-22-mood-vlog-style.md#1-레퍼런스-관찰)에 있습니다. 이번 구현에서는 영상을 내려받거나 시청하지 않았습니다. 취향은 갤러리와 사용자가 제공한 캡처로 확인합니다.
 
 ## kind와 preset
 
-| kind | 언제 쓰나 | preset | 한 줄 최대 글자 |
+| kind | 언제 쓰나 | preset(첫 항목이 기본) | 줄당 글자 / 최대 줄 |
 | --- | --- | --- | --- |
-| `variety` | 장면을 한마디로 받아치는 편집자 멘트 | `pop`(기본), `shout`(크게 놀람), `punch`(툭 치는 반전), `drop`(위에서 떨어짐), `shake`(흔들림) | 18 |
-| `situation` | 상황 설명. 시청자가 놓친 맥락. 상단 타이틀 | `box-yellow`(기본), `box-dark`, `box-pink`, `box-mint`, `box-sky`, `ribbon`(띠), `sticker`(스티커), `stamp`(도장), `bubble`(말풍선) | 28 |
-| `sfx_text` | 효과음을 글자로. 효과음 cue와 같이 쓸 수 있음 | `tilt-red`(기본), `tilt-blue`, `burst`, `whoosh`(옆에서 날아듦), `pen-sfx`(손글씨) | 8 |
-| `inner_voice` | 인물의 속마음 추정. 괄호로 감쌈 | `bracket`(기본), `whisper`, `thought`(생각 구름), `pen-note`(손글씨 메모) | 24 |
-| `dialogue` | 실제로 말한 대사 | `dialogue`, `dialogue-box`(반투명 상자) | 32 |
-| `mood` | 풍경·여운 구간의 문장 | `serif-fade`(기본), `serif-low`, `editorial`(큰 세리프+영문 부제), `letter-fade`(한 글자씩), `film-line`(위아래 선), `pen-script`(손글씨) | 26 |
-| `place` | 장소·시간 표시 | `place-card`, `place-editorial`(큰 영문 지명+한글) | 20 |
+| `variety` | 가벼운 받아치기 | `deadpan`(작고 정적인 멘트), `pop`, `shout`, `punch`, `drop`, `shake` | 18 / 2 |
+| `situation` | 확인된 상황 설명 | `box-dark`, `box-yellow`, `box-pink`, `box-mint`, `box-sky`, `ribbon`, `sticker`, `stamp`, `bubble` | 28 / 2 |
+| `sfx_text` | 소리를 글자로 | `pen-sfx`, `tilt-red`, `tilt-blue`, `burst`, `whoosh` | 8 / 2 |
+| `inner_voice` | 괄호로 드러내는 편집자의 해석 | `pen-note`, `bracket`, `whisper`, `thought` | 24 / 2 |
+| `dialogue` | 실제로 말한 대사 | `dialogue-soft`(작은 명조), `dialogue`, `dialogue-box` | 32 / 2 |
+| `mood` | 한 장면의 짧은 문장 | `soft-caption`(작은 명조와 느린 페이드), `blur-in`(흐림에서 등장), `bilingual`(한글과 영문), `serif-fade`, `serif-low`, `editorial`, `letter-fade`, `film-line`, `pen-script` | 26 / 2 |
+| `narration` | 대사 없는 장면의 독백 | `diary`(왼쪽 명조), `diary-center`(가운데 명조), `letter`(손글씨), `typewriter`(글자 순서대로) | 22 / 4 |
+| `place` | 장소·시간·장 구분 | `place-card`, `place-editorial`, `chapter`(큰 영문과 한글 제목) | 20 / 2 |
 
-- 모든 자막은 최대 2줄입니다. 줄바꿈은 `\n`으로 직접 넣습니다.
-- `sub`(36자 이하)는 보조 문장입니다. `editorial`·`film-line`은 그 아래 작은 영문 이탤릭/대문자로, `place-editorial`은 큰 영문 지명으로 씁니다. 예: `"text": "노을이 지는 시간", "sub": "golden hour"`
-- `preset`을 생략하면 kind의 기본 preset을 씁니다(후보 카드만 해당). timeline v2에서는 반드시 적습니다.
-- 위치는 `bottom`(기본), `top`, `center`, `upper_left`, `upper_right`, `lower_left`, `lower_right` 중에서 고릅니다. 얼굴과 대사 자막을 가리지 않는 쪽을 고릅니다.
+- 감성 브이로그에서 주로 쓰는 예능 preset은 `deadpan`, `pen-note`, `whisper`, `pen-sfx`, `box-dark`입니다. `pop`, `shout`, `burst`, `box-yellow` 등은 기존 모양을 유지하지만 거의 쓰지 않습니다.
+- 줄바꿈은 `\n`으로 넣습니다. 내레이션만 최대 4줄이고 나머지는 최대 2줄입니다.
+- `sub`는 36자 이하 보조 문장입니다. `bilingual`·`blur-in`·`diary`·`diary-center`·`letter`는 작은 영문을, `chapter`는 큰 영문 제목을 보여줍니다. 기존 `editorial`·`film-line`·`place-editorial`도 지원합니다. 예: `"text": "첫째 날, 제주", "sub": "DAY 1"`.
+- 후보 카드에서만 `preset`을 생략할 수 있습니다. timeline v2에는 반드시 적습니다. 기존 timeline의 명시된 preset은 바뀌지 않습니다.
 
-## 문구 쓰는 법
+## 내레이션 작법
 
-- **받아치기는 짧게.** 예: `결국 원점`, `실화냐`, `계획은 계획일 뿐`.
-- **상황은 사실만.** 예: `같은 골목 3바퀴째`, `지도 앱 4번째 재검색`. 화면과 전사로 확인한 사실만 씁니다.
-- **효과 글자는 소리처럼.** 예: `띠용?!`, `쾅`, `두둥`, `머쓱`. 한 장면에 하나만 씁니다.
-- **속마음은 추정임이 보이게.** 괄호와 말투로 편집자의 해석임을 드러냅니다. 예: `(기억력 테스트 실패)`, `(배고픔 한계)`.
-- **감성은 담백하게.** 예: `그래도 바람은 좋았다`, `이 길은 처음이었다`. 형용사를 쌓지 않습니다.
-- 한 화면에 동시에 보이는 예능 자막은 3개까지로 합니다.
-- 웃음 setup(상황)→payoff(반전)→reaction(리액션) 순서가 보이게 시간을 나눕니다. payoff 전에 결말을 자막으로 먼저 말하지 않습니다.
+1인칭 일기·편지체로 씁니다. 현재 화면에서 출발하고, 감정은 한 줄만 남기며, 마지막 줄은 짧게 닫습니다. 한 장면에는 내레이션 하나만 두고 대사가 있는 구간에는 쓰지 않습니다. `\n`으로 나눈 줄은 차례로 나타납니다.
 
-## 타이밍
+| 장면에 맞춰 쓸 예문 | preset / sub |
+| --- | --- |
+| `오늘은 조금 천천히 걷기로 했다\n바람이 먼저 와 있었다\n그걸로 충분했다` | `diary` / `a slow day` |
+| `창문을 열자\n어제와 다른 냄새가 났다` | `diary` |
+| `계획은 없었다\n그래서 더 오래 머물렀다` | `diary-center` |
+| `엄마에게 보내고 싶은 풍경\n사진으로는 다 안 담겼다` | `letter` |
+| `돌아가는 길\n오늘을 조금 더 붙잡고 싶었다` | `typewriter` |
+
+예문은 그대로 붙이는 사실 기록이 아닙니다. 촬영자의 실제 감정·행동을 단정하지 않고 화면에서 보이는 것과 사용자가 확인한 경험을 바탕으로 고칩니다. 내레이션은 편집자가 쓴 독백이며 `dialogue`가 아닙니다.
+
+피할 문구는 형용사 나열(`너무너무 아름답고 행복하고 소중한 하루`), 시청자에게 외치는 말(`여러분 여기 꼭 가세요!!`), 실제로 없던 사건입니다.
+
+## 타이밍과 첫 sample 피드백
 
 - **대사 자막은 자동으로 맞춥니다.** 단어 단위 전사(`analysis/<id>/words.json`)로 어느 말인지 찾고, 실제 목소리 구간(`voicing.json`, 50ms 간격 음높이 주기성)에 맞춰 목소리 시작 0.15초 전에 나타나고 끝난 뒤 0.3초에 사라집니다. 거리 소음이 큰 영상에서는 Whisper 시각이 2초가량 어긋날 수 있어서, 목소리 구간을 기준으로 삼습니다. 작성한 `at`·`duration`은 대략이면 됩니다.
 - 컷을 넘어 이어지는 말은 자막도 다음 컷까지 이어집니다. 오래된 run에는 `python3 scripts/analyze.py --run-id <run> --add-words`로 단어 시각과 목소리 구간을 추가합니다.
@@ -48,30 +67,55 @@ preset 목록과 글자 수 제한의 원본은 `renderer/src/production/presets
 - 긴 문장은 여러 목소리 구간에 걸칩니다. 자막은 단어로 잰 문장 길이만큼, 그 안의 목소리 구간 끝까지 머뭅니다. 짧은 말도 읽을 시간(0.4초 + 글자당 0.08초)은 보장합니다.
 - 같은 위치의 자막은 겹치지 않습니다. 겹치면 앞 자막이 다음 자막 직전에 끝나고, 리뷰 카드에 "자막 겹침 조정"으로 표시됩니다(2026-10-20 피드백).
 
+
+- 감성 자막은 3–6초를 기본 호흡으로 삼고 새 soft preset은 18프레임 동안 페이드합니다. 기존 preset의 움직임은 그대로입니다.
+- 내레이션 권장 노출은 `max(2.5초, Σ줄(0.6초 + 0.12초 × 공백을 뺀 글자 수) + 1.5초)`입니다. 최소 2.5초 미만은 거부하고, 권장 시간 미만은 경고합니다.
+- 내레이션이 끝날 때까지 장면이 이어져야 합니다. 컷을 늘릴 수 없으면 문장을 줄입니다. 다음 장면으로 넘어가기 전에 끝냅니다.
+
+## 위치
+
+- 내레이션은 `lower_left`를 권장합니다. 풍경 가운데가 비었으면 `center`, 하단 여백이 있으면 `bottom`도 씁니다. 위치를 생략했을 때의 기존 기본값은 `bottom`입니다.
+- 작은 감성 자막은 `bottom`, `deadpan`은 `lower_right`, `chapter`는 `center`를 권장합니다.
+- `top`, `upper_left`, `upper_right`도 쓸 수 있습니다. 얼굴·하늘선·대사 자막을 가리지 않습니다.
+- 레터박스가 있으면 `bottom` 자막이 아래 막대 위에 놓일 수 있습니다. 자막은 색보정·그레인을 받지 않습니다.
+
+## 화면 톤과 효과
+
+`look`은 timeline 또는 `candidates.json`의 **최상위** 선택 필드입니다. 없으면 기존 화면을 유지합니다. 후보의 `plan`이나 클립별로 넣지 않습니다.
+
+| 필드 | 허용값 | 생략 시 |
+| --- | --- | --- |
+| `grade` | `none`, `warm`, `faded`, `film` | `none` |
+| `grade_strength` | 유한 숫자 0–1 | 0.6 |
+| `grain` | 유한 숫자 0–0.25 | 0 |
+| `vignette` | 유한 숫자 0–0.5 | 0 |
+| `letterbox` | `null`, 2.0, 2.39 | 없음 |
+
+권장값은 `warm 0.5 · grain 0.08 · vignette 0.2 · letterbox 없음`입니다. 자동으로 적용하지 않습니다.
+
+```json
+"look": {"grade": "warm", "grade_strength": 0.5, "grain": 0.08, "vignette": 0.2, "letterbox": null}
+```
+
+- 레터박스 2.39는 영화 같은 분위기를 원하는 묶음에만 권장합니다. 이번 버전은 timeline 전역 하나이므로 **오프닝만이 아니라 영상 전체에 적용**됩니다. 구간별 look은 지원하지 않습니다.
+- `light_leak`은 오프닝·장소 전환에 0.5–2초, 20초에 한 번 이하로 씁니다. 최소 15프레임, strength 0.5–2이며 화면을 흔들지 않습니다.
+- `transition: "dissolve"`는 시간·장소가 바뀌는 곳에만 씁니다. 길이는 15프레임(0.5초)이며 두 클립 모두 그 이상이어야 합니다. 앞 영상에는 추가 원본 프레임이 필요합니다. 첫 클립은 조립 시 `fade`, 원본 여유가 부족하면 `cut`으로 보정하고 경고합니다.
+- 후보 미리보기에는 디졸브를 그리지 않고 카드에 `디졸브(조립 후 확인)`이라고 적습니다. 조립 뒤 확인합니다. 디졸브 구간의 오디오는 기존 컷을 유지하며 crossfade하지 않습니다.
+- `drift: true`는 정적인 영상 풍경 컷의 느린 줌입니다. 계획한 zoom에서 1.05배까지(최대 3배) 움직입니다. 사진은 기존 방식으로 움직이므로 `drift`를 지정하지 않습니다.
+- `punch_zoom`, `shake`, `flash`, `speedlines`는 예능 장면에서만 씁니다. 기존 `fade`·`whip` 계약은 유지합니다(`whip`의 별도 렌더 효과는 미구현).
+
+## 예능 10%
+
+강조할 말 하나만 크기·색을 바꾸는 정도로 씁니다. 정적인 장면 뒤 `deadpan` `(사실 길 잃음)`, `pen-note` `(배고픔 한계)`, `pen-sfx` `꼬르륵`처럼 가볍게 넣습니다. 한 화면에 예능 자막은 1개이며 감성 자막·내레이션과 겹치지 않습니다. 상황은 사실만 쓰고 속마음은 괄호로 편집자의 추정임을 드러냅니다. payoff 전에 결말을 먼저 말하지 않습니다.
+
 ## variation
 
 - 같은 preset이 3번 이상 연달아 나오거나 한 kind의 자막 4개 이상이 모두 같은 preset이면 리뷰 페이지와 조립 보고서에 경고가 나옵니다.
 - 상단 상황 박스는 장면 성격에 맞춰 바꿉니다. 정보는 `box-yellow`·`box-sky`, 귀여움은 `box-pink`·`sticker`, 판정·결론은 `stamp`, 장면 전환은 `ribbon`, 누군가의 한마디는 `bubble`을 씁니다.
 - 효과음도 같은 소리를 반복하지 않습니다([사운드 가이드](sound-guide.md)).
 
-## 예능 화법 (재미를 더 살리는 방법)
 
-- **사물·자연 의인화:** 바람·음식·간판이 말하는 것처럼 씁니다. 예: 바람 `(바람: 오늘 주인공은 나야)`
-- **내레이터 해설:** 다큐 내레이션처럼 과장되게 상황을 설명합니다. 예: `situation` 바람과의 사투 3초째
-- **자막 연쇄:** setup → payoff → reaction을 2–4개 자막으로 나눠 박자를 만듭니다.
-- **효과와 함께:** 반전 순간에 `punch_zoom`·`shake`·`flash`·`speedlines` 효과와 효과 글자를 같이 둡니다.
-- 예시: 바람에 머리카락이 얼굴을 덮는 장면
-  1. `situation`(`ribbon`) "푸꾸옥 바람 특보 발령"
-  2. 머리카락이 덮이는 순간 `speedlines` + `sfx_text`(`whoosh`) "휘이잉"
-  3. 얼굴이 안 보일 때 `punch_zoom` + `variety`(`shake`) "앞이 안 보여요"
-  4. `inner_voice`(`thought`) "(바람: 미안 일부러 그랬어)"
-
-## 감성 자막을 아름답게
-
-- 감성 구간은 길이보다 밀도가 중요합니다. 한 장면에 한 문장, 3–5초 머뭅니다.
-- `editorial`·`letter-fade`·`film-line`·`place-editorial`처럼 여백과 글자 간격이 있는 preset을 씁니다. 한글 문장 아래 짧은 영문(`sub`)을 두면 정돈된 느낌이 납니다.
-- 문장은 담백하게, 느낌표와 이모티콘은 쓰지 않습니다. 예: `오늘의 바다는 조금 늦게 저물었다` / `slow sunset`
-- 감성 자막은 화면 가운데나 아래쪽 여백에 두고, 인물의 얼굴과 하늘선을 가리지 않습니다.
+감성 브이로그에서는 절제된 preset부터 고릅니다. 다양한 preset을 보여주려고 자막을 늘리지 않습니다.
 
 ## 하지 않는 것
 
@@ -81,10 +125,11 @@ preset 목록과 글자 수 제한의 원본은 `renderer/src/production/presets
 - 다른 방송·유행어 문구를 그대로 길게 옮기지 않습니다.
 - 감성 구간에 효과 글자나 큰 예능 자막을 겹치지 않습니다.
 
+
 ## 확인 절차
 
 1. 후보 카드의 기대 화면에서 글자 크기, 위치, 얼굴 가림을 확인합니다.
-2. 리뷰 페이지의 자막 비율을 확인합니다.
+2. 리뷰 페이지의 감성 비율과 내레이션 읽기 경고를 확인합니다. 경고 해소와 사람의 시청 확인은 별개입니다.
 3. 사용자가 `자막 수정`을 고른 후보는 `selection.json`의 `note`를 반영해 다시 리뷰를 만듭니다.
 
-폰트는 `renderer/assets/fonts/`의 OFL 폰트(Black Han Sans, Jua, Do Hyeon, Gowun Batang, Nanum Gothic ExtraBold)이며 `config/fonts-lock.json`으로 hash를 고정합니다. `./init.sh`의 doctor가 무결성을 검사합니다.
+폰트는 `renderer/assets/fonts/`에 번들된 OFL 7종(Black Han Sans, Jua, Do Hyeon, Gowun Batang, Nanum Gothic ExtraBold, Nanum Pen Script, Cormorant Garamond)입니다. `config/fonts-lock.json`으로 hash를 고정하며 `./init.sh`의 doctor가 무결성을 검사합니다. 새 폰트는 추가하지 않습니다.
