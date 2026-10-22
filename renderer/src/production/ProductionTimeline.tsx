@@ -31,7 +31,7 @@ const ClipVisual = ({clip, asset}: {clip: Clip; asset: Asset}) => {
     const scale = interpolate(frame, [0, clip.duration], [1, zoom], {extrapolateRight: 'clamp'});
     return (
       <AbsoluteFill style={{opacity}}>
-        <BlurBackdrop kind="image" src={asset.src} />
+        <BlurBackdrop kind="image" src={asset.src} aspect={clip.aspect} />
         <AbsoluteFill style={{transform: `scale(${scale})`}}>
           <Img src={staticFile(asset.src)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
         </AbsoluteFill>

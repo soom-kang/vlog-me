@@ -191,6 +191,8 @@ def validate_timeline_v2(timeline, sources):
             raise ValueError("Clips must be contiguous video or image sources")
         if clip.get("tag") not in CLIP_TAGS:
             raise ValueError("Each clip needs a fun or mood tag")
+        if not isinstance(clip.get("deflicker", False), bool):
+            raise ValueError("deflicker must be true or false")
         if clip.get("transition", "cut") not in TRANSITIONS:
             raise ValueError("Unknown transition")
         zoom = clip.get("zoom", 1)

@@ -19,6 +19,7 @@ import audio_library
 import caption_sync
 import common
 import production
+import render_prod
 import review
 from test_longform import ADOPT_TWO, LongformFixture, plan_candidates
 from test_production import edit_fixture
@@ -33,7 +34,7 @@ WORDS = [{"text": w, "start": s, "end": e} for w, s, e in [
 def hotel_candidate(**caption):
     return {"id": "c10", "plan": {"cuts": [[22.3, 34.0]], "captions": [
         {"kind": "dialogue", "text": "지금 마사지고 나발이고\n호텔을 가고 싶어", "at": 3.7, "duration": 3.4} | caption,
-        {"kind": "variety", "text": "오늘의 결론: 호텔", "at": 9.0, "duration": 2.0}]}}
+        {"kind": "variety", "text": "오늘의 결론: 호텔", "at": 9.0, "duration": 2.0, "position": "top"}]}}
 
 
 class CaptionSyncTests(unittest.TestCase):
@@ -192,15 +193,44 @@ class FeedbackRunTests(LongformFixture):
     def test_vertical_video_gets_a_blurred_fill_proxy(self):
         self.assertIn("crop=608:1080:656:0", review.fill_filter(0.5625))
         self.assertIn("crop=1920:822:0:129", review.fill_filter(2.3333))
+        # The blurred background is averaged over time so moving highlights do not make it pulse.
+        self.assertIn(f"tmix=frames={review.FILL_SMOOTH}", review.fill_filter(0.5625))
         entry = review.read_entries(self.run)["v001"]
         self.assertIs(review.filled(self.run, entry), entry)
         tall = entry | {"id": "v009", "display_size": [1080, 1920], "has_audio": True}
         with patch.object(review, "run_command", side_effect=self.media):
             filled = review.filled(self.run, tall)
-        self.assertEqual((filled["proxy"], filled["display_size"]), ("proxy/fill/v009.mp4", [16, 9]))
-        self.assertTrue((self.run / "proxy/fill/v009.mp4").is_file())
+        self.assertEqual((filled["proxy"], filled["display_size"]), (f"proxy/fill/v009-v{review.FILL_VERSION}.mp4", [16, 9]))
+        self.assertTrue((self.run / f"proxy/fill/v009-v{review.FILL_VERSION}.mp4").is_file())
         with patch.object(review, "run_command", side_effect=AssertionError("cached")):
-            self.assertEqual(review.filled(self.run, tall)["proxy"], "proxy/fill/v009.mp4")
+            self.assertEqual(review.filled(self.run, tall)["proxy"], f"proxy/fill/v009-v{review.FILL_VERSION}.mp4")
+
+    def test_photos_get_a_baked_fill_and_videos_can_be_deflickered(self):
+        commands = []
+
+        def record(command, *args, **kwargs):
+            commands.append(command)
+            return self.media(command, *args, **kwargs)
+
+        entries = review.read_entries(self.run)
+        photo = entries["p001"] | {"display_size": [3024, 4032]}
+        video = entries["v001"] | {"has_audio": True}
+        with patch.object(review, "run_command", side_effect=record):
+            filled = review.filled(self.run, photo)
+            clean = review.deflickered(self.run, video)
+        name = f"photos/fill/p001-v{review.PHOTO_FILL_VERSION}.jpg"
+        self.assertEqual((filled["proxy"], filled["display_size"]), (name, [16, 9]))
+        self.assertIn(review.PHOTO_FILL_FILTER, commands[0])
+        self.assertEqual(clean["proxy"], f"proxy/clean/v001-deflicker-v{review.DEFLICKER_VERSION}.mp4")
+        self.assertIn(review.DEFLICKER_FILTER, commands[1])
+        # The final render gets the baked photo and tells the renderer not to draw a CSS blur behind it.
+        timeline = {"clips": [{"source": "p001", "aspect": 0.75}, {"source": "v001", "deflicker": True}]}
+        with patch.object(review, "run_command", side_effect=AssertionError("cached")):
+            props = render_prod.render_props(self.run, timeline, {"p001": photo, "v001": video}, {})
+        self.assertEqual(props["assets"]["p001"]["src"], name)
+        self.assertEqual(props["assets"]["v001"]["src"], clean["proxy"])
+        self.assertAlmostEqual(props["timeline"]["clips"][0]["aspect"], review.WIDE)
+        self.assertEqual(timeline["clips"][0]["aspect"], 0.75)
 
     def test_bad_audition_and_stack_fields_rejected(self):
         entries = review.read_entries(self.run)

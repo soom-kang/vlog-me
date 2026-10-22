@@ -177,12 +177,12 @@
     {
       "id": "main-edit-vietnam",
       "name": "Main edit: Phu Quoc day (sources/vietnam-20260527)",
-      "description": "Full-folder candidates in the sample style; male performer and companion hints excluded",
+      "description": "Full-day main edit from sources/vietnam-20260527 including additional/ (120 new clips); sample style; male performer and companion hints excluded",
       "dependencies": [
         "sample-feedback-1"
       ],
-      "status": "in-progress",
-      "evidence": "work/prod-20261019-075246-e19437c2 review/v18 (17 candidates, ~87s); user adopted all 17 on 2026-10-20 (selected/pending); vertical clips use baked blur-fill proxies (review.filled, tests/test_feedback_features.py); assemble/render NOT_RUN, awaiting request"
+      "status": "completed",
+      "evidence": "work/prod-20261020-053818-932c04b5/render/v1/final.mp4 (4:40.9, 8428 frames, -14.5 LUFS, -1.84 dBTP, QA 8/8 PASS); 42 adopted / 8 dropped; review v10 + review/sample-v10.mp4; fixes: c22 back to 5.4 s, deflicker on c23/c26/c35/c48, baked photo fill, oversampled limiter (render_prod.LIMIT 0.70) after first QA FAIL true_peak -0.57 dBTP (kept as render/v1/final.failed-truepeak.partial.mp4); frame scan: no isolated glitch frames except the planned c47 shake; human viewing of the final NOT_RUN"
     }
   ]
 }

@@ -40,10 +40,11 @@ def duck_envelope(duration, speech, base_db=BGM_BASE_DB, depth_db=DUCK_DEPTH_DB,
         for frame, db in [(start - fade, base_db), (start, duck_db), (end, duck_db), (end + fade, base_db)]:
             if 0 < frame < last:
                 points[frame] = min(points.get(frame, db), db)
-    # A speech region inside the edge fades keeps the duck level; drop base points it overlaps.
+    # Inside speech the music stays at the duck level: base points it overlaps (e.g. the end of the
+    # fade-in) are lowered, never removed, so speech covering the whole cue still leaves ducked music.
     for start, end in merge([[s, e] for s, e in speech]):
-        for frame in [f for f, db in points.items() if start < f < end and db != duck_db and 0 < f < last]:
-            del points[frame]
+        for frame in [f for f, db in points.items() if start <= f <= end and db > duck_db and 0 < f < last]:
+            points[frame] = duck_db
     return [[frame, points[frame]] for frame in sorted(points)]
 
 

@@ -8,7 +8,7 @@ import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
 import {PhotoStack, type PhotoStackCue} from './PhotoStack';
 
 type Segment = {src: string; trimBefore: number; frames: number; playbackRate: number; gain?: number[][]; aspect?: number};
-type AudioCue = {id: string; src: string; from: number; duration: number; gain: number[][]};
+type AudioCue = {id: string; src: string; from: number; duration: number; gain: number[][]; in?: number};
 export type CandidateProps = {
   kind: 'video' | 'image'; segments: Segment[]; zoom: number; captions: CaptionCue[]; audio?: AudioCue[];
   overlays?: ((PhotoInsertCue & {style?: undefined; src: string}) | (PhotoStackCue & {style: 'stack'; srcs: string[]}))[];
@@ -47,7 +47,7 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
               </>
             ) : (
               <>
-                <BlurBackdrop kind="image" src={segment.src} />
+                <BlurBackdrop kind="image" src={segment.src} aspect={segment.aspect} />
                 <Zoomed zoom={zoom} durationInFrames={durationInFrames}>
                   <Img src={staticFile(segment.src)} style={{width: '100%', height: '100%', objectFit: 'contain'}} />
                 </Zoomed>
@@ -65,7 +65,7 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
       {audio.map((cue) => (
         // Library BGM/SFX from run/audio; the BGM envelope already ducks under speech.
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
-          <Audio src={staticFile(cue.src)} volume={(frame) => gainAt(frame, cue.gain)} />
+          <Audio src={staticFile(cue.src)} trimBefore={cue.in ?? 0} volume={(frame) => gainAt(frame, cue.gain)} />
         </Sequence>
       ))}
       {overlays.map((cue) => (

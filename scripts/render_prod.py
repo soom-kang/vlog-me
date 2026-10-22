@@ -36,13 +36,22 @@ def chunk_plan(duration_frames, chunk_seconds):
 def render_props(run, timeline, entries, staged):
     assets = {}
     used = {clip["source"] for clip in timeline["clips"]}
+    # Deflicker is per source: one cleaned asset serves every clip of that source.
+    clean = {clip["source"] for clip in timeline["clips"] if clip.get("deflicker")}
+    baked = set()
     for entry in entries.values():
+        if entry["id"] in clean:
+            entry = review.deflickered(run, entry)
         if entry["id"] in used:
             entry = review.filled(run, entry)
+            if "fill_of" in entry:
+                baked.add(entry["id"])
         assets[entry["id"]] = {"src": entry["proxy"], "kind": "video" if entry["kind"] == "video" else "image"}
     for asset_id, info in staged.items():
         assets[asset_id] = {"src": info["src"], "kind": "audio"}
-    return {"timeline": timeline, "assets": assets}
+    # A baked fill already fills the 16:9 frame, so the renderer must not draw its own (CSS) blur behind it.
+    clips = [{**clip, "aspect": review.WIDE} if clip["source"] in baked else clip for clip in timeline["clips"]]
+    return {"timeline": {**timeline, "clips": clips}, "assets": assets}
 
 
 def pick_version(run, props_sha):
@@ -60,6 +69,9 @@ def pick_version(run, props_sha):
     folder.mkdir()
     (folder / "chunks").mkdir()
     return version, folder, False
+
+
+LIMIT = 0.70   # linear peak ceiling before AAC; keeps the final true peak at or below -1 dBTP
 
 
 def loudness(path, extra=""):
@@ -81,8 +93,9 @@ def finish(folder, timeline, timeout):
     normalize = (f"loudnorm=I={TARGET_LUFS}:TP={TARGET_TP}:LRA=11:measured_I={measured['input_i']}:"
                  f"measured_TP={measured['input_tp']}:measured_LRA={measured['input_lra']}:"
                  f"measured_thresh={measured['input_thresh']}:offset={measured['target_offset']}:linear=true,"
-                 # quiet, peaky field audio makes loudnorm fall back to dynamic mode; cap peaks before AAC overshoot
-                 "alimiter=limit=0.75:attack=5:release=50:level=disabled")
+                 # quiet, peaky field audio makes loudnorm fall back to dynamic mode; cap peaks before AAC overshoot.
+                 # Limiting at 4x the sample rate also catches inter-sample peaks (0.75 at 48 kHz measured -0.57 dBTP).
+                 f"aresample=192000,alimiter=limit={LIMIT}:attack=5:release=50:level=disabled,aresample=48000")
     partial = safe_path(folder, "final.partial.mp4")
     if partial.exists():
         raise ValueError("Existing final.partial.mp4 requires inspection; no automatic overwrite")

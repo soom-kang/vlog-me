@@ -12,6 +12,8 @@ export const BlurBackdrop = ({kind, src, aspect, trimBefore = 0, playbackRate = 
   kind: 'video' | 'image'; src: string; aspect?: number; trimBefore?: number; playbackRate?: number;
 }) => {
   if (kind === 'image') {
+    // Photos arrive pre-filled at 16:9 (baked blur); only older timelines without an aspect still need the CSS blur.
+    if (aspect !== undefined && !needsBackdrop(aspect)) return null;
     return (
       <AbsoluteFill style={{overflow: 'hidden'}}>
         <Img src={staticFile(src)} style={{width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.15)', ...LOOK}} />

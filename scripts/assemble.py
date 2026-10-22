@@ -67,6 +67,8 @@ def build_timeline(run, kept, entries, library):
                         "in": round(cut_in * FPS), "speed": speed, "zoom": plan.get("zoom", 1), "tag": candidate["tag"],
                         "aspect": review.display_aspect(entry),
                         "transition": plan.get("transition", "cut") if index == 0 else "cut"}
+                if plan.get("deflicker"):
+                    clip["deflicker"] = True
                 clips.append(clip)
                 if entry.get("has_audio", True):
                     db = plan.get("original_gain_db", 0)
@@ -74,13 +76,11 @@ def build_timeline(run, kept, entries, library):
                                   "duration": frames, "gain_db": sound.mute_envelope(frames, mutes[index], base_db=db)})
                 cursor += frames
             # Muted lines no longer sound, so the BGM should not duck under them.
-            silenced = plan.get("original_gain_db", 0) <= sound.SILENT_DB
-            talk = [] if silenced else [s for s in review.speech_segments(run, entry)
-                                        if not any(a <= (s["start"] + s["end"]) / 2 < b for a, b in plan.get("mute", []))]
+            talk = review.audible_speech(plan, review.speech_segments(run, entry))
             speech += [[start + a, start + b] for a, b in sound.map_speech(plan["cuts"], speed, talk)]
         else:
             frames = round(plan.get("photo_seconds", 3.0) * FPS)
-            clips.append({"id": f"{cid}-k0", "source": entry["id"], "from": cursor, "duration": frames,
+            clips.append({"id": f"{cid}-k0", "source": entry["id"], "from": cursor, "duration": frames, "aspect": review.display_aspect(entry),
                           "zoom": plan.get("zoom", 1), "tag": candidate["tag"], "transition": plan.get("transition", "cut")})
             cursor += frames
         for index, caption in enumerate(plan.get("captions", [])):
@@ -125,11 +125,11 @@ def build_timeline(run, kept, entries, library):
             if bgm_spans and bgm_spans[-1]["asset"] == bgm["asset"] and bgm_spans[-1]["end"] == start:
                 bgm_spans[-1]["end"] = cursor
             else:
-                bgm_spans.append({"asset": bgm["asset"], "start": start, "end": cursor,
+                bgm_spans.append({"asset": bgm["asset"], "start": start, "end": cursor, "in": round(bgm.get("offset", 0) * FPS),
                                   "gain_db": bgm.get("gain_db", sound.BGM_BASE_DB)})
     for index, span in enumerate(bgm_spans):
         frames = span["end"] - span["start"]
-        available = library[span["asset"]]["frames"]
+        available = library[span["asset"]]["frames"] - span["in"]
         if frames > available:
             warnings.append(f"{span['asset']}: 곡이 {available / FPS:.0f}초라 {frames / FPS:.0f}초 구간을 다 채우지 못합니다(반복 재생 없음)")
             frames = available
@@ -137,7 +137,7 @@ def build_timeline(run, kept, entries, library):
             continue
         talk = [[a - span["start"], b - span["start"]] for a, b in speech if b > span["start"] and a < span["start"] + frames]
         audio.append({"id": f"bgm-{index}", "kind": "bgm", "source": span["asset"], "from": span["start"], "duration": frames,
-                      "in": 0, "gain_db": sound.duck_envelope(frames, talk, base_db=span["gain_db"])})
+                      "in": span["in"], "gain_db": sound.duck_envelope(frames, talk, base_db=span["gain_db"])})
     timeline = {"schema_version": 2, "purpose": "production", "fps": FPS, "width": 1920, "height": 1080,
                 "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions, "overlays": overlays,
                 "effects": effects}

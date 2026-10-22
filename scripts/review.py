@@ -24,6 +24,7 @@ from common import digest, read_json, run_command, run_lock, safe_path, write_js
 import ingest
 import production
 import sound
+import voices
 
 FPS = 30
 CANDIDATE_ID = r"c\d{2,3}"
@@ -136,6 +137,12 @@ def validate_candidates(data, entries):
             at = _number(effect.get("at"), 0, length - 0.1, f"{cid}: effect at")
             _number(effect.get("duration"), 0.1, length - at + 0.01, f"{cid}: effect duration")
             _number(effect.get("strength", 1), 0.5, 2, f"{cid}: effect strength")
+        if not isinstance(plan.get("deflicker", False), bool) or (plan.get("deflicker") and entry["kind"] != "video"):
+            raise ValueError(f"{cid}: deflicker is true/false and only for video")
+        if plan.get("original") not in (None, "dialogue_only"):
+            raise ValueError(f"{cid}: original must be \"dialogue_only\" when set")
+        if plan.get("original") and entry["kind"] != "video":
+            raise ValueError(f"{cid}: only video candidates have original sound")
         mutes = plan.get("mute", [])
         if mutes and entry["kind"] != "video":
             raise ValueError(f"{cid}: only video candidates can mute original sound")
@@ -168,6 +175,7 @@ def validate_candidates(data, entries):
             if not re.fullmatch(audio_library.ASSET_ID, str(bgm.get("asset"))) or not bgm["asset"].startswith("bgm-"):
                 raise ValueError(f"{cid}: bgm asset must be a registered bgm-* ID")
             _number(bgm.get("gain_db", sound.BGM_BASE_DB), -40, -6, f"{cid}: bgm gain_db")
+            _number(bgm.get("offset", 0), 0, 3600, f"{cid}: bgm offset seconds")
         elif bgm is not None and not isinstance(bgm, str):
             raise ValueError(f"{cid}: bgm is a note string or {{asset, gain_db}}")
         if not isinstance(c.get("preview", False), bool):
@@ -212,6 +220,13 @@ def stage_audio(run, asset_ids, platforms):
     return staged
 
 
+def audible_speech(plan, speech):
+    """Transcript lines the viewer can still hear: the BGM must not duck under muted or silenced lines."""
+    if plan.get("original_gain_db", 0) <= sound.SILENT_DB:
+        return []
+    return [s for s in speech if not any(a <= (s["start"] + s["end"]) / 2 < b for a, b in plan.get("mute", []))]
+
+
 def speech_segments(run, entry):
     path = run / "analysis" / entry["id"] / "transcript.json"
     if entry["kind"] != "video" or not path.is_file():
@@ -220,13 +235,15 @@ def speech_segments(run, entry):
 
 
 def audio_cues(candidate, entry, total, staged, speech):
+    """BGM, SFX and shutter cues for one candidate preview."""
     plan = candidate["plan"]
     cues = []
     bgm = plan.get("bgm")
     if isinstance(bgm, dict):
-        frames = min(total, staged[bgm["asset"]]["frames"])
-        talk = sound.map_speech(plan["cuts"], plan.get("speed", 1), speech) if entry["kind"] == "video" else []
-        cues.append({"id": "bgm", "src": staged[bgm["asset"]]["src"], "from": 0, "duration": frames,
+        offset = round(bgm.get("offset", 0) * FPS)
+        frames = min(total, staged[bgm["asset"]]["frames"] - offset)
+        talk = sound.map_speech(plan["cuts"], plan.get("speed", 1), audible_speech(plan, speech)) if entry["kind"] == "video" else []
+        cues.append({"id": "bgm", "src": staged[bgm["asset"]]["src"], "from": 0, "duration": frames, "in": offset,
                      "gain": sound.duck_envelope(frames, talk, base_db=bgm.get("gain_db", sound.BGM_BASE_DB)) if frames > 1 else [[0, -80]]})
     for index, sfx in enumerate(plan.get("sfx", [])):
         if not sfx.get("asset"):
@@ -259,6 +276,10 @@ def display_aspect(entry):
 WIDE = 16 / 9
 
 
+FILL_SMOOTH = 15        # frames (0.5 s) averaged in the blurred background
+FILL_VERSION = 2        # cached fill proxies of older versions are left alone, not overwritten
+
+
 def fill_filter(aspect):
     # Proxies are padded to 1920x1080. Replace the bars with a blurred, slightly darker copy of the picture.
     if aspect < WIDE:
@@ -267,20 +288,72 @@ def fill_filter(aspect):
     else:
         height = int(round(1920 / aspect / 2)) * 2
         crop, background, foreground = f"crop=1920:{height}:0:{(1080 - height) // 2}", "scale=-2:1080,crop=1920:1080", "scale=1920:-2"
-    return (f"[0:v]{crop},split[a][b];[a]{background},boxblur=40:2,eq=brightness=-0.08:saturation=1.2[bg];"
+    # The background is a strong close-up of the picture, so bright patches moving through it make the
+    # whole fill pulse; averaging FILL_SMOOTH frames keeps it calm without touching the foreground.
+    return (f"[0:v]{crop},split[a][b];[a]{background},boxblur=40:2,tmix=frames={FILL_SMOOTH},"
+            "eq=brightness=-0.08:saturation=1.2[bg];"
             f"[b]{foreground}[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1,format=yuv420p,"
             "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv[v]")
 
 
-def filled(run, entry, timeout=3600):
-    """Entry whose proxy has blurred fill instead of black bars (vertical or very wide clips). Cached in proxy/fill/."""
-    if entry["kind"] != "video" or abs(display_aspect(entry) - WIDE) <= 0.05:
+# A photo's blurred fill, baked once: a large CSS blur in the browser can tear whole frames while rendering.
+PHOTO_FILL_FILTER = ("[0:v]split[a][b];[a]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,boxblur=40:2,"
+                     "eq=brightness=-0.08:saturation=1.2[bg];[b]scale=1920:1080:force_original_aspect_ratio=decrease[fg];"
+                     "[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuvj420p[v]")
+PHOTO_FILL_VERSION = 1
+DEFLICKER_FILTER = "deflicker=size=9:mode=am"
+DEFLICKER_VERSION = 1
+
+
+def filled_photo(run, entry, timeout=3600):
+    folder = run / "photos" / "fill"
+    folder.mkdir(exist_ok=True)
+    name = f"{entry['id']}-v{PHOTO_FILL_VERSION}"
+    final = safe_path(folder, f"{name}.jpg")
+    if not final.exists():
+        partial = safe_path(folder, f"{name}.partial.jpg")
+        if partial.exists():
+            raise ValueError(f"Existing {partial.name} requires inspection; no automatic overwrite")
+        run_command(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-i", str(safe_path(run, entry["proxy"], True)),
+                     "-filter_complex", PHOTO_FILL_FILTER, "-map", "[v]", "-frames:v", "1", "-q:v", "2", str(partial)], timeout=timeout)
+        os.link(partial, final)
+        partial.unlink()
+    return {**entry, "proxy": str(final.relative_to(run.absolute())), "display_size": [16, 9], "fill_of": entry["proxy"]}
+
+
+def deflickered(run, entry, timeout=3600):
+    """Entry whose proxy has frame-to-frame brightness pumping removed (ffmpeg deflicker). Cached in proxy/clean/."""
+    if entry["kind"] != "video":
         return entry
+    folder = run / "proxy" / "clean"
+    folder.mkdir(exist_ok=True)
+    name = f"{entry['id']}-deflicker-v{DEFLICKER_VERSION}"
+    final = safe_path(folder, f"{name}.mp4")
+    if not final.exists():
+        partial = safe_path(folder, f"{name}.partial.mp4")
+        if partial.exists():
+            raise ValueError(f"Existing {partial.name} requires inspection; no automatic overwrite")
+        command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-i", str(safe_path(run, entry["proxy"], True)),
+                   "-map", "0:v:0", "-vf", DEFLICKER_FILTER, "-c:v", "h264_videotoolbox", "-b:v", "12M"]
+        command += ["-map", "0:a:0", "-c:a", "copy"] if entry.get("has_audio") else ["-an"]
+        run_command(command + ["-movflags", "+faststart", str(partial)], timeout=timeout)
+        os.link(partial, final)
+        partial.unlink()
+    return {**entry, "proxy": str(final.relative_to(run.absolute())), "clean_of": entry["proxy"]}
+
+
+def filled(run, entry, timeout=3600):
+    """Entry whose proxy has blurred fill instead of black bars (vertical or very wide clips and photos)."""
+    if abs(display_aspect(entry) - WIDE) <= 0.05:
+        return entry
+    if entry["kind"] != "video":
+        return filled_photo(run, entry, timeout)
     folder = run / "proxy" / "fill"
     folder.mkdir(exist_ok=True)
-    final = safe_path(folder, f"{entry['id']}.mp4")
+    name = f"{entry['id']}-v{FILL_VERSION}" + ("-deflicker" if "clean_of" in entry else "")
+    final = safe_path(folder, f"{name}.mp4")
     if not final.exists():
-        partial = safe_path(folder, f"{entry['id']}.partial.mp4")
+        partial = safe_path(folder, f"{name}.partial.mp4")
         if partial.exists():
             raise ValueError(f"Existing {partial.name} requires inspection; no automatic overwrite")
         command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-i", str(safe_path(run, entry["proxy"], True)),
@@ -310,7 +383,7 @@ def render_props(candidate, entry, staged=None, speech=(), photos=None):
         kind = "video"
     else:
         segments = [{"src": entry["proxy"], "trimBefore": 0, "frames": round(plan.get("photo_seconds", 3.0) * FPS),
-                     "playbackRate": 1}]
+                     "playbackRate": 1, "aspect": display_aspect(entry)}]
         kind = "image"
     total = sum(s["frames"] for s in segments)
     captions = []
@@ -377,6 +450,7 @@ def card_html(candidate, entry, folder, timing=()):
             edit.append(f"사진 띄우기 {e(i['photo'])} {i['at']:.1f}s부터 {i['duration']:.1f}초 · {sides[i.get('position', 'right')]}")
     edit += [f"효과 {e(fx['type'])} {fx['at']:.1f}s · {fx['duration']:.1f}초" for fx in plan.get("effects", [])]
     edit += [f"원음 음소거 {clock(a)}–{clock(b)}" for a, b in plan.get("mute", [])]
+    edit += ["밝기 깜빡임 보정(deflicker)"] if plan.get("deflicker") else []
     warnings = sound.sfx_warnings([{"asset": s.get("asset") or s["name"], "from": round(s["at"] * FPS)} for s in plan.get("sfx", [])])
     edit += [f"주의: {e(w)}" for w in warnings]
     edit += [e(n) for n in plan.get("notes", [])]
@@ -385,6 +459,14 @@ def card_html(candidate, entry, folder, timing=()):
         if note["status"] == "synced":
             how = "목소리 구간" if note.get("voiced") else "전사 시각(목소리 구간을 찾지 못함)"
             edit.append(f"자막 타이밍 “{first_line}” {note['authored'][0]:.1f}s → {how} {note['spoken'][0]:.1f}–{note['spoken'][1]:.1f}s에 맞춤")
+        elif note["status"] == "separated":
+            edit.append(f"자막 겹침 조정 “{first_line}” → “{e(note['next'].split(chr(10))[0])}” 앞에서 끝냄")
+        elif note["status"] == "gated":
+            edit.append(f"원음은 대사 자막 구간에서만 들림(그 밖 {len(note['mutes'])}구간 음소거)")
+        elif note["status"] == "voice_unknown":
+            edit.append("주의: 목소리 분석 실패 → 남성 음역 여부를 확인하지 못함")
+        elif note["status"] == "male_voice":
+            edit.append("주의: 남성 음역 목소리가 들릴 수 있음 " + ", ".join(f"{clock(a)}–{clock(b)}" for a, b in note["segments"]))
         else:
             edit.append(f"주의: 대사 자막 “{first_line}”을 전사에서 찾지 못해 작성한 시각을 그대로 씁니다")
     preview = (f'<video controls preload="metadata" src="{cid}/preview.mp4"></video>'
@@ -428,6 +510,7 @@ def page_html(run_id, version, candidates, entries, folder, timing=None):
                    "".join(card_html(c, entries[e_id], folder, (timing or {}).get(c["id"], ())) for c in items)
                    for e_id, items in groups.items())
     fun = sum(c["tag"] == "fun" for c in candidates)
+    male = [cid for cid, notes in (timing or {}).items() if any(n["status"] == "male_voice" for n in notes)]
     share = production.caption_style_share({"captions": [x for c in candidates for x in c["plan"].get("captions", [])]})
     ratio = ("자막 비율: 스타일 자막 없음" if share["variety_share"] is None else
              f"자막 비율: 예능 {share['variety']} · 감성 {share['mood']} · 대사 {share['dialogue']} "
@@ -436,6 +519,7 @@ def page_html(run_id, version, candidates, entries, folder, timing=None):
     variation = production.preset_warnings([x for c in candidates for x in c["plan"].get("captions", [])])
     if variation:
         ratio += " · 자막 variation: " + " / ".join(variation)
+    ratio += (" · 남성 음역 목소리 남음: " + ", ".join(male)) if male else " · 남성 음역 목소리: 남은 후보 없음(음높이 추정)"
     return f'''<!doctype html>
 <html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>vlog-me · 후보 리뷰 v{version}</title>
@@ -492,7 +576,14 @@ def build(run_id):
                 # Dialogue captions are re-timed to the spoken words; candidates.json keeps the authored values.
                 candidate, timing[authored["id"]] = caption_sync.sync_candidate(authored, entry, caption_sync.load_words(run, entry),
                                                                                  caption_sync.load_voicing(run, entry))
+                heard = male_voice(run, entry, candidate["plan"], timeout)
+                if heard is None:
+                    timing[authored["id"]].append({"text": "", "status": "voice_unknown"})
+                elif heard:
+                    timing[authored["id"]].append({"text": "", "status": "male_voice", "segments": heard})
                 timed.append(candidate)
+                if candidate["plan"].get("deflicker"):
+                    entry = deflickered(run, entry, timeout)
                 entry = filled(run, entry, timeout)
                 (folder / candidate["id"]).mkdir()
                 proxy = safe_path(run, entry["proxy"], True)
@@ -534,6 +625,34 @@ def build(run_id):
                          next_action=f"inspect review/v{version}; fix candidates.json and build again")
             write_json(run / "state.json", state, replace=True)
             raise
+
+
+def voice_profile(run, entry, timeout=600):
+    """Cached voices.analyze result for a video (work/<run>/voices/<id>.json), or None without audio."""
+    if entry["kind"] != "video" or not entry.get("has_audio", True):
+        return None
+    cache = run / "voices" / f"{entry['id']}.json"
+    if cache.is_file():
+        data = read_json(cache)
+        if data.get("proxy_sha256") == entry.get("proxy_sha256") and data.get("version") == voices.VERSION:
+            return data
+    try:
+        data = {**voices.analyze(safe_path(run, entry["proxy"], True), timeout), "proxy_sha256": entry.get("proxy_sha256")}
+    except (RuntimeError, ValueError) as exc:
+        return {"error": str(exc)[:200]}
+    cache.parent.mkdir(exist_ok=True)
+    write_json(cache, data, replace=cache.is_file())
+    return data
+
+
+def male_voice(run, entry, plan, timeout=600):
+    """Male-range voice still audible in a timed plan, as source-second ranges."""
+    profile = voice_profile(run, entry, timeout)
+    if not profile:
+        return []
+    if "error" in profile:
+        return None
+    return voices.unmuted(profile["segments"], plan["cuts"], plan.get("mute", []), plan.get("original_gain_db", 0))
 
 
 def validate_selection(data, candidates):

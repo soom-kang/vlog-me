@@ -55,6 +55,9 @@ Claude Code 주 세션이 프로젝트 Skill(`/vlog-workflow`, `vlog-scout`, `k-
 - `inserts`: 영상 위에 사진을 띄웁니다. 예: `[{"photo": "p053", "at": 1.6, "duration": 5.2, "position": "right", "tilt": 4}]`. 위치는 `left`/`right`, 기울기는 ±10도 안입니다. timeline에서는 `overlays`가 됩니다.
 - `mute`: 원본 기준 초 구간의 원음을 짧은 페이드와 함께 끕니다. 예: `[[78.7, 79.7]]`. 끈 구간의 전사는 BGM ducking 기준에서 빠집니다.
 - `original_gain_db: -80`처럼 원음을 통째로 끄면 그 후보에서는 BGM이 대사 때문에 낮아지지 않습니다.
+- `deflicker: true`: 역광·야경에서 프레임마다 밝기가 출렁이는 영상에 ffmpeg deflicker를 적용한 영상(`proxy/clean/`)을 미리 만들어 리뷰·렌더에 씁니다.
+- 세로 영상과 사진의 블러 배경은 미리 구워 둡니다(`proxy/fill/<id>-v2.mp4`, `photos/fill/<id>-v1.jpg`). 배경은 0.5초 시간 평균으로 깜빡임을 막고, 렌더러는 이때 CSS 블러를 그리지 않습니다.
+- 리뷰 미리보기(0.5배 캡처)에서 가끔 화면 전체가 밀린 프레임이 나올 수 있습니다. 2026-10-21 c20에서 확인했고, 1배 본편 렌더에서는 나타나지 않았습니다.
 
 ### 4. 조립과 렌더
 
