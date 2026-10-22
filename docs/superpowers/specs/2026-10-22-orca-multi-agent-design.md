@@ -1,7 +1,7 @@
 # Orca 멀티 에이전트 개발 구조 설계
 
 - 날짜: 2026-10-22
-- 상태: 설계 초안(사용자 승인 전)
+- 상태: 설계 완료, 사용자 승인 대기
 - 범위: vlog-me **코드 개발 작업**만 해당합니다. 영상 편집과 production run은 대상이 아닙니다.
 
 ## 1. 의도와 배경
@@ -74,7 +74,7 @@ Claude 사용량 한도(토큰)가 바닥나도 개발이 멈추지 않도록 Co
   - 실행할 검증 명령(`./init.sh`, 관련 `python3 -m pytest tests/...`, renderer 타입 검사·lint).
   - 금지 사항: push, main 병합, `feature_list.json`·`progress.md`·`session-handoff.md` 수정, 테스트 기대값을 약하게 바꾸기, 다운로드, 렌더, 외부 호출.
   - worker 브랜치에 하는 로컬 커밋은 허용합니다.
-- Codex 실행 시 sandbox는 worktree 쓰기만 허용하는 모드로 둡니다. 구체적인 Codex 설정 키는 구현할 때 확인합니다(§9).
+- Codex 실행 시 sandbox는 worktree 쓰기만 허용하는 모드로 둡니다. 구체적인 Codex 설정 키는 구현할 때 확인합니다(§10).
 - **격리 수준(Claude 판단):** Codex sandbox는 보통 쓰기만 제한하고 읽기는 막지 않습니다. 그래서 절대 경로로 main checkout의 `sources/`를 읽는 것을 기술적으로 완전히 막지는 못합니다. 이 설계는 CLAUDE.md의 원칙("permission과 helper 검사는 OS sandbox가 아니라 겹겹의 방어")을 따릅니다. 방어는 다음 세 겹입니다. (1) worktree에 `sources/`가 없음, (2) `AGENTS.md` 금지 규칙, (3) coordinator가 병합 전에 diff와 worker transcript에서 `sources/`·`work/` 경로 언급을 확인. OS 수준 격리(별도 사용자, 별도 clone이나 호스트)는 하지 않습니다.
 - plan·review worker도 child worktree(또는 coordinator worktree)에서 **읽기 전용 역할**로 실행하고, 같은 금지 규칙을 지시문에 넣습니다. Claude worker에게는 worktree에 포함된 `.claude/settings.json`과 hook이 그대로 적용됩니다.
 - **툴체인(Claude 판단):** `.tools/`와 `renderer/node_modules`는 gitignore 대상이라 새 worktree에 없습니다. Orca setup hook이 main checkout의 두 디렉터리를 worktree에 symlink합니다. 미디어가 아니므로 격리 원칙에 어긋나지 않고, 다운로드도 필요 없습니다. 그래서 `./init.sh` 전체 검증을 worktree 안에서 실행할 수 있습니다.
@@ -102,7 +102,8 @@ Claude 사용량 한도(토큰)가 바닥나도 개발이 멈추지 않도록 Co
 - fallback은 `worker-start --task <같은 task> --retry-of <실패한 dispatch> --agent codex --model <fallback 모델> --effort xhigh`로 실행합니다.
 - 한도 초과가 아닌 실패(코드 오류, 잘못된 지시)는 fallback하지 않습니다. coordinator가 원인을 보고 사용자에게 알립니다.
 - fallback이 일어나면 상태 파일과 최종 보고에 "어떤 단계가 어떤 모델로 넘어갔는지"를 적습니다.
-- 응답 없는 worker를 한도 초과로 추정해 멈추지 않습니다. Orca orchestration 규칙대로 종료가 확인된 경우에만 재실행합니다.
+- **살아 있는 채 멈춘 worker(사용자 결정, 2026-10-22):** Claude Code는 한도에 걸리면 종료하지 않고 기다리는 경우가 많습니다. `worker-read` 출력에 사용량 한도 초과 메시지가 **분명히** 보이면, coordinator가 `worker-stop`으로 그 dispatch를 멈추고 위와 같이 `--retry-of`로 재실행합니다. 멈춘 근거(출력 발췌)를 상태 파일에 남깁니다.
+- 한도 메시지 없이 응답만 없는 worker는 한도 초과로 추정해 멈추지 않습니다. Orca orchestration 규칙대로 기다리거나 사용자에게 알립니다.
 
 ### 6.3 coordinator 단계 이어받기(수동)
 - coordinator, plan, review가 같은 Claude 계정 한도를 나눠 쓰므로, 이 경로가 생각보다 자주 쓰일 수 있습니다. 그래서 구현 순서는 상태 파일과 §6.3 이어받기를 먼저 만들고, §6.2 자동 감지는 그다음에 붙입니다(Claude 판단).
@@ -144,7 +145,13 @@ Claude 사용량 한도(토큰)가 바닥나도 개발이 멈추지 않도록 Co
 
 `config/project.json`, `config/*.example.json`, `scripts/production.py`, `scripts/common.py`는 바꾸지 않습니다.
 
-## 9. builder에게 맡기는 부분과 먼저 확인할 것
+## 9. 이 기능을 만드는 방식
+
+- 이 기능 자체는 **현재 규칙대로 Claude 단일 세션에서** 만듭니다. Orca 흐름은 이 기능이 완성되고 승인된 뒤부터 씁니다.
+- 시작 시점의 main은 사용자가 이전 변경을 커밋해 깨끗한 상태입니다(커밋 `994191d`, 2026-10-22).
+- `feature_list.json`에서 진행 중인 `first-real-sample`은 이 기능을 시작할 때 보류로 표시하고, 이 기능을 새 feature로 등록합니다. 진행 중인 기능은 하나만 둡니다(Claude 판단).
+
+## 10. builder에게 맡기는 부분과 먼저 확인할 것
 
 **구현 첫 단계에서 확인(spike)**
 - Claude·Codex worker가 사용량 한도에 걸렸을 때 Orca에서 어떻게 보이는지(`failed`로 끝나는지, 멈춘 채 `live`로 남는지)와 출력 메시지 형식. 실제 한도를 일부러 채울 수는 없으므로, 존재하지 않는 모델 ID로 worker를 띄워 실패 receipt 모양을 보고, 기존 Claude·Codex 로그에서 rate limit 메시지 형식을 확인합니다. 결과에 따라 §6.2의 감지 방법을 확정합니다.

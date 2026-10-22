@@ -2,6 +2,9 @@
 
 ## Current Objective
 
+2026-10-22: 개발 작업 전용 Orca 흐름(`orca-dev-orchestration`)을 구현했습니다. 운영 절차는 `docs/orca.md`, Codex 규칙은 `AGENTS.md`, 근거는 reports/orca-dev-orchestration.md입니다. production은 그대로 Claude 단일 세션입니다. vlog-me는 Orca repo로 등록했고(2026-10-22), 실패 receipt 확인도 마쳤습니다(reports/orca-spike-2026-10-22.md 3번). 남은 일: 사용자의 `orca.yaml` 승인, 첫 실제 Orca Run(사용자가 기능을 지정할 때). `first-real-sample`은 on_hold이며, 재개는 사용자 결정입니다.
+
+이전 목표(보류 중):
 첫 실제 sample(`sources/vietnam-20260527/`)을 후보 리뷰까지 진행했습니다. run `prod-20261019-075246-e19437c2`는 `reviewed/pending`이며 사용자 선택을 기다립니다. 근거는 reports/first-sample-review-2026-10-19.md입니다.
 
 - phase: production (`config/project.json`), `.claude/settings.json`의 `sources/` 읽기 deny 해제(쓰기 deny·hook 유지)

@@ -151,8 +151,8 @@
       "dependencies": [
         "project-skills"
       ],
-      "status": "in_progress",
-      "evidence": "reports/first-sample-review-2026-10-19.md; render/v3/verify.json (8/8, -14.16 LUFS, -2.1 dBTP); tests/test_inserts.py; 118 tests PASS on setup-config copy; typecheck/lint PASS; human viewing/listening NOT_RUN"
+      "status": "on_hold",
+      "evidence": "reports/first-sample-review-2026-10-19.md; render/v3/verify.json (8/8, -14.16 LUFS, -2.1 dBTP); tests/test_inserts.py; 118 tests PASS on setup-config copy; typecheck/lint PASS; human viewing/listening NOT_RUN; 2026-10-22 orca-dev-orchestration 작업 동안 보류"
     },
     {
       "id": "phase-aware-harness",
@@ -183,6 +183,25 @@
       ],
       "status": "completed",
       "evidence": "work/prod-20261020-053818-932c04b5/render/v1/final.mp4 (4:40.9, 8428 frames, -14.5 LUFS, -1.84 dBTP, QA 8/8 PASS); 42 adopted / 8 dropped; review v10 + review/sample-v10.mp4; fixes: c22 back to 5.4 s, deflicker on c23/c26/c35/c48, baked photo fill, oversampled limiter (render_prod.LIMIT 0.70) after first QA FAIL true_peak -0.57 dBTP (kept as render/v1/final.failed-truepeak.partial.mp4); frame scan: no isolated glitch frames except the planned c47 shake; human viewing of the final NOT_RUN"
+    },
+    {
+      "id": "orca-dev-orchestration",
+      "name": "Orca multi-agent development workflow",
+      "description": "Development-only Orca flow: Claude coordinator/plan, Codex coding in child worktrees, conditional independent review, usage-limit fallback to Codex models. Production stays Claude single-session.",
+      "dependencies": [
+        "phase-aware-harness"
+      ],
+      "status": "completed",
+      "evidence": "reports/orca-dev-orchestration.md; reports/orca-spike-2026-10-22.md; ./init.sh PASS (158 tests); dev-check PASS in media-free worktree (157); tests/test_orca_harness.py; failed-receipt spike PASS; real dev Orca Run and usage-limit fallback NOT_RUN",
+      "done_criteria": [
+        "CLAUDE.md and docs/workflow.md scope split",
+        "AGENTS.md",
+        "docs/orca.md and worker templates",
+        "scripts/orca-setup.sh",
+        "tests/test_orca_harness.py PASS",
+        "spike results recorded",
+        "./init.sh PASS"
+      ]
     }
   ]
 }

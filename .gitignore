@@ -17,4 +17,5 @@ sources/
 .env.*
 *.local.json
 .claude/settings.local.json
+.orca-runs/
 /assets/

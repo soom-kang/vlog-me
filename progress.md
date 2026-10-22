@@ -2,8 +2,9 @@
 
 ## Current State
 
-- Last Updated: 2026-10-19 Asia/Seoul
-- Active Feature: first-real-sample. `sources/vietnam-20260527/`로 첫 실제 sample을 진행 중이며 최종 렌더 완료(`render/v3/final.mp4`, 56.9초, QA PASS). 노을 BGM은 Mixkit Serene View로 교체(다운로드 1건, 사용자 위임). 사용자 시청 대기. 근거: reports/first-sample-review-2026-10-19.md
+- Last Updated: 2026-10-22 Asia/Seoul
+- 2026-10-22 Active Feature: orca-dev-orchestration. 개발 작업 전용 Orca 흐름(Claude coordinator·plan, Codex coding, 조건부 독립 리뷰, 한도 초과 시 Codex fallback)을 Claude 단일 세션에서 구현 중. 설계 docs/superpowers/specs/2026-10-22-orca-multi-agent-design.md, 계획 docs/superpowers/plans/2026-10-22-orca-multi-agent.md. first-real-sample은 그동안 보류(on_hold). 구현 완료: AGENTS.md, docs/orca.md, docs/orca/ 템플릿 4개, orca.yaml, scripts/dev-check.sh, tests/test_orca_harness.py. ./init.sh PASS(158), 원본 없는 임시 worktree에서 dev-check PASS(157). Orca repo 등록과 실패 receipt 확인(가짜 모델 ID → dispatch_input/providerRejected, 정리 완료)은 PASS. 실제 개발 Run·한도 초과 fallback은 NOT_RUN. 근거 reports/orca-dev-orchestration.md.
+- (보류) first-real-sample. `sources/vietnam-20260527/`로 첫 실제 sample을 진행 중이며 최종 렌더 완료(`render/v3/final.mp4`, 56.9초, QA PASS). 노을 BGM은 Mixkit Serene View로 교체(다운로드 1건, 사용자 위임). 사용자 시청 대기. 근거: reports/first-sample-review-2026-10-19.md
 - 2026-10-21 본편 렌더 완료: `work/prod-20261020-053818-932c04b5/render/v1/final.mp4`(4분 41초, QA 8/8 PASS, -14.5 LUFS, true peak -1.84 dBTP). 처음 렌더는 true peak -0.57 dBTP로 QA FAIL이었습니다. 리미터를 4배 오버샘플링으로 바꿔 다시 마무리했습니다. 깜빡임 보정(deflicker)과 사진 블러 배경 미리 굽기를 추가했습니다. 사람 시청 확인은 아직입니다.
 - 2026-10-21 본편 선택 확정: 사용자가 v8의 대사 사이 편집이 흐름을 끊는다고 해서 v7 후보로 되돌렸습니다. v7 피드백을 반영해 리뷰 v9와 `review/sample-v9.mp4`(4분 42초)를 만들고 선택을 기록했습니다(채택 42, 삭제 8, 스토리 순서). 고친 것: 세로 영상 블러 배경 깜빡임(시간 평균), 사진 쌓기 흰 플래시 제거, c15·c22·c25 대사 끝까지, c49는 망고에서 끝, BGM은 곡마다 이어서 재생. 다음은 사용자가 요청하면 조립과 렌더입니다.
 - 2026-10-20 본편 v2 피드백 3차: 남자 목소리는 그녀의 말과 겹치지 않으면 뮤트 대신 편집으로 잘라냅니다(c07·c48). 흔들림·흐림 측정으로 c04·c09·c15·c17·c37·c41을 다듬었습니다. 자동 흔들림 보정은 ffmpeg deshake와 자체 보정을 모두 시험했는데 효과가 없어 넣지 않았습니다. 결과물은 리뷰 v8과 `review/sample-v8.mp4`(5분 40초)입니다.

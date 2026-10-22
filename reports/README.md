@@ -4,6 +4,7 @@
 
 ## 현재 기준
 
+- [orca-dev-orchestration.md](orca-dev-orchestration.md): 개발 작업용 Orca 멀티 에이전트 흐름 구현·검증·한계(2026-10-22). 사전 확인은 [orca-spike-2026-10-22.md](orca-spike-2026-10-22.md)
 - [first-sample-review-2026-10-19.md](first-sample-review-2026-10-19.md): 첫 실제 sample(vietnam-20260527) 후보 리뷰까지의 진행·제한
 - [preview-only-review.md](preview-only-review.md): 현재 시작·미리보기 동작, 검증, 제한
 - [project-review-2026-10-19.md](project-review-2026-10-19.md): 실제 제작 목표 기준의 적대적 리뷰와 개선 계획

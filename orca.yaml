@@ -1,0 +1,5 @@
+# Orca reads this for new worktrees. Share only gitignored toolchain folders, never media.
+worktree:
+  sharedDirectories:
+    - .tools
+    - renderer/node_modules
