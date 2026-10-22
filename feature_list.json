@@ -211,8 +211,8 @@
         "caption-system",
         "orca-dev-orchestration"
       ],
-      "status": "in_progress",
-      "evidence": "진행 중"
+      "status": "completed",
+      "evidence": "reports/mood-vlog-style.md; merge 95259e0; dev-check PASS(180, 7 skip); init.sh PASS. 갤러리 still·렌더 NOT_RUN"
     }
   ]
 }

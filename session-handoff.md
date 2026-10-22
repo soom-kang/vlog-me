@@ -2,6 +2,8 @@
 
 ## Current Objective
 
+2026-10-22 (최신): `mood-vlog-style`을 완료하고 병합했습니다(`95259e0`, Orca Run run_35eda3424ac5, 상태 파일 `.orca-runs/run_35eda3424ac5.md`). 감성 90 · 예능 10, 내레이션 자막, 감성 preset 10개, look·light_leak·dissolve·drift가 들어갔고, 자막 Skill은 `k-mood-caption`입니다. 다음 허용 행동은 둘입니다. (1) 사용자가 동의하면 갤러리 still 두 장을 만듭니다: `node renderer/scripts/gallery.mjs reports/caption-gallery-v2.jpg`, `node renderer/scripts/gallery.mjs reports/look-gallery.jpg LookGallery`. 기존 caption-gallery.jpg는 덮어쓰지 않습니다. 사용자가 보고 크기·위치·톤을 조정합니다. (2) 영상 편집·렌더는 사용자가 따로 요청할 때 `/vlog-workflow`로 시작합니다. 기존 prod run의 timeline은 고치지 않았습니다. 정리할 것: worktree `/Users/soom.kang/orca/workspaces/vlog-me/orca-mood-vlog-style`과 브랜치 `soom-kang/orca-mood-vlog-style`은 사용자 확인 뒤 지웁니다. Orca new-child는 origin/main에서 만들어지므로 다음부터 `--base-branch main`을 씁니다. 근거: reports/mood-vlog-style.md.
+
 2026-10-22: 개발 작업 전용 Orca 흐름(`orca-dev-orchestration`)을 구현했습니다. 운영 절차는 `docs/orca.md`, Codex 규칙은 `AGENTS.md`, 근거는 reports/orca-dev-orchestration.md입니다. production은 그대로 Claude 단일 세션입니다. vlog-me는 Orca repo로 등록했고(2026-10-22), 실패 receipt 확인도 마쳤습니다(reports/orca-spike-2026-10-22.md 3번). 남은 일: 사용자의 `orca.yaml` 승인, 첫 실제 Orca Run(사용자가 기능을 지정할 때). `first-real-sample`은 on_hold이며, 재개는 사용자 결정입니다.
 
 이전 목표(보류 중):

@@ -4,12 +4,13 @@
 
 ## 현재 기준
 
+- [mood-vlog-style.md](mood-vlog-style.md): 감성 90 · 예능 10 자막·화면 톤 환경(2026-10-22). 갤러리 still은 아직 만들지 않았습니다
 - [orca-dev-orchestration.md](orca-dev-orchestration.md): 개발 작업용 Orca 멀티 에이전트 흐름 구현·검증·한계(2026-10-22). 사전 확인은 [orca-spike-2026-10-22.md](orca-spike-2026-10-22.md)
 - [first-sample-review-2026-10-19.md](first-sample-review-2026-10-19.md): 첫 실제 sample(vietnam-20260527) 후보 리뷰까지의 진행·제한
 - [preview-only-review.md](preview-only-review.md): 현재 시작·미리보기 동작, 검증, 제한
 - [project-review-2026-10-19.md](project-review-2026-10-19.md): 실제 제작 목표 기준의 적대적 리뷰와 개선 계획
 - `unit4-expected-frame-synthetic.jpg`: 단위 4 기대 화면 still 예시(합성 영상, 단위 5 이전의 시스템 폰트)
-- `caption-gallery.jpg`: 현재 자막 preset 33종 갤러리(2026-10-20, 첫 sample 피드백 반영). `node renderer/scripts/gallery.mjs reports/caption-gallery.jpg`로 다시 만듭니다
+- `caption-gallery.jpg`: 2026-10-22 이전 자막 preset 33종 갤러리(2026-10-20, 첫 sample 피드백 반영). `node renderer/scripts/gallery.mjs reports/caption-gallery.jpg`로 다시 만듭니다
 - `unit5-caption-gallery.jpg`: 단위 5 당시 preset 14종(과거 기록)
 - `preview-only-checks.log`, `preview-only-lifecycle.json`, `preview-only-browser.json`, `preview-only-viewer.png`: 위 전환의 최종 실행 증거
 
