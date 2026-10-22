@@ -202,6 +202,17 @@
         "spike results recorded",
         "./init.sh PASS"
       ]
+    },
+    {
+      "id": "mood-vlog-style",
+      "name": "감성 90 / 예능 10 브이로그 스타일 환경",
+      "description": "자막 비율을 감성 90 / 예능 10으로 뒤집고, 대사 없는 풍경 장면에서 자막만으로 이야기를 전하는 내레이션 자막과 감성 효과를 추가합니다(레퍼런스: 오눅, 강민경). 렌더 없음, Orca 개발 흐름.",
+      "dependencies": [
+        "caption-system",
+        "orca-dev-orchestration"
+      ],
+      "status": "in_progress",
+      "evidence": "진행 중"
     }
   ]
 }
