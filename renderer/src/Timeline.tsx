@@ -3,6 +3,7 @@ import {Audio, Video} from '@remotion/media';
 import {gainAt} from './gain.mjs';
 import {CandidateComposition} from './production/CandidatePreview';
 import {GalleryComposition} from './production/CaptionGallery';
+import {LookGalleryComposition} from './production/LookGallery';
 import {ProductionComposition} from './production/ProductionTimeline';
 
 type Interval = {id: string; from: number; duration: number};
@@ -55,6 +56,7 @@ export const Root = () => (
       width: props.timeline.width, height: props.timeline.height})} />
   <CandidateComposition />
   <GalleryComposition />
+  <LookGalleryComposition />
   <ProductionComposition />
   </>
 );

@@ -131,6 +131,15 @@ class FontLockTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("VLOG_MEDIA_TESTS") == "1", "set VLOG_MEDIA_TESTS=1 (scripts/smoke-media.sh)")
 class GalleryMediaTests(unittest.TestCase):
+    def test_look_gallery_dimensions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(os.path.realpath(tmp)) / "look-gallery.jpg"
+            subprocess.run(["node", str(PROJECT_ROOT / "renderer/scripts/gallery.mjs"), str(output), "LookGallery"],
+                           check=True, capture_output=True, text=True, timeout=300)
+            probe = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-of", "json", str(output)],
+                                              check=True, capture_output=True, text=True).stdout)
+            self.assertEqual((probe["streams"][0]["width"], probe["streams"][0]["height"]), (1920, 2160))
+
     def test_gallery_renders_every_preset(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(os.path.realpath(tmp)) / "gallery.jpg"

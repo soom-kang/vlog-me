@@ -61,3 +61,14 @@ test('light leak has a capped plateau and clamps short cues', () => {
   assert.equal(lightLeakOpacity(30, 60, 2), 0.5);
   assert.equal(lightLeakOpacity(30, 60, 1), 0.3);
 });
+
+test('gallery still shows all narration lines and subtitle before fade-out', () => {
+  const lines = ['오늘은 조금 천천히 걷기로 했다', '바람이 먼저 와 있었다', '그걸로 충분했다'];
+  const starts = narrationLineStarts(lines, 180, 30, rules);
+  assert.deepEqual(starts, [0, 65, 115]);
+  const localFrame = 30 + 120;
+  assert.ok(starts.at(-1) + rules.fade_frames * 2 <= localFrame);
+  assert.ok(localFrame < 180 - rules.fade_frames);
+  assert.equal(softFade(localFrame, 180, registry.soft_fade_frames), 1);
+  assert.ok(localFrame < 180 - 12); // Existing layout fade-outs start no earlier than frame 168.
+});
