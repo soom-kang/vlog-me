@@ -133,9 +133,9 @@ class ProductionTests(unittest.TestCase):
 class TimelineV2Tests(unittest.TestCase):
     def test_production_example_has_mood_direction(self):
         example = common.read_json(PROJECT_ROOT / "config/production.example.json")
-        self.assertEqual(example["caption_style"], "mood 90 / variety 10")
+        self.assertEqual(example["caption_style"], "mood 95 / variety 5")
         self.assertEqual(example["editorial_direction"],
-                         "mood 90 / fun 10, quiet scenery and first-person narration with a light touch of everyday humor")
+                         "mood 95 / fun 5, premium mood vlog (docs/house-style.md): scenery and spoken-tone captions, her voice only when she talks to camera alone")
 
     def test_dissolve_and_drift_rules(self):
         timeline, sources = edit_fixture()

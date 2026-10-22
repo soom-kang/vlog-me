@@ -161,7 +161,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/vlog-workflow",
       "files": {
-        "SKILL.md": "e06e1b47879c053328810fa062c476c998dd38ca9900883477ac2d9e08e00a70"
+        "SKILL.md": "b98f7dc5691a74970bb31123ea75b0d5c60885e4569e56d6a14991fa1a90f264"
       }
     },
     {
@@ -172,7 +172,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/vlog-scout",
       "files": {
-        "SKILL.md": "1ff3005bc04b7d890d1c8db3fa5b310df087895b53790db5de0c891968a1564f"
+        "SKILL.md": "66b4da1a3ae9cd04a42f53154516ac43477d07e2ef8b6e87dfc1709d326dde61"
       }
     },
     {
@@ -183,7 +183,7 @@
       "scope": "project-custom",
       "path": ".claude/skills/k-mood-caption",
       "files": {
-        "SKILL.md": "28433ff442e7348f01adcf19e4c8429e65c8e2ef289538a2d07e1f6d038615f1"
+        "SKILL.md": "1dfc3f8a81c0ab5f9e0b4cf2072208ab291cef4941527d91f7c987087e8dbbf9"
       }
     },
     {

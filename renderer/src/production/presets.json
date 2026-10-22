@@ -1,6 +1,6 @@
 {
-  "target_mood_share": 0.9,
-  "share_window": [0.8, 1.0],
+  "target_mood_share": 0.95,
+  "share_window": [0.85, 1.0],
   "max_lines": 2,
   "max_sub_chars": 36,
   "max_same_preset_in_a_row": 2,
@@ -16,14 +16,14 @@
   },
   "motion": {"dissolve_frames": 15, "drift_scale": 1.05, "light_leak_min_frames": 15},
   "kinds": {
-    "variety": {"group": "variety", "max_chars": 18, "presets": ["deadpan", "pop", "shout", "punch", "drop", "shake"]},
+    "variety": {"group": "variety", "max_chars": 18, "presets": ["deadpan", "pop", "shout", "punch", "drop", "shake", "pop-word"]},
     "situation": {"group": "variety", "max_chars": 28,
                   "presets": ["box-dark", "box-yellow", "box-pink", "box-mint", "box-sky", "ribbon", "sticker", "stamp", "bubble"]},
     "sfx_text": {"group": "variety", "max_chars": 8, "presets": ["pen-sfx", "tilt-red", "tilt-blue", "burst", "whoosh"]},
     "inner_voice": {"group": "variety", "max_chars": 24, "presets": ["pen-note", "bracket", "whisper", "thought"]},
-    "dialogue": {"group": "dialogue", "max_chars": 32, "presets": ["dialogue-soft", "dialogue", "dialogue-box"]},
-    "mood": {"group": "mood", "max_chars": 26, "presets": ["soft-caption", "blur-in", "bilingual", "serif-fade", "serif-low", "editorial", "letter-fade", "film-line", "pen-script"]},
-    "narration": {"group": "mood", "max_chars": 22, "max_lines": 4, "presets": ["diary", "diary-center", "letter", "typewriter"]},
-    "place": {"group": "mood", "max_chars": 20, "presets": ["place-card", "place-editorial", "chapter"]}
+    "dialogue": {"group": "dialogue", "max_chars": 32, "presets": ["talk", "dialogue-soft", "dialogue", "dialogue-box"]},
+    "mood": {"group": "mood", "max_chars": 26, "presets": ["talk-mood", "soft-caption", "blur-in", "bilingual", "serif-fade", "serif-low", "editorial", "letter-fade", "film-line", "pen-script"]},
+    "narration": {"group": "mood", "max_chars": 22, "max_lines": 4, "presets": ["talk-note", "diary", "diary-center", "letter", "typewriter"]},
+    "place": {"group": "mood", "max_chars": 20, "presets": ["place-tiny", "place-card", "place-editorial", "chapter"]}
   }
 }

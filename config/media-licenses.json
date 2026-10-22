@@ -966,6 +966,143 @@
       "channels": 2,
       "integrated_lufs": -13.3,
       "true_peak_dbtp": 1.4
+    },
+    {
+      "id": "bgm-forest-mist",
+      "kind": "bgm",
+      "file": "assets/audio/library/mixkit-148/forest-mist-whispers-alejandro-magana.mp3",
+      "sha256": "30232da0b9521ed35e009162bfe7c63d06c9c8e4ca81ea5137ab63a9dc66cd98",
+      "title": "Forest Mist Whispers",
+      "author": "Alejandro Magaña (A. M.)",
+      "source": "https://mixkit.co/free-stock-music/mood/emotional/ (item 148, https://assets.mixkit.co/music/148/148.mp3)",
+      "origin": "claude_search",
+      "registered_on": "2026-10-22",
+      "free": true,
+      "license": "Mixkit Free Music License",
+      "license_status": "verified",
+      "license_evidence": "https://mixkit.co/license/#musicFree — 상업·비상업 무료, YouTube 사용 허용, 출처 표기 의무 없음(2026-10-22 확인). 사용자가 2026-10-22 채팅으로 이 곡 다운로드를 승인",
+      "claim_status": "documented_low_risk",
+      "claim_evidence": "Mixkit 약관이 음원의 권리관리 서비스(Content ID 등) 등록을 금지하고, claim 발생 시 team@mixkit.co로 안내. no-claim 보증 아님",
+      "requires_whitelist": false,
+      "allowed_platforms": [
+        "youtube"
+      ],
+      "attribution_required": true,
+      "attribution_text": "Music: Forest Mist Whispers - Alejandro Magaña (A. M.) (Mixkit)",
+      "moods": [
+        "calm",
+        "warm"
+      ],
+      "vocals": false,
+      "platform_check": "not_checked",
+      "duration_seconds": 150.936,
+      "sample_rate": 48000,
+      "channels": 2,
+      "integrated_lufs": -14.8,
+      "true_peak_dbtp": -0.0
+    },
+    {
+      "id": "bgm-chillax",
+      "kind": "bgm",
+      "file": "assets/audio/library/mixkit-655/chillax-francisco-alvear.mp3",
+      "sha256": "06afab7e30716dd5e73f9f5caa498c986b31e0e2bd618136372d6a7d8148b611",
+      "title": "Chillax",
+      "author": "Francisco Alvear",
+      "source": "https://mixkit.co/free-stock-music/mood/emotional/ (item 655, https://assets.mixkit.co/music/655/655.mp3)",
+      "origin": "claude_search",
+      "registered_on": "2026-10-22",
+      "free": true,
+      "license": "Mixkit Free Music License",
+      "license_status": "verified",
+      "license_evidence": "https://mixkit.co/license/#musicFree — 상업·비상업 무료, YouTube 사용 허용, 출처 표기 의무 없음(2026-10-22 확인). 사용자가 2026-10-22 채팅으로 이 곡 다운로드를 승인",
+      "claim_status": "documented_low_risk",
+      "claim_evidence": "Mixkit 약관이 음원의 권리관리 서비스(Content ID 등) 등록을 금지하고, claim 발생 시 team@mixkit.co로 안내. no-claim 보증 아님",
+      "requires_whitelist": false,
+      "allowed_platforms": [
+        "youtube"
+      ],
+      "attribution_required": true,
+      "attribution_text": "Music: Chillax - Francisco Alvear (Mixkit)",
+      "moods": [
+        "calm",
+        "warm"
+      ],
+      "vocals": false,
+      "platform_check": "not_checked",
+      "duration_seconds": 144.0,
+      "sample_rate": 44100,
+      "channels": 2,
+      "integrated_lufs": -19.2,
+      "true_peak_dbtp": -3.2
+    },
+    {
+      "id": "bgm-slow-pop",
+      "kind": "bgm",
+      "file": "assets/audio/library/mixkit-351/slow-pop-arulo.mp3",
+      "sha256": "82f868158c7895f4887fe314e2aeecbe3ded318f5634d116980a1827e7dfda34",
+      "title": "Slow Pop",
+      "author": "Arulo",
+      "source": "https://mixkit.co/free-stock-music/mood/emotional/ (item 351, https://assets.mixkit.co/music/351/351.mp3)",
+      "origin": "claude_search",
+      "registered_on": "2026-10-22",
+      "free": true,
+      "license": "Mixkit Free Music License",
+      "license_status": "verified",
+      "license_evidence": "https://mixkit.co/license/#musicFree — 상업·비상업 무료, YouTube 사용 허용, 출처 표기 의무 없음(2026-10-22 확인). 사용자가 2026-10-22 채팅으로 이 곡 다운로드를 승인",
+      "claim_status": "documented_low_risk",
+      "claim_evidence": "Mixkit 약관이 음원의 권리관리 서비스(Content ID 등) 등록을 금지하고, claim 발생 시 team@mixkit.co로 안내. no-claim 보증 아님",
+      "requires_whitelist": false,
+      "allowed_platforms": [
+        "youtube"
+      ],
+      "attribution_required": true,
+      "attribution_text": "Music: Slow Pop - Arulo (Mixkit)",
+      "moods": [
+        "calm",
+        "travel",
+        "warm"
+      ],
+      "vocals": false,
+      "platform_check": "not_checked",
+      "duration_seconds": 97.641,
+      "sample_rate": 44100,
+      "channels": 2,
+      "integrated_lufs": -14.0,
+      "true_peak_dbtp": 0.0
+    },
+    {
+      "id": "bgm-old-letter",
+      "kind": "bgm",
+      "file": "assets/audio/library/mixkit-854/old-letter-michael-ramir-c.mp3",
+      "sha256": "37ff7738752a32ac342bd4c939f3ba1ce215b2fcdf04f357e23c5ed960b6c9b6",
+      "title": "Old Letter",
+      "author": "Michael Ramir C.",
+      "source": "https://mixkit.co/free-stock-music/mood/emotional/ (item 854, https://assets.mixkit.co/music/854/854.mp3)",
+      "origin": "claude_search",
+      "registered_on": "2026-10-22",
+      "free": true,
+      "license": "Mixkit Free Music License",
+      "license_status": "verified",
+      "license_evidence": "https://mixkit.co/license/#musicFree — 상업·비상업 무료, YouTube 사용 허용, 출처 표기 의무 없음(2026-10-22 확인). 사용자가 2026-10-22 채팅으로 이 곡 다운로드를 승인",
+      "claim_status": "documented_low_risk",
+      "claim_evidence": "Mixkit 약관이 음원의 권리관리 서비스(Content ID 등) 등록을 금지하고, claim 발생 시 team@mixkit.co로 안내. no-claim 보증 아님",
+      "requires_whitelist": false,
+      "allowed_platforms": [
+        "youtube"
+      ],
+      "attribution_required": true,
+      "attribution_text": "Music: Old Letter - Michael Ramir C. (Mixkit)",
+      "moods": [
+        "calm",
+        "warm"
+      ],
+      "vocals": false,
+      "platform_check": "not_checked",
+      "duration_seconds": 164.955,
+      "sample_rate": 44100,
+      "channels": 2,
+      "integrated_lufs": -17.5,
+      "true_peak_dbtp": -2.9
     }
   ],
   "note": "Register files under assets/audio/ with scripts/audio_library.py register. Nothing is downloaded automatically; Claude-found files need production config audio_search and audio_downloads plus the user's approval per download."

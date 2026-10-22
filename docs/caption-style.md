@@ -1,19 +1,21 @@
-# 자막 스타일 가이드 (감성 90 · 예능 10)
+# 자막 스타일 가이드 (감성 95 · 예능 5)
+
+2026-10-23부터 기본 작업 방식은 [하우스 스타일](house-style.md)입니다. 기본 preset은 레퍼런스형(`talk`, `talk-note`, `talk-mood`, `place-tiny`)이고, 아래 90·10 시기의 설명은 이전 preset의 참고로 남깁니다.
 
 후보 카드(`candidates.json`)와 timeline v2의 자막을 쓸 때 따르는 기준입니다. 목표는 **풍경과 일상의 결을 보여주는 감성 브이로그**입니다. 예능은 강조할 순간에만 살짝 넣습니다. 2026-10-22에 승인된 방향이며, 첫 sample의 대사 타이밍·겹침 피드백은 아래에 유지합니다.
 
-preset과 제한의 원본은 `renderer/src/production/presets.json`입니다. 렌더러와 Python 검증기가 같은 파일을 읽습니다. [새 자막 갤러리](../reports/caption-gallery-v2.jpg)와 [화면 톤 갤러리](../reports/look-gallery.jpg)는 **병합 뒤 사용자 동의를 받아 생성할 예정**입니다. 기존 `caption-gallery.jpg`는 보존합니다. 이 개발 작업에서는 렌더하지 않습니다.
+preset과 제한의 원본은 `renderer/src/production/presets.json`입니다. 렌더러와 Python 검증기가 같은 파일을 읽습니다. [자막 갤러리 v2](../reports/caption-gallery-v2.jpg)와 [화면 톤 갤러리](../reports/look-gallery.jpg)는 2026-10-22에 만들었습니다. 레퍼런스형 preset이 들어간 갤러리는 `reports/caption-gallery-v3.jpg`입니다. 이전 갤러리는 덮어쓰지 않고 보존합니다.
 
 ```bash
 node renderer/scripts/gallery.mjs reports/caption-gallery-v2.jpg
 node renderer/scripts/gallery.mjs reports/look-gallery.jpg LookGallery
 ```
 
-## 90 · 10의 의미
+## 95 · 5의 의미
 
-- 감성 계열(`mood`·`narration`·`place`)이 스타일 자막의 약 90%, 예능 계열(`variety`·`situation`·`sfx_text`·`inner_voice`)이 약 10%입니다.
+- 감성 계열(`mood`·`narration`·`place`)이 스타일 자막의 약 95%, 예능 계열(`variety`·`situation`·`sfx_text`·`inner_voice`)이 약 5%입니다(2026-10-23 사용자 확정, 이전 90·10).
 - `dialogue`(실제 대사)는 비율 계산에서 뺍니다. 스타일 자막이 없으면 비율도 없습니다.
-- 리뷰 페이지는 감성 80–100%를 범위 안으로 표시합니다. 감성 100%도 괜찮습니다. 범위 밖이어도 검증을 거부하지 않습니다.
+- 리뷰 페이지는 감성 85–100%를 범위 안으로 표시합니다. 감성 100%도 괜찮습니다. 범위 밖이어도 검증을 거부하지 않습니다.
 - 비율은 편집 참고값이며 시간 quota가 아닙니다. 웃긴 순간이 실제로 있을 때만 예능 자막을 넣습니다. 웃기지 않은 장면에 예능 자막을 붙이는 것이 비율 미달보다 나쁩니다.
 
 ## 레퍼런스 관찰 요약
@@ -116,6 +118,27 @@ node renderer/scripts/gallery.mjs reports/look-gallery.jpg LookGallery
 
 
 감성 브이로그에서는 절제된 preset부터 고릅니다. 다양한 preset을 보여주려고 자막을 늘리지 않습니다.
+
+## 레퍼런스형 구어체 (2026-10-22 피드백)
+
+사용자 피드백: 문어체 일기투("~했다")는 "올드하고 아저씨스럽다". 20–30대 여성이 직접 말하는 느낌이어야 합니다. 기준 영상은 사용자가 로컬에 둔 `refers/*.mp4`(오눅 3편, 걍민경 3편, Git 제외)입니다. 아래는 프레임 64장과 원해상도 자막 크롭을 보고 정리한 관찰이며, 소리는 아직 청취로 확인하지 않았습니다.
+
+- **모양:** 하단 가운데에 흰 고딕 한 줄. 글자 높이 약 40px, 얇은 테두리나 그림자만 씁니다. 박스·명조·왼쪽 정렬 일기체는 쓰지 않습니다.
+- **말투:** 본인이 말하듯 쓴 해요체와 반말을 섞습니다. 끝맺음은 `~더라구요`, `~할게요`, `~이에요`, `..`, `!`, `?!`이고, 혼잣말은 괄호로 짧게 붙입니다. `~했다`, `~였다`로 끝나는 문어체 독백은 쓰지 않습니다.
+- **강조:** 리액션 한 단어만 크게 씁니다(`pop-word`, 예: `미쳐`). 영상 전체에서 3–4번이면 충분합니다.
+- **장소:** 왼쪽 위 작은 글자(`place-tiny`)로 장소와 시간을 적습니다.
+
+| kind | preset | 예 |
+| --- | --- | --- |
+| `dialogue` | `talk` | `바로 옆에 킹콩 마켓이 있어요` |
+| `narration` | `talk-note` | `오일은 직접 고를 수 있어요\n저는 코코넛으로!` |
+| `mood` | `talk-mood` | `바람 진짜 많이 불던 날` |
+| `place` | `place-tiny` (`upper_left`) | `살린다 리조트`, sub `CHECK-IN · 10:38` |
+| `variety` | `pop-word` | `미쳐` |
+
+내용 규칙은 그대로입니다. 실제로 하지 않은 말은 `narration`이고, 확인되지 않은 감정·사건은 쓰지 않습니다. 말투만 구어체로 바꿉니다.
+
+**두 사람 대화가 겹치는 장면:** 출연자와 동행의 대화가 섞인 구간은 원음을 모두 끄고(`original_gain_db: -80`) BGM만 깝니다. 무슨 이야기였는지는 `talk-note`나 괄호 혼잣말로 짧게 요약합니다. 이때도 동행을 암시하지 않습니다. `우리`, `같이`, `오빠`, 누군가에게 묻는 말투는 쓰지 않고 혼자 말한 것처럼 씁니다(예: `(수다 타임.. 메뉴 얘기만 한참)`). 요약은 전사로 확인한 화제만 씁니다.
 
 ## 하지 않는 것
 

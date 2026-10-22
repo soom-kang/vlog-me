@@ -9,8 +9,8 @@
   "vlog_type": "travel",
   "runtime_policy": "content_driven",
   "target_duration_seconds": null,
-  "editorial_direction": "mood 90 / fun 10, quiet scenery and first-person narration with a light touch of everyday humor",
-  "caption_style": "mood 90 / variety 10",
+  "editorial_direction": "mood 95 / fun 5, premium mood vlog (docs/house-style.md): scenery and spoken-tone captions, her voice only when she talks to camera alone",
+  "caption_style": "mood 95 / variety 5",
   "sound_design": "rich_contextual",
   "audio_asset_policy": "free_only",
   "audio_platforms": [
@@ -21,7 +21,7 @@
   "upload": false,
   "asr_local": true,
   "asr_model": "ggml-large-v3-turbo.bin",
-  "audio_search": false,
+  "audio_search": true,
   "audio_downloads": false,
   "production_render": false,
   "production_profile": {

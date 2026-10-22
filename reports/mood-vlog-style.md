@@ -29,7 +29,8 @@
 
 ## NOT_RUN과 한계
 
-- 렌더 전부: 갤러리 still(`reports/caption-gallery-v2.jpg`, `reports/look-gallery.jpg`), 합성 smoke, production. 그래서 색감·그레인·블렌드·레터박스·light leak 모양과 디졸브 합성은 아직 눈으로 확인하지 않았습니다.
+- 갤러리 still: 2026-10-22 PASS(`reports/caption-gallery-v2.jpg` 1920×11880, `reports/look-gallery.jpg` 1920×2160, frame 30). 사용자 피드백 대기. 내레이션 순차 등장·light leak 움직임·디졸브·drift·그레인 움직임은 still로 확인할 수 없습니다.
+- 렌더: 합성 smoke, production은 NOT_RUN.
 - 레퍼런스: 두 채널의 자막 폰트·위치·색보정은 출처로 확인하지 못해 추정입니다. 확인된 출처로 보면 강민경 채널은 예능식 편집이어서 "예능 10"과 `film` 톤에만 반영했습니다.
 - 새 폰트는 넣지 않았습니다(승인된 OFL 7종만 사용). 구간별 look은 범위 밖입니다(사용자 결정: 전역만).
 - 발견: Orca `new-child` worktree가 local main이 아니라 origin/main(994191d)에서 만들어졌습니다. worker가 0c2c094로 fast-forward해서 해결했습니다. 다음 Run부터는 `worker-start --base-branch main`을 쓰는 것이 좋습니다(docs/orca.md 보강 후보).

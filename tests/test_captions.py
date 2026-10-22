@@ -33,7 +33,7 @@ class PresetRegistryTests(unittest.TestCase):
     def test_groups_cover_variety_mood_and_dialogue(self):
         groups = {spec["group"] for spec in REGISTRY["kinds"].values()}
         self.assertEqual(groups, {"variety", "mood", "dialogue"})
-        self.assertEqual(REGISTRY["target_mood_share"], 0.9)
+        self.assertEqual(REGISTRY["target_mood_share"], 0.95)
         self.assertNotIn("target_variety_share", REGISTRY)
 
     def test_caption_text_rules(self):
@@ -68,8 +68,9 @@ class PresetRegistryTests(unittest.TestCase):
             production.validate_caption_text({"kind": "mood", "preset": "serif-fade", "text": "가\n나\n다"})
 
     def test_mood_friendly_defaults(self):
+        # House style (docs/house-style.md): spoken-tone reference presets are the defaults.
         expected = {"variety": "deadpan", "situation": "box-dark", "sfx_text": "pen-sfx", "inner_voice": "pen-note",
-                    "dialogue": "dialogue-soft", "mood": "soft-caption", "narration": "diary", "place": "place-card"}
+                    "dialogue": "talk", "mood": "talk-mood", "narration": "talk-note", "place": "place-tiny"}
         for kind, preset in expected.items():
             with self.subTest(kind=kind):
                 self.assertEqual(production.validate_caption_text({"kind": kind, "text": "가"}, require_preset=False), preset)
@@ -82,7 +83,19 @@ class PresetRegistryTests(unittest.TestCase):
         registered = {p for spec in REGISTRY["kinds"].values() for p in spec["presets"]}
         self.assertEqual(len(old), 33)
         self.assertTrue(old <= registered)
-        self.assertEqual(len(registered), 43)
+        self.assertEqual(len(registered), 48)
+
+    def test_reference_talk_presets(self):
+        # Spoken-tone presets modelled on the 오눅·걍민경 references; kind defaults stay mood-first.
+        cues = {"talk": "dialogue", "talk-note": "narration", "talk-mood": "mood", "place-tiny": "place", "pop-word": "variety"}
+        for preset, kind in cues.items():
+            with self.subTest(preset=preset):
+                self.assertEqual(production.validate_caption_text({"kind": kind, "preset": preset, "text": "미쳐"}), preset)
+        self.assertEqual(production.validate_caption_text(
+            {"kind": "narration", "preset": "talk-note", "text": "오일은 직접 고를 수 있어요\n저는 코코넛으로!"}), "talk-note")
+        for kind in ["mood", "narration", "place"]:
+            with self.subTest(kind=kind), self.assertRaises(ValueError):
+                production.validate_caption_text({"kind": kind, "preset": "talk", "text": "가"})
 
     def test_narration_reading_time(self):
         text = "가나다라마바사아자차"
@@ -98,7 +111,7 @@ class PresetRegistryTests(unittest.TestCase):
         items = review.validate_candidates(candidates(), ENTRIES)
         with tempfile.TemporaryDirectory() as tmp:
             page = review.page_html("prod-x", 1, items, ENTRIES, Path(tmp))
-        self.assertIn("자막 비율: 감성 1 · 예능 3 · 대사 0 (감성 25%, 목표 90% 참고 · 목표 범위 밖)", page)
+        self.assertIn("자막 비율: 감성 1 · 예능 3 · 대사 0 (감성 25%, 목표 95% 참고 · 목표 범위 밖)", page)
         data = candidates()
         data["candidates"][0]["plan"]["captions"][0]["preset"] = "serif-fade"
         with self.assertRaisesRegex(ValueError, "c01: Caption preset"):
