@@ -102,7 +102,7 @@ const STYLES: Record<string, (cue: CaptionCue, m: Motion) => CSSProperties> = {
     borderLeft: '5px solid #fffaf0', paddingLeft: 20, textShadow: '0 2px 10px rgba(0,0,0,0.55)', letterSpacing: 2}),
 };
 
-const soft = '0 2px 18px rgba(0,0,0,0.55)';
+const SOFT_SHADOW = '0 2px 18px rgba(0,0,0,0.55)';
 
 type NarrationOptions = {fontFamily: string; fontSize: number; textAlign: 'left' | 'center';
   lineHeight: number; color?: string; blur: number; lift: number};
@@ -197,7 +197,7 @@ const LAYOUTS: Record<string, (cue: CaptionCue, m: Motion) => ReactNode> = {
     const reveal = interpolate(frame, [0, 18], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
     const out = interpolate(frame, [duration - 12, duration], [1, 0], clamp);
     return (
-      <div style={{textAlign: 'center', color: '#fffaf0', opacity: reveal * out, textShadow: soft}}>
+      <div style={{textAlign: 'center', color: '#fffaf0', opacity: reveal * out, textShadow: SOFT_SHADOW}}>
         <div style={{fontFamily: FONTS.serif, fontSize: 72, letterSpacing: 10 - 4 * reveal, whiteSpace: 'pre-wrap',
           filter: `blur(${(1 - reveal) * 6}px)`}}>{cue.text}</div>
         {cue.sub ? (
@@ -210,7 +210,7 @@ const LAYOUTS: Record<string, (cue: CaptionCue, m: Motion) => ReactNode> = {
   'letter-fade': (cue, {frame, duration}) => {
     const out = interpolate(frame, [duration - 12, duration], [1, 0], clamp);
     return (
-      <div style={{fontFamily: FONTS.serif, fontSize: 60, letterSpacing: 6, color: '#fffaf0', textShadow: soft,
+      <div style={{fontFamily: FONTS.serif, fontSize: 60, letterSpacing: 6, color: '#fffaf0', textShadow: SOFT_SHADOW,
         opacity: out, whiteSpace: 'pre-wrap', textAlign: 'center'}}>
         {Array.from(cue.text).map((char, index) => {
           const t = interpolate(frame, [index * 2.5, index * 2.5 + 12], [0, 1], clamp);
@@ -221,7 +221,7 @@ const LAYOUTS: Record<string, (cue: CaptionCue, m: Motion) => ReactNode> = {
     );
   },
   'film-line': (cue, {fade}) => (
-    <div style={{textAlign: 'center', color: '#fffaf0', opacity: fade, textShadow: soft}}>
+    <div style={{textAlign: 'center', color: '#fffaf0', opacity: fade, textShadow: SOFT_SHADOW}}>
       <div style={{width: 120 + 240 * fade, height: 2, background: '#fffaf0', margin: '0 auto 18px', opacity: 0.8}} />
       <div style={{fontFamily: FONTS.serif, fontSize: 50, letterSpacing: 6, whiteSpace: 'pre-wrap'}}>{cue.text}</div>
       {cue.sub ? <div style={{fontFamily: FONTS.latin, fontSize: 30, letterSpacing: 8, marginTop: 10,
@@ -230,7 +230,7 @@ const LAYOUTS: Record<string, (cue: CaptionCue, m: Motion) => ReactNode> = {
     </div>
   ),
   'place-editorial': (cue, {fade, frame}) => (
-    <div style={{color: '#fffaf0', opacity: fade, textShadow: soft}}>
+    <div style={{color: '#fffaf0', opacity: fade, textShadow: SOFT_SHADOW}}>
       <div style={{fontFamily: FONTS.latin, fontSize: 64, fontWeight: 500, letterSpacing: 14 - 6 * fade,
         textTransform: 'uppercase'}}>{cue.sub ?? cue.text}</div>
       <div style={{display: 'flex', alignItems: 'center', gap: 16, marginTop: 6}}>

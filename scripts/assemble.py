@@ -88,10 +88,30 @@ def build_timeline(run, kept, entries, library, look=None):
             cursor += frames
         for index, caption in enumerate(plan.get("captions", [])):
             at = start + round(caption["at"] * FPS)
+            frames = max(1, min(round(caption["duration"] * FPS), cursor - at))
+            if caption["kind"] == "narration":
+                minimum = round(production.NARRATION["min_seconds"] * FPS)
+                if cursor - start < minimum:
+                    raise ValueError(f"{cid}-t{index}: rounded scene has {cursor - start} frames; "
+                                     f"narration needs a minimum of {minimum} frames")
+                if round(caption["duration"] * FPS) < minimum:
+                    raise ValueError(f"{cid}-t{index}: narration is below the minimum of {minimum} frames "
+                                     "after caption synchronization; revise caption timing")
+                if frames < minimum:
+                    # Per-cut rounding can shorten the scene beyond review's seconds tolerance.
+                    adjusted_at = cursor - minimum
+                    if any(other is not caption and other.get("position", "bottom") == caption.get("position", "bottom")
+                           and start + round(other["at"] * FPS) < cursor
+                           and start + round(other["at"] * FPS) + round(other["duration"] * FPS) > adjusted_at
+                           for other in plan.get("captions", [])):
+                        raise ValueError(f"{cid}-t{index}: keeping the narration minimum of {minimum} frames "
+                                         "would overlap another caption at the same position; revise caption timing")
+                    warnings.append(f"{cid}-t{index}: 내레이션 최소 {minimum}프레임을 유지하도록 시작을 {at - adjusted_at}프레임 앞당겼습니다")
+                    at, frames = adjusted_at, minimum
             captions.append({"id": f"{cid}-t{index}", "kind": caption["kind"],
                              "preset": production.validate_caption_text(caption, False), "text": caption["text"],
                              "position": caption.get("position", "bottom"), "speaker": caption.get("speaker"), "sub": caption.get("sub"),
-                             "from": min(at, cursor - 1), "duration": max(1, min(round(caption["duration"] * FPS), cursor - at))})
+                             "from": min(at, cursor - 1), "duration": frames})
         for index, insert in enumerate(plan.get("inserts", [])):
             at = min(start + round(insert["at"] * FPS), cursor - 1)
             cue = {"id": f"{cid}-p{index}", "from": at, "duration": max(1, min(round(insert["duration"] * FPS), cursor - at))}

@@ -94,6 +94,61 @@ ADOPT_TWO = {"c01": {"decision": "adopt"}, "c02": {"decision": "adopt"}, "c03": 
 
 
 class AssembleTests(LongformFixture):
+    def test_narration_keeps_minimum_frames_after_cut_rounding(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 0.414], [0.5, 0.914], [1.0, 3.0]],
+            "captions": [{"kind": "narration", "text": "바람", "at": 0.328, "duration": 2.5}]}
+        # 2.828 seconds becomes 84 frames; the authored start rounds to 10,
+        # leaving only 74 frames unless the cue moves one frame earlier.
+        self.review_and_select(ADOPT_TWO, order=["c02", "c01"], candidates=data)
+        state = assemble.assemble(self.run_id)
+        timeline = common.read_json(self.run / "timeline.json")
+        cue = next(c for c in timeline["captions"] if c["id"] == "c01-t0")
+        self.assertEqual((cue["from"], cue["duration"]), (99, 75))
+        self.assertEqual(cue["from"] + cue["duration"], timeline["duration_frames"])
+        self.assertGreaterEqual(cue["from"], timeline["clips"][1]["from"])
+        self.assertIn("c01-t0", " ".join(state["warnings"]))
+
+    def test_narration_reports_candidate_when_rounded_scene_is_too_short(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 0.414], [0.5, 0.914], [1.0, 2.672]],
+            "captions": [{"kind": "narration", "text": "바람", "at": 0, "duration": 2.5}]}
+        # The reviewed 2.5-second candidate becomes only 12 + 12 + 50 frames.
+        self.review_and_select(ADOPT_TWO, order=["c02", "c01"], candidates=data)
+        with self.assertRaisesRegex(ValueError, r"c01-t0:.*74 frames.*minimum.*75"):
+            assemble.assemble(self.run_id)
+        self.assertFalse((self.run / "timeline.json").exists())
+
+    def test_narration_adjustment_preserves_caption_separation(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 0.414], [0.5, 0.914], [1.0, 3.0]],
+            "captions": [{"kind": "mood", "text": "산책", "at": 0, "duration": 0.328},
+                         {"kind": "narration", "text": "바람", "at": 0.328, "duration": 2.5}]}
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        with self.assertRaisesRegex(ValueError, r"c01-t1:.*75 frames.*overlap"):
+            assemble.assemble(self.run_id)
+        self.assertFalse((self.run / "timeline.json").exists())
+        # A cue in a different position does not prevent the one-frame repair.
+        data["candidates"][0]["plan"]["captions"][0]["position"] = "top"
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        assemble.assemble(self.run_id)
+        cue = next(c for c in common.read_json(self.run / "timeline.json")["captions"] if c["id"] == "c01-t1")
+        self.assertEqual((cue["from"], cue["duration"]), (99, 75))
+
+    def test_narration_shortened_by_sync_reports_candidate(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 3.0]],
+            "captions": [{"kind": "narration", "text": "바람", "at": 0, "duration": 2.5},
+                         {"kind": "mood", "text": "산책", "at": 1.0, "duration": 1.0}]}
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        with self.assertRaisesRegex(ValueError, r"c01-t0:.*75 frames.*synchronization"):
+            assemble.assemble(self.run_id)
+        self.assertFalse((self.run / "timeline.json").exists())
+
     def test_dissolve_assembly_keeps_audio_cuts_and_corrects_unavailable_tails(self):
         data = plan_candidates()
         data["candidates"][0]["plan"].update(transition="dissolve", drift=True)

@@ -41,7 +41,7 @@ description: 분석이 끝난 vlog-me run에서 재밌는 장면(fun)과 감성 
   {"id": "c01", "title": "바람 부는 산책길", "tag": "mood", "source": "v003", "range": [192.0, 200.0],
    "reason": "빛과 흔들리는 나뭇잎, 대사 없이 길이 이어지는 구간", "evidence": ["v003 contact sheet 03:12–03:20"],
    "key_moment": 4.0, "preview": true,
-   "plan": {"cuts": [[192.0, 200.0]], "speed": 1.0, "zoom": 1.0, "drift": true, "transition": "dissolve",
+   "plan": {"cuts": [[192.0, 200.0]], "speed": 1.0, "zoom": 1.0, "drift": true,
             "captions": [{"kind": "narration", "text": "오늘은 조금 천천히 걷기로 했다\n바람이 먼저 와 있었다",
                           "at": 0.5, "duration": 5.5, "position": "lower_left", "sub": "a slow day"}],
             "bgm": {"asset": "bgm-walk", "gain_db": -20, "note": "현장음을 가리지 않게 낮게"},
