@@ -94,6 +94,95 @@ ADOPT_TWO = {"c01": {"decision": "adopt"}, "c02": {"decision": "adopt"}, "c03": 
 
 
 class AssembleTests(LongformFixture):
+    def test_narration_keeps_minimum_frames_after_cut_rounding(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 0.414], [0.5, 0.914], [1.0, 3.0]],
+            "captions": [{"kind": "narration", "text": "바람", "at": 0.328, "duration": 2.5}]}
+        # 2.828 seconds becomes 84 frames; the authored start rounds to 10,
+        # leaving only 74 frames unless the cue moves one frame earlier.
+        self.review_and_select(ADOPT_TWO, order=["c02", "c01"], candidates=data)
+        state = assemble.assemble(self.run_id)
+        timeline = common.read_json(self.run / "timeline.json")
+        cue = next(c for c in timeline["captions"] if c["id"] == "c01-t0")
+        self.assertEqual((cue["from"], cue["duration"]), (99, 75))
+        self.assertEqual(cue["from"] + cue["duration"], timeline["duration_frames"])
+        self.assertGreaterEqual(cue["from"], timeline["clips"][1]["from"])
+        self.assertIn("c01-t0", " ".join(state["warnings"]))
+
+    def test_narration_reports_candidate_when_rounded_scene_is_too_short(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 0.414], [0.5, 0.914], [1.0, 2.672]],
+            "captions": [{"kind": "narration", "text": "바람", "at": 0, "duration": 2.5}]}
+        # The reviewed 2.5-second candidate becomes only 12 + 12 + 50 frames.
+        self.review_and_select(ADOPT_TWO, order=["c02", "c01"], candidates=data)
+        with self.assertRaisesRegex(ValueError, r"c01-t0:.*74 frames.*minimum.*75"):
+            assemble.assemble(self.run_id)
+        self.assertFalse((self.run / "timeline.json").exists())
+
+    def test_narration_adjustment_preserves_caption_separation(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 0.414], [0.5, 0.914], [1.0, 3.0]],
+            "captions": [{"kind": "mood", "text": "산책", "at": 0, "duration": 0.328},
+                         {"kind": "narration", "text": "바람", "at": 0.328, "duration": 2.5}]}
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        with self.assertRaisesRegex(ValueError, r"c01-t1:.*75 frames.*overlap"):
+            assemble.assemble(self.run_id)
+        self.assertFalse((self.run / "timeline.json").exists())
+        # A cue in a different position does not prevent the one-frame repair.
+        data["candidates"][0]["plan"]["captions"][0]["position"] = "top"
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        assemble.assemble(self.run_id)
+        cue = next(c for c in common.read_json(self.run / "timeline.json")["captions"] if c["id"] == "c01-t1")
+        self.assertEqual((cue["from"], cue["duration"]), (99, 75))
+
+    def test_narration_shortened_by_sync_reports_candidate(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"] = {
+            "cuts": [[0.0, 3.0]],
+            "captions": [{"kind": "narration", "text": "바람", "at": 0, "duration": 2.5},
+                         {"kind": "mood", "text": "산책", "at": 1.0, "duration": 1.0}]}
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        with self.assertRaisesRegex(ValueError, r"c01-t0:.*75 frames.*synchronization"):
+            assemble.assemble(self.run_id)
+        self.assertFalse((self.run / "timeline.json").exists())
+
+    def test_dissolve_assembly_keeps_audio_cuts_and_corrects_unavailable_tails(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"].update(transition="dissolve", drift=True)
+        data["candidates"][1]["plan"]["transition"] = "dissolve"
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        state = assemble.assemble(self.run_id)
+        timeline = common.read_json(self.run / "timeline.json")
+        self.assertEqual([c["transition"] for c in timeline["clips"]], ["fade", "dissolve", "cut"])
+        self.assertTrue(timeline["clips"][1]["drift"])
+        self.assertIn("페이드로 바꿨습니다", " ".join(state["warnings"]))
+        self.assertEqual([a["duration"] for a in timeline["audio"] if a["kind"] == "original"], [30, 45])
+        # Force the preceding clip to consume its full source; the dissolve becomes a cut.
+        self.review_and_select(ADOPT_TWO, candidates=data, order=["c01", "c02"])
+        with patch.object(assemble, "review", wraps=review) as reviewed:
+            entries = review.read_entries(self.run)
+            entries["v001"]["frames"] = 90
+            reviewed.read_entries.return_value = entries
+            state = assemble.assemble(self.run_id)
+        timeline = common.read_json(self.run / "timeline.json")
+        self.assertEqual(timeline["clips"][-1]["transition"], "cut")
+        self.assertIn("디졸브 대신 컷", " ".join(state["warnings"]))
+        self.assertEqual(timeline["duration_frames"], 165)
+
+    def test_global_look_survives_review_and_assembly(self):
+        data = plan_candidates()
+        data["look"] = {"grade": "film", "grain": 0.1, "letterbox": 2.0}
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        jobs = common.read_json(self.run / "review/v1/render-input.json")["jobs"]
+        self.assertTrue(all(job["props"]["look"] == data["look"] for job in jobs))
+        assemble.assemble(self.run_id)
+        self.assertEqual(common.read_json(self.run / "timeline.json")["look"], data["look"])
+        self.assertIn("화면 톤: film", (self.run / "assemble-report.md").read_text())
+        self.assertIn("mood_share", render_prod.check(self.run_id)["captions"])
+
     def test_adopted_candidates_become_a_valid_timeline(self):
         self.review_and_select(ADOPT_TWO)
         state = assemble.assemble(self.run_id)
@@ -108,7 +197,7 @@ class AssembleTests(LongformFixture):
         self.assertEqual((cues["bgm-0"]["from"], cues["bgm-0"]["duration"]), (0, 165))
         self.assertIn(-30, [db for _, db in cues["bgm-0"]["gain_db"]])
         self.assertEqual([(c["id"], c["from"]) for c in timeline["captions"]], [("c02-t0", 15), ("c01-t0", 120)])
-        self.assertEqual(timeline["captions"][1]["preset"], "pop")
+        self.assertEqual(timeline["captions"][1]["preset"], "deadpan")
         report = (self.run / "assemble-report.md").read_text(encoding="utf-8")
         self.assertIn("효과음 '쿵'에 음원이 없어", report)
 

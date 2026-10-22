@@ -1,7 +1,8 @@
 import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
+import {lightLeakOpacity} from './mood.mjs';
 
-// Short variety-show camera effects. punch_zoom and shake move the picture; flash and speedlines draw on top.
-export type EffectCue = {id: string; type: 'punch_zoom' | 'shake' | 'flash' | 'speedlines'; from: number; duration: number;
+// Short camera effects: variety (punch_zoom, shake, flash, speedlines) and mood (light_leak).
+export type EffectCue = {id: string; type: 'punch_zoom' | 'shake' | 'flash' | 'speedlines' | 'light_leak'; from: number; duration: number;
   strength?: number};
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
@@ -30,6 +31,14 @@ export const effectTransform = (frame: number, effects: EffectCue[]) => {
 export const EffectOverlay = ({cue}: {cue: EffectCue}) => {
   const frame = useCurrentFrame();
   const strength = cue.strength ?? 1;
+  if (cue.type === 'light_leak') {
+    const left = interpolate(frame, [0, cue.duration], [-30, 110], clamp);
+    return <AbsoluteFill style={{pointerEvents: 'none', overflow: 'hidden', mixBlendMode: 'screen',
+      opacity: lightLeakOpacity(frame, cue.duration, strength)}}>
+      <div style={{position: 'absolute', top: '-20%', bottom: '-20%', left: `${left}%`, width: '80%',
+        background: 'radial-gradient(ellipse at 30% 35%, rgba(255,170,90,0.9), transparent 65%), radial-gradient(ellipse at 60% 75%, rgba(255,120,160,0.6), transparent 65%)'}} />
+    </AbsoluteFill>;
+  }
   if (cue.type === 'flash') {
     const opacity = interpolate(frame, [0, 2, Math.min(cue.duration, 10)], [0, 0.9 * Math.min(1, strength), 0], clamp);
     return <AbsoluteFill style={{background: '#ffffff', opacity, pointerEvents: 'none'}} />;

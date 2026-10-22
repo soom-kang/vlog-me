@@ -8,6 +8,7 @@ edits must be resolved (rebuild the review and select again) before assembling.
 import argparse
 from datetime import datetime, timezone
 import json
+import math
 import re
 import signal
 
@@ -49,7 +50,7 @@ def ordered(candidates, decisions, entries, order=None):
     return sorted(kept, key=lambda c: (position[c["source"]], (c.get("range") or [0])[0]))
 
 
-def build_timeline(run, kept, entries, library):
+def build_timeline(run, kept, entries, library, look=None):
     clips, audio, captions, overlays, effects, bgm_spans, speech, warnings = [], [], [], [], [], [], [], []
     cursor = 0
     for authored in kept:
@@ -69,6 +70,8 @@ def build_timeline(run, kept, entries, library):
                         "transition": plan.get("transition", "cut") if index == 0 else "cut"}
                 if plan.get("deflicker"):
                     clip["deflicker"] = True
+                if plan.get("drift"):
+                    clip["drift"] = True
                 clips.append(clip)
                 if entry.get("has_audio", True):
                     db = plan.get("original_gain_db", 0)
@@ -85,10 +88,30 @@ def build_timeline(run, kept, entries, library):
             cursor += frames
         for index, caption in enumerate(plan.get("captions", [])):
             at = start + round(caption["at"] * FPS)
+            frames = max(1, min(round(caption["duration"] * FPS), cursor - at))
+            if caption["kind"] == "narration":
+                minimum = round(production.NARRATION["min_seconds"] * FPS)
+                if cursor - start < minimum:
+                    raise ValueError(f"{cid}-t{index}: rounded scene has {cursor - start} frames; "
+                                     f"narration needs a minimum of {minimum} frames")
+                if round(caption["duration"] * FPS) < minimum:
+                    raise ValueError(f"{cid}-t{index}: narration is below the minimum of {minimum} frames "
+                                     "after caption synchronization; revise caption timing")
+                if frames < minimum:
+                    # Per-cut rounding can shorten the scene beyond review's seconds tolerance.
+                    adjusted_at = cursor - minimum
+                    if any(other is not caption and other.get("position", "bottom") == caption.get("position", "bottom")
+                           and start + round(other["at"] * FPS) < cursor
+                           and start + round(other["at"] * FPS) + round(other["duration"] * FPS) > adjusted_at
+                           for other in plan.get("captions", [])):
+                        raise ValueError(f"{cid}-t{index}: keeping the narration minimum of {minimum} frames "
+                                         "would overlap another caption at the same position; revise caption timing")
+                    warnings.append(f"{cid}-t{index}: 내레이션 최소 {minimum}프레임을 유지하도록 시작을 {at - adjusted_at}프레임 앞당겼습니다")
+                    at, frames = adjusted_at, minimum
             captions.append({"id": f"{cid}-t{index}", "kind": caption["kind"],
                              "preset": production.validate_caption_text(caption, False), "text": caption["text"],
                              "position": caption.get("position", "bottom"), "speaker": caption.get("speaker"), "sub": caption.get("sub"),
-                             "from": min(at, cursor - 1), "duration": max(1, min(round(caption["duration"] * FPS), cursor - at))})
+                             "from": min(at, cursor - 1), "duration": frames})
         for index, insert in enumerate(plan.get("inserts", [])):
             at = min(start + round(insert["at"] * FPS), cursor - 1)
             cue = {"id": f"{cid}-p{index}", "from": at, "duration": max(1, min(round(insert["duration"] * FPS), cursor - at))}
@@ -138,13 +161,32 @@ def build_timeline(run, kept, entries, library):
         talk = [[a - span["start"], b - span["start"]] for a, b in speech if b > span["start"] and a < span["start"] + frames]
         audio.append({"id": f"bgm-{index}", "kind": "bgm", "source": span["asset"], "from": span["start"], "duration": frames,
                       "in": span["in"], "gain_db": sound.duck_envelope(frames, talk, base_db=span["gain_db"])})
+    for index, clip in enumerate(clips):
+        if clip.get("transition") != "dissolve":
+            continue
+        cid = clip["id"].rsplit("-k", 1)[0]
+        if index == 0:
+            clip["transition"] = "fade"
+            warnings.append(f"{cid}: 영상 첫 장면은 디졸브할 앞 장면이 없어 페이드로 바꿨습니다")
+            continue
+        previous = clips[index - 1]
+        source = entries[previous["source"]]
+        d = production.MOTION["dissolve_frames"]
+        enough = (source["kind"] != "video" or previous.get("in", 0)
+                  + math.ceil((previous["duration"] + d) * previous.get("speed", 1)) <= source["frames"])
+        if min(previous["duration"], clip["duration"]) < d or not enough:
+            clip["transition"] = "cut"
+            warnings.append(f"{cid}: 앞 장면 원본 여유가 부족해 디졸브 대신 컷")
     timeline = {"schema_version": 2, "purpose": "production", "fps": FPS, "width": 1920, "height": 1080,
                 "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions, "overlays": overlays,
                 "effects": effects}
+    if look is not None:
+        timeline["look"] = production.validate_look(look)
     # Photo-stack shutters are one intentional burst, not separate effects, so they skip the density/repeat advice.
     warnings += sound.sfx_warnings([{"asset": c["source"], "from": c["from"]} for c in audio
                                     if c["kind"] == "sfx" and not re.search(r"-p\d+-s\d+$", c["id"])])
     warnings += production.preset_warnings(captions)
+    warnings += production.narration_warnings(captions)
     return timeline, warnings
 
 
@@ -159,14 +201,16 @@ def assemble(run_id):
         candidates_path, selection_path = safe_path(run, "candidates.json", True), safe_path(run, "selection.json", True)
         if digest(candidates_path) != state.get("candidates_sha256") or digest(selection_path) != state.get("selection_sha256"):
             raise ValueError("candidates.json or selection.json changed after selection; review and select again")
-        candidates = review.validate_candidates(read_json(candidates_path), entries)
+        data = read_json(candidates_path)
+        look = review.candidates_look(data)
+        candidates = review.validate_candidates(data, entries)
         selection = read_json(selection_path)
         decisions = review.validate_selection(selection, candidates)
         kept = ordered(candidates, decisions, entries, selection.get("order"))
         staged = review.stage_audio(run, review.used_audio(kept), config.get("audio_platforms", ["youtube"]))
         library = {a["id"]: a for a in audio_library.load_library()["assets"] if a["id"] in staged}
         sources = source_map(entries, library.values())
-        timeline, warnings = build_timeline(run, kept, entries, {k: sources[k] for k in library})
+        timeline, warnings = build_timeline(run, kept, entries, {k: sources[k] for k in library}, look=look)
         duration = production.validate_timeline_v2(timeline, sources)
         target = run / "timeline.json"
         if target.exists():
@@ -175,9 +219,11 @@ def assemble(run_id):
         write_json(target, timeline)
         share = production.caption_style_share(timeline)
         report = [f"# 조립 결과 · {run_id}", "", f"- 길이 {duration / FPS:.1f}초 · 클립 {len(timeline['clips'])}개 · 후보 {len(kept)}개",
-                  f"- 자막: 예능 {share['variety']} · 감성 {share['mood']} · 대사 {share['dialogue']}"
-                  + (f" (예능 {share['variety_share']:.0%})" if share["variety_share"] is not None else ""),
+                  f"- 자막: 감성 {share['mood']} · 예능 {share['variety']} · 대사 {share['dialogue']}"
+                  + (f" (감성 {share['mood_share']:.0%})" if share["mood_share"] is not None else ""),
                   f"- 음원: {', '.join(sorted(library)) or '없음'}", "", "## 확인할 점"]
+        if look is not None:
+            report.insert(4, "- " + review.look_summary(look))
         report += [f"- {w}" for w in warnings] or ["- 없음"]
         (run / "assemble-report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
         state.update(stage="assembled", status="pending", timeline_sha256=digest(target), duration_seconds=round(duration / FPS, 2),

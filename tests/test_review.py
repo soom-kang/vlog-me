@@ -44,6 +44,59 @@ def candidates():
 
 
 class CandidateContractTests(unittest.TestCase):
+    def test_dissolve_and_drift_candidate_rules(self):
+        data = candidates()
+        data["candidates"][0]["plan"].update(transition="dissolve", drift=True)
+        items = review.validate_candidates(data, ENTRIES)
+        props = review.render_props(items[0], ENTRIES["v001"])
+        self.assertTrue(all(segment["drift"] for segment in props["segments"]))
+        with tempfile.TemporaryDirectory() as tmp:
+            page = review.card_html(items[0], ENTRIES["v001"], Path(tmp))
+        self.assertIn("디졸브(조립 후 확인)", page)
+        self.assertIn("느린 줌", page)
+        for index, update in [(0, {"transition": "spin"}), (0, {"drift": "yes"}), (1, {"drift": False})]:
+            data = candidates()
+            data["candidates"][index]["plan"].update(update)
+            with self.subTest(update=update), self.assertRaises(ValueError):
+                review.validate_candidates(data, ENTRIES)
+
+    def test_narration_and_light_leak_candidate_minimums(self):
+        data = candidates()
+        plan = data["candidates"][1]["plan"]
+        plan["captions"] = [{"kind": "narration", "text": "바람이 먼저 와 있었다", "at": 0, "duration": 2.5}]
+        plan["effects"] = [{"type": "light_leak", "at": 0, "duration": 0.5}]
+        items = review.validate_candidates(data, ENTRIES)
+        props = review.render_props(items[1], ENTRIES["p001"])
+        self.assertEqual(props["captions"][0]["duration"], 75)
+        self.assertEqual(props["effects"][0]["duration"], 15)
+        with tempfile.TemporaryDirectory() as tmp:
+            page = review.page_html("prod-x", 1, items, ENTRIES, Path(tmp))
+        self.assertIn("내레이션이 읽기에 짧습니다", page)
+        plan["captions"][0]["duration"] = 2.49
+        with self.assertRaises(ValueError):
+            review.validate_candidates(data, ENTRIES)
+        plan["captions"][0]["duration"] = 2.5
+        plan["effects"][0]["duration"] = 0.49
+        with self.assertRaises(ValueError):
+            review.validate_candidates(data, ENTRIES)
+
+    def test_candidates_look_reaches_props_and_page(self):
+        data = candidates()
+        self.assertIsNone(review.candidates_look(data))
+        self.assertNotIn("look", review.render_props(data["candidates"][0], ENTRIES["v001"]))
+        data["look"] = {"grade": "warm", "grade_strength": 0.5, "grain": 0.08, "vignette": 0.2}
+        items = review.validate_candidates(data, ENTRIES)
+        look = review.candidates_look(data)
+        self.assertEqual(review.render_props(items[0], ENTRIES["v001"], look=look)["look"], data["look"])
+        with tempfile.TemporaryDirectory() as tmp:
+            page = review.page_html("prod-x", 1, items, ENTRIES, Path(tmp), look=look)
+        self.assertIn("화면 톤: warm 0.5 · grain 0.08 · vignette 0.2", page)
+        for bad in [{"grade": "teal"}, {"grain": 1}, False]:
+            with self.subTest(look=bad), self.assertRaises(ValueError):
+                review.candidates_look({"look": bad})
+            with self.subTest(candidates_look=bad), self.assertRaises(ValueError):
+                review.validate_candidates({**data, "look": bad}, ENTRIES)
+
     def test_valid_candidates_and_frame_plan(self):
         items = review.validate_candidates(candidates(), ENTRIES)
         self.assertEqual(review.edited_seconds(items[0], ENTRIES["v001"]), 14.0)

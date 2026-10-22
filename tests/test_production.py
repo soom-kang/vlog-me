@@ -131,6 +131,68 @@ class ProductionTests(unittest.TestCase):
 
 
 class TimelineV2Tests(unittest.TestCase):
+    def test_production_example_has_mood_direction(self):
+        example = common.read_json(PROJECT_ROOT / "config/production.example.json")
+        self.assertEqual(example["caption_style"], "mood 90 / variety 10")
+        self.assertEqual(example["editorial_direction"],
+                         "mood 90 / fun 10, quiet scenery and first-person narration with a light touch of everyday humor")
+
+    def test_dissolve_and_drift_rules(self):
+        timeline, sources = edit_fixture()
+        timeline["clips"][1]["transition"] = "dissolve"
+        timeline["clips"][0]["drift"] = True
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+        sources["v1"]["frames"] = 233
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+        sources["v1"]["frames"] = 232
+        with self.assertRaisesRegex(ValueError, "Dissolve needs D more"):
+            production.validate_timeline_v2(timeline, sources)
+        sources["v1"]["frames"] = 210
+        with self.assertRaisesRegex(ValueError, "Dissolve needs D more"):
+            production.validate_timeline_v2(timeline, sources)
+        for index, update, message in [(0, {"transition": "dissolve"}, "First clip"),
+                                       (2, {"drift": False}, "Photos already drift"),
+                                       (0, {"drift": "yes"}, "drift must")]:
+            timeline, sources = edit_fixture()
+            timeline["clips"][index].update(update)
+            with self.subTest(update=update), self.assertRaisesRegex(ValueError, message):
+                production.validate_timeline_v2(timeline, sources)
+        timeline, sources = edit_fixture()
+        timeline["clips"][1].update(transition="dissolve", duration=14)
+        with self.assertRaisesRegex(ValueError, "both clips"):
+            production.validate_timeline_v2(timeline, sources)
+
+    def test_narration_and_light_leak_minimums(self):
+        timeline, sources = edit_fixture()
+        timeline["captions"] = [{"id": "n1", "kind": "narration", "preset": "diary", "text": "바람이 불었다",
+                                 "from": 0, "duration": 74}]
+        with self.assertRaisesRegex(ValueError, "Narration duration"):
+            production.validate_timeline_v2(timeline, sources)
+        timeline["captions"][0]["duration"] = 75
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+        timeline["effects"] = [{"id": "fx1", "type": "light_leak", "from": 0, "duration": 14, "strength": 2}]
+        with self.assertRaisesRegex(ValueError, "Light leak"):
+            production.validate_timeline_v2(timeline, sources)
+        timeline["effects"][0]["duration"] = 15
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+
+    def test_existing_fixture_still_valid(self):
+        timeline, sources = edit_fixture()
+        self.assertNotIn("look", timeline)
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+
+    def test_look_is_optional_and_bounded(self):
+        timeline, sources = edit_fixture()
+        good = {"grade": "warm", "grade_strength": 0.5, "grain": 0.08, "vignette": 0.2, "letterbox": 2.39}
+        self.assertEqual(production.validate_timeline_v2({**timeline, "look": good}, sources), 240)
+        self.assertEqual(production.validate_look({}), {})
+        self.assertEqual(production.validate_look({"letterbox": None}), {"letterbox": None})
+        for bad in [None, [], {"grade": "teal"}, {"grain": 0.3}, {"vignette": True}, {"letterbox": 1.85},
+                    {"lut": "file"}, {"grade_strength": 1.2}, {"grain": float("nan")}, {"vignette": float("inf")},
+                    {"grade_strength": -0.1}, {"grain": "0.1"}, {"letterbox": True}]:
+            with self.subTest(look=bad), self.assertRaises(ValueError):
+                production.validate_timeline_v2({**timeline, "look": bad}, sources)
+
     def test_valid_edit_is_content_driven(self):
         timeline, sources = edit_fixture()
         self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
@@ -182,9 +244,10 @@ class TimelineV2Tests(unittest.TestCase):
     def test_caption_share_is_reported_not_enforced(self):
         timeline, _ = edit_fixture()
         share = production.caption_style_share(timeline)
-        self.assertEqual((share["variety"], share["mood"], share["variety_share"]), (4, 1, 0.8))
+        self.assertEqual((share["mood"], share["variety"], share["mood_share"]), (1, 4, 0.2))
         timeline["captions"] = [dict(timeline["captions"][4], id=f"m{i}") for i in range(3)]
-        self.assertEqual(production.caption_style_share(timeline)["variety_share"], 0.0)
+        self.assertEqual(production.caption_style_share(timeline)["mood_share"], 1.0)
+        self.assertTrue(production.caption_style_share(timeline)["in_window"])
 
     def test_synthetic_v1_validator_still_rejects_production_timelines(self):
         timeline, _ = edit_fixture()

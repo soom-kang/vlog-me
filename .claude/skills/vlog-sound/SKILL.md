@@ -41,6 +41,7 @@ python3 scripts/audio_library.py check --platforms youtube
 - 기본 -16 dB이고, 대사 구간은 자동으로 12 dB 낮아집니다.
 - 효과음은 payoff·reaction에만 씁니다. 1분에 8개 이하, 같은 효과음은 3초 안에 반복하지 않습니다.
 - 감성 구간은 현장음 위주로 두고 효과음을 넣지 않습니다.
+- 내레이션 장면은 BGM을 낮게 깔거나 비웁니다.
 - 후보 카드: `plan.sfx[].asset`, `plan.bgm.asset`에 등록 ID를 넣으면 미리보기에 소리가 들어갑니다.
 - **BGM은 들어 보고 고릅니다.** 장면 묶음마다 `plan.bgm_options`에 2–4곡을 넣습니다. 저장된 음원(`origin: user`)과 추천 음원(`origin: claude_search`)을 가능하면 반반 섞습니다. 리뷰 페이지의 "음악 비교"에서 같은 장면을 곡별로 들은 뒤, 사용자가 고른 곡을 `plan.bgm`에 넣습니다.
 - 효과음도 장면마다 다른 소리를 씁니다. 사진 쌓기에는 셔터음(`inserts[].sfx`), 바람·이동에는 whoosh 계열, 반전에는 짧은 타악기를 씁니다.

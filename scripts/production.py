@@ -15,9 +15,12 @@ RUN_PATTERN = r"prod-[a-z0-9][a-z0-9-]{0,70}"
 SOURCE_PARENT = "sources"
 PROFILE_LIMITS = {"concurrency": 8, "timeout_seconds": 14400}
 CLIP_TAGS = {"fun", "mood"}
-TRANSITIONS = {"cut", "fade", "whip"}
+TRANSITIONS = {"cut", "fade", "whip", "dissolve"}
 # Shared with the renderer so Python validation and Remotion presets cannot drift apart.
 CAPTION_REGISTRY = json.loads((Path(__file__).resolve().parents[1] / "renderer/src/production/presets.json").read_text(encoding="utf-8"))
+NARRATION = CAPTION_REGISTRY["narration"]
+LOOK = CAPTION_REGISTRY["look"]
+MOTION = CAPTION_REGISTRY["motion"]
 CAPTION_KINDS = set(CAPTION_REGISTRY["kinds"])
 VARIETY_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "variety"}
 MOOD_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "mood"}
@@ -26,7 +29,7 @@ AUDIO_KINDS = {"original", "bgm", "sfx"}
 OVERLAY_POSITIONS = {"left", "right"}
 STACK_POSITIONS = {"left", "right", "center"}
 STACK_PHOTOS = (2, 12)
-EFFECT_TYPES = {"punch_zoom", "shake", "flash", "speedlines"}
+EFFECT_TYPES = {"punch_zoom", "shake", "flash", "speedlines", "light_leak"}
 OVERLAY_MAX_TILT = 10
 
 
@@ -107,8 +110,9 @@ def validate_caption_text(caption, require_preset=True):
     if not isinstance(text, str) or not text.strip():
         raise ValueError("Empty caption")
     lines = text.split("\n")
-    if len(lines) > CAPTION_REGISTRY["max_lines"] or any(len(line) > spec["max_chars"] for line in lines):
-        raise ValueError(f"{caption['kind']} captions allow {CAPTION_REGISTRY['max_lines']} lines of {spec['max_chars']} characters")
+    max_lines = spec.get("max_lines", CAPTION_REGISTRY["max_lines"])
+    if len(lines) > max_lines or any(len(line) > spec["max_chars"] for line in lines):
+        raise ValueError(f"{caption['kind']} captions allow {max_lines} lines of {spec['max_chars']} characters")
     if caption.get("position", "bottom") not in CAPTION_POSITIONS:
         raise ValueError("Unknown caption position")
     sub = caption.get("sub")
@@ -117,6 +121,26 @@ def validate_caption_text(caption, require_preset=True):
     if caption.get("sync", "speech") not in {"speech", "manual"}:
         raise ValueError("Caption sync must be speech or manual")
     return preset
+
+
+def narration_seconds(text):
+    """Recommended reading time; only the absolute minimum is enforced."""
+    reading = sum(NARRATION["read_base_seconds"] + NARRATION["read_per_char_seconds"] * len(re.sub(r"\s", "", line))
+                  for line in text.split("\n"))
+    return max(NARRATION["min_seconds"], reading + NARRATION["fade_frames"] / 30 + 1)
+
+
+def narration_warnings(captions, fps=30):
+    """Use fps=1 for candidate durations expressed in seconds."""
+    warnings = []
+    for caption in captions:
+        if caption.get("kind") != "narration":
+            continue
+        seconds = caption["duration"] / fps
+        recommended = narration_seconds(caption["text"])
+        if seconds < recommended:
+            warnings.append(f"'{caption['text'][:12]}…' 내레이션이 읽기에 짧습니다(현재 {seconds:.1f}초, 권장 {recommended:.1f}초)")
+    return warnings
 
 
 def preset_warnings(captions):
@@ -160,12 +184,33 @@ def _gain(points, duration):
         previous = frame
 
 
+def validate_look(look):
+    """Validate the optional global look without adding defaults to saved timelines."""
+    allowed = {"grade", "grade_strength", "grain", "vignette", "letterbox"}
+    if not isinstance(look, dict) or set(look) - allowed:
+        raise ValueError("Look must be an object with only grade, grade_strength, grain, vignette and letterbox")
+    if "grade" in look and look["grade"] not in LOOK["grades"]:
+        raise ValueError("Unknown look grade")
+    for key in ["grade_strength", "grain", "vignette"]:
+        if key in look:
+            value = look[key]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 <= value <= LOOK[f"max_{key}"]:
+                raise ValueError(f"Look {key} must be a finite number in 0..{LOOK[f'max_{key}']}")
+    if look.get("letterbox") is not None:
+        value = look["letterbox"]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value not in LOOK["letterbox"]:
+            raise ValueError("Unknown letterbox aspect")
+    return look
+
+
 def validate_timeline_v2(timeline, sources):
     """Validate a production edit. `sources` maps id -> {kind, frames?, has_audio?}."""
     if timeline.get("schema_version") != 2 or timeline.get("purpose") != "production":
         raise ValueError("Only production timeline v2 is accepted here")
     if timeline.get("fps") != 30 or (timeline.get("width"), timeline.get("height")) != (1920, 1080):
         raise ValueError("Production renderer supports 1920x1080 CFR 30 only")
+    if "look" in timeline:
+        validate_look(timeline["look"])
     clips, audio, captions = timeline.get("clips", []), timeline.get("audio", []), timeline.get("captions", [])
     overlays = timeline.get("overlays", [])
     if not clips:
@@ -185,7 +230,7 @@ def validate_timeline_v2(timeline, sources):
 
     cursor = 0
     clip_by_id = {}
-    for clip in clips:
+    for index, clip in enumerate(clips):
         source = sources.get(clip.get("source"))
         if clip["from"] != cursor or not source or source.get("kind") not in {"video", "image"}:
             raise ValueError("Clips must be contiguous video or image sources")
@@ -195,6 +240,22 @@ def validate_timeline_v2(timeline, sources):
             raise ValueError("deflicker must be true or false")
         if clip.get("transition", "cut") not in TRANSITIONS:
             raise ValueError("Unknown transition")
+        if "drift" in clip:
+            if type(clip["drift"]) is not bool:
+                raise ValueError("drift must be true or false")
+            if source["kind"] != "video":
+                raise ValueError("Photos already drift")
+        if clip.get("transition") == "dissolve":
+            d = MOTION["dissolve_frames"]
+            if index == 0:
+                raise ValueError("First clip cannot dissolve")
+            previous = clips[index - 1]
+            if min(previous["duration"], clip["duration"]) < d:
+                raise ValueError("Dissolve needs both clips to last at least D frames")
+            previous_source = sources[previous["source"]]
+            if (previous_source["kind"] == "video" and previous.get("in", 0)
+                    + math.ceil((previous["duration"] + d) * previous.get("speed", 1)) > previous_source["frames"]):
+                raise ValueError("Dissolve needs D more source frames after the previous clip")
         zoom = clip.get("zoom", 1)
         if isinstance(zoom, bool) or not isinstance(zoom, (int, float)) or not 1 <= zoom <= 3:
             raise ValueError("Zoom must be 1..3")
@@ -242,6 +303,8 @@ def validate_timeline_v2(timeline, sources):
     for caption in captions:
         _interval(caption, cursor)
         validate_caption_text(caption)
+        if caption["kind"] == "narration" and caption["duration"] < round(NARRATION["min_seconds"] * 30):
+            raise ValueError("Narration duration is below the minimum reading time")
     for overlay in overlays:
         # Photo inserts float over the running video; they never replace a clip.
         _interval(overlay, cursor)
@@ -270,6 +333,8 @@ def validate_timeline_v2(timeline, sources):
         _interval(effect, cursor)
         if effect.get("type") not in EFFECT_TYPES:
             raise ValueError(f"Effect type must be one of {sorted(EFFECT_TYPES)}")
+        if effect["type"] == "light_leak" and effect["duration"] < MOTION["light_leak_min_frames"]:
+            raise ValueError("Light leak is shorter than the minimum duration")
         strength = effect.get("strength", 1)
         if isinstance(strength, bool) or not isinstance(strength, (int, float)) or not 0.5 <= strength <= 2:
             raise ValueError("Effect strength must be 0.5..2")
@@ -277,13 +342,13 @@ def validate_timeline_v2(timeline, sources):
 
 
 def caption_style_share(timeline):
-    """Report the variety/mood caption split. A guide for review, never an enforced quota."""
-    counts = {"variety": 0, "mood": 0, "dialogue": 0}
+    """Report the mood/variety caption split. A guide for review, never an enforced quota."""
+    counts = {"mood": 0, "variety": 0, "dialogue": 0}
     for caption in timeline.get("captions", []):
         kind = caption.get("kind")
-        counts["variety" if kind in VARIETY_CAPTIONS else "mood" if kind in MOOD_CAPTIONS else "dialogue"] += 1
-    styled = counts["variety"] + counts["mood"]
-    share = round(counts["variety"] / styled, 2) if styled else None
+        counts["mood" if kind in MOOD_CAPTIONS else "variety" if kind in VARIETY_CAPTIONS else "dialogue"] += 1
+    styled = counts["mood"] + counts["variety"]
+    mood = round(counts["mood"] / styled, 2) if styled else None
     low, high = CAPTION_REGISTRY["share_window"]
-    return {**counts, "variety_share": share, "target": CAPTION_REGISTRY["target_variety_share"],
-            "in_window": share is not None and low <= share <= high}
+    return {**counts, "mood_share": mood, "variety_share": None if mood is None else round(1 - mood, 2),
+            "target": CAPTION_REGISTRY["target_mood_share"], "in_window": mood is not None and low <= mood <= high}

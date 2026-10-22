@@ -33,7 +33,7 @@ MIN_CUT = 0.3
 PHOTO_SECONDS = (1.0, 10.0)
 INSERT_MIN = 0.5
 KIND_LABELS = {"variety": "예능", "situation": "상황", "sfx_text": "효과 글자", "inner_voice": "속마음",
-               "dialogue": "대사", "mood": "감성", "place": "장소"}
+               "dialogue": "대사", "mood": "감성", "narration": "내레이션", "place": "장소"}
 
 
 def _number(value, low, high, name):
@@ -61,11 +61,26 @@ def edited_to_source(candidate, t):
     return plan["cuts"][-1][1]
 
 
+def candidates_look(data):
+    look = data.get("look")
+    return None if look is None else production.validate_look(look)
+
+
+def look_summary(look):
+    production.validate_look(look)
+    parts = [f"{look.get('grade', 'none')} {look.get('grade_strength', 0.6):g}",
+             f"grain {look.get('grain', 0):g}", f"vignette {look.get('vignette', 0):g}"]
+    if look.get("letterbox") is not None:
+        parts.append(f"letterbox {look['letterbox']:g}")
+    return "화면 톤: " + " · ".join(parts)
+
+
 def validate_candidates(data, entries):
     """`entries` maps source id -> sources.json entry. Returns candidates in order."""
     candidates = data.get("candidates") if isinstance(data, dict) else None
     if not isinstance(candidates, list) or not candidates:
         raise ValueError("candidates.json needs a non-empty candidates list")
+    candidates_look(data)
     seen = set()
     for c in candidates:
         cid = c.get("id")
@@ -131,11 +146,15 @@ def validate_candidates(data, entries):
             if insert.get("position", "right") not in production.OVERLAY_POSITIONS:
                 raise ValueError(f"{cid}: insert position must be left or right")
             _number(insert.get("tilt", 0), -production.OVERLAY_MAX_TILT, production.OVERLAY_MAX_TILT, f"{cid}: insert tilt")
+        if "transition" in plan and (not isinstance(plan["transition"], str) or plan["transition"] not in production.TRANSITIONS):
+            raise ValueError(f"{cid}: unknown transition")
+        if "drift" in plan and (type(plan["drift"]) is not bool or entry["kind"] != "video"):
+            raise ValueError(f"{cid}: drift is true/false and only for video")
         for effect in plan.get("effects", []):
             if not isinstance(effect, dict) or effect.get("type") not in production.EFFECT_TYPES:
                 raise ValueError(f"{cid}: effect type must be one of {sorted(production.EFFECT_TYPES)}")
             at = _number(effect.get("at"), 0, length - 0.1, f"{cid}: effect at")
-            _number(effect.get("duration"), 0.1, length - at + 0.01, f"{cid}: effect duration")
+            _number(effect.get("duration"), production.MOTION["light_leak_min_frames"] / FPS if effect["type"] == "light_leak" else 0.1, length - at + 0.01, f"{cid}: effect duration")
             _number(effect.get("strength", 1), 0.5, 2, f"{cid}: effect strength")
         if not isinstance(plan.get("deflicker", False), bool) or (plan.get("deflicker") and entry["kind"] != "video"):
             raise ValueError(f"{cid}: deflicker is true/false and only for video")
@@ -157,7 +176,7 @@ def validate_candidates(data, entries):
             except ValueError as exc:
                 raise ValueError(f"{cid}: {exc}") from exc
             at = _number(caption.get("at"), 0, length, f"{cid}: caption at")
-            _number(caption.get("duration"), 0.2, length - at + 0.01, f"{cid}: caption duration")
+            _number(caption.get("duration"), production.NARRATION["min_seconds"] if caption["kind"] == "narration" else 0.2, length - at + 0.01, f"{cid}: caption duration")
         for sfx in plan.get("sfx", []):
             if not isinstance(sfx.get("name"), str) or not sfx["name"].strip():
                 raise ValueError(f"{cid}: sfx needs a name")
@@ -369,14 +388,14 @@ def stack_interval(insert):
     return max(3, min(45, round(insert.get("interval", 0.35) * FPS)))
 
 
-def render_props(candidate, entry, staged=None, speech=(), photos=None):
+def render_props(candidate, entry, staged=None, speech=(), photos=None, look=None):
     """Frame-exact props for the Remotion CandidatePreview composition."""
     plan = candidate["plan"]
     if entry["kind"] == "video":
         speed = plan.get("speed", 1)
         mutes = sound.map_mutes(plan["cuts"], speed, plan.get("mute", []))
         segments = [{"src": entry["proxy"], "trimBefore": round(start * FPS), "aspect": display_aspect(entry),
-                     "frames": max(1, round((end - start) * FPS / speed)), "playbackRate": speed}
+                     "frames": max(1, round((end - start) * FPS / speed)), "playbackRate": speed, "drift": plan.get("drift", False)}
                     for start, end in plan["cuts"]]
         for segment, ranges in zip(segments, mutes):
             segment["gain"] = sound.mute_envelope(segment["frames"], ranges, base_db=plan.get("original_gain_db", 0))
@@ -407,7 +426,7 @@ def render_props(candidate, entry, staged=None, speech=(), photos=None):
                 "duration": max(1, min(round(fx["duration"] * FPS), total - min(round(fx["at"] * FPS), total - 1))),
                 "strength": fx.get("strength", 1)} for index, fx in enumerate(plan.get("effects", []))]
     return {"kind": kind, "segments": segments, "zoom": plan.get("zoom", 1), "captions": captions, "overlays": overlays,
-            "effects": effects,
+            "effects": effects, **({"look": production.validate_look(look)} if look is not None else {}),
             "audio": audio_cues(candidate, entry, total, staged or {}, list(speech)),
             "durationInFrames": total, "keyFrame": min(round(candidate["key_moment"] * FPS), total - 1)}
 
@@ -432,6 +451,10 @@ def card_html(candidate, entry, folder, timing=()):
         span = f"{e(Path(entry['original']).name)} · 사진 {length:.1f}초"
         frames = f'<figure><img src="{cid}/src-1.jpg" alt=""><figcaption>사진</figcaption></figure>'
         edit = [f"줌 ×{plan.get('zoom', 1):g}(천천히 확대)"]
+    if plan.get("transition") == "dissolve":
+        edit.append("디졸브(조립 후 확인)")
+    if plan.get("drift"):
+        edit.append("느린 줌")
     edit += [f"자막 [{KIND_LABELS[c['kind']]}·{e(production.validate_caption_text(c, False))}] “{e(c['text'])}” {c['at']:.1f}s" for c in plan.get("captions", [])]
     edit += [f"효과음 {e(s['name'])} {s['at']:.1f}s" + (f" · {e(s['asset'])} {s.get('gain_db', -6)} dB" if s.get("asset") else " · (음원 미지정, 계획만)")
              for s in plan.get("sfx", [])]
@@ -502,7 +525,7 @@ def source_times(candidate, entry):
     return [edited_to_source(candidate, t) for t in (0.0, max(0.0, key - 1.0), key, max(0.0, length - 0.05))]
 
 
-def page_html(run_id, version, candidates, entries, folder, timing=None):
+def page_html(run_id, version, candidates, entries, folder, timing=None, look=None):
     groups = {}
     for candidate in candidates:
         groups.setdefault(candidate["source"], []).append(candidate)
@@ -512,13 +535,16 @@ def page_html(run_id, version, candidates, entries, folder, timing=None):
     fun = sum(c["tag"] == "fun" for c in candidates)
     male = [cid for cid, notes in (timing or {}).items() if any(n["status"] == "male_voice" for n in notes)]
     share = production.caption_style_share({"captions": [x for c in candidates for x in c["plan"].get("captions", [])]})
-    ratio = ("자막 비율: 스타일 자막 없음" if share["variety_share"] is None else
-             f"자막 비율: 예능 {share['variety']} · 감성 {share['mood']} · 대사 {share['dialogue']} "
-             f"(예능 {share['variety_share']:.0%}, 목표 {share['target']:.0%} 참고" +
+    ratio = ("자막 비율: 스타일 자막 없음" if share["mood_share"] is None else
+             f"자막 비율: 감성 {share['mood']} · 예능 {share['variety']} · 대사 {share['dialogue']} "
+             f"(감성 {share['mood_share']:.0%}, 목표 {share['target']:.0%} 참고" +
              ("" if share["in_window"] else " · 목표 범위 밖") + ")")
     variation = production.preset_warnings([x for c in candidates for x in c["plan"].get("captions", [])])
+    variation += production.narration_warnings([x for c in candidates for x in c["plan"].get("captions", [])], fps=1)
     if variation:
         ratio += " · 자막 variation: " + " / ".join(variation)
+    if look is not None:
+        ratio += " · " + look_summary(look)
     ratio += (" · 남성 음역 목소리 남음: " + ", ".join(male)) if male else " · 남성 음역 목소리: 남은 후보 없음(음높이 추정)"
     return f'''<!doctype html>
 <html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
@@ -559,7 +585,9 @@ def build(run_id):
             raise ValueError(f"Review needs an analyzed run, got {state.get('stage')}/{state.get('status')}")
         entries = read_entries(run)
         candidates_path = safe_path(run, "candidates.json", True)
-        candidates = validate_candidates(read_json(candidates_path), entries)
+        data = read_json(candidates_path)
+        look = candidates_look(data)
+        candidates = validate_candidates(data, entries)
         staged = stage_audio(run, used_audio(candidates), config.get("audio_platforms", ["youtube"]))
         review_root = run / "review"
         review_root.mkdir(exist_ok=True)
@@ -595,7 +623,7 @@ def build(run_id):
                     else:
                         run_command(["sips", "-Z", "480", str(proxy), "--out", out], timeout=timeout)
                 photos = {k: v["proxy"] for k, v in entries.items()}
-                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry), photos),
+                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry), photos, look=look),
                              "preview": bool(candidate.get("preview"))})
                 # Music audition: the same edit once per BGM option, compared by ear before choosing.
                 for asset_id in candidate["plan"].get("bgm_options", []):
@@ -604,7 +632,7 @@ def build(run_id):
                     variant["plan"]["bgm"] = {"asset": asset_id, "gain_db": gain}
                     (folder / f"{candidate['id']}--{asset_id}").mkdir()
                     jobs.append({"id": f"{candidate['id']}--{asset_id}", "still": False, "preview": True,
-                                 "props": render_props(variant, entry, staged, speech_segments(run, entry), photos)})
+                                 "props": render_props(variant, entry, staged, speech_segments(run, entry), photos, look=look)})
             write_json(folder / "render-input.json", {"run_id": run_id, "version": version, "jobs": jobs})
             run_command(["node", str(common.ROOT / "renderer/scripts/review.mjs"), run_id, str(version), str(run)], timeout=timeout)
             for job in jobs:
@@ -612,7 +640,7 @@ def build(run_id):
                     safe_path(folder, f"{job['id']}/expected.jpg", True)
                 if job["preview"]:
                     safe_path(folder, f"{job['id']}/preview.mp4", True)
-            (folder / "index.html").write_text(page_html(run_id, version, timed, entries, folder, timing), encoding="utf-8")
+            (folder / "index.html").write_text(page_html(run_id, version, timed, entries, folder, timing, look=look), encoding="utf-8")
             production.require_production_scope()
             state.update(stage="reviewed", status="pending", review_version=version,
                          candidates_sha256=digest(candidates_path),

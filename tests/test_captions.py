@@ -1,4 +1,4 @@
-"""Caption preset registry, 80/20 reporting and bundled font integrity. Text fixtures only."""
+"""Caption preset registry, mood-first ratio reporting and bundled font integrity. Text fixtures only."""
 import json
 import os
 from pathlib import Path
@@ -33,10 +33,11 @@ class PresetRegistryTests(unittest.TestCase):
     def test_groups_cover_variety_mood_and_dialogue(self):
         groups = {spec["group"] for spec in REGISTRY["kinds"].values()}
         self.assertEqual(groups, {"variety", "mood", "dialogue"})
-        self.assertEqual(REGISTRY["target_variety_share"], 0.8)
+        self.assertEqual(REGISTRY["target_mood_share"], 0.9)
+        self.assertNotIn("target_variety_share", REGISTRY)
 
     def test_caption_text_rules(self):
-        self.assertEqual(production.validate_caption_text({"kind": "sfx_text", "text": "쾅"}, require_preset=False), "tilt-red")
+        self.assertEqual(production.validate_caption_text({"kind": "sfx_text", "text": "쾅"}, require_preset=False), "pen-sfx")
         self.assertEqual(production.validate_caption_text({"kind": "variety", "preset": "shout", "text": "실화냐\n이게"}), "shout")
         bad = [{"kind": "variety", "text": "결국 원점"},
                {"kind": "variety", "preset": "serif-fade", "text": "결국 원점"},
@@ -51,16 +52,53 @@ class PresetRegistryTests(unittest.TestCase):
     def test_share_is_reported_against_the_window(self):
         def share(kinds):
             return production.caption_style_share({"captions": [{"kind": k} for k in kinds]})
-        self.assertTrue(share(["variety"] * 8 + ["mood"] * 2)["in_window"])
+        self.assertTrue(share(["mood"] * 9 + ["variety"])["in_window"])
         self.assertFalse(share(["variety"] * 5 + ["mood"] * 5)["in_window"])
+        self.assertTrue(share(["mood"] * 10)["in_window"])
         self.assertFalse(share(["variety"] * 10)["in_window"])
-        self.assertIsNone(share(["dialogue"])["variety_share"])
+        self.assertIsNone(share(["dialogue"])["mood_share"])
+
+    def test_narration_allows_four_lines_of_22(self):
+        cue = {"kind": "narration", "preset": "diary", "text": "\n".join(["가" * 22] * 4)}
+        self.assertEqual(production.validate_caption_text(cue), "diary")
+        for text in ["\n".join(["가"] * 5), "가" * 23]:
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                production.validate_caption_text({**cue, "text": text})
+        with self.assertRaises(ValueError):
+            production.validate_caption_text({"kind": "mood", "preset": "serif-fade", "text": "가\n나\n다"})
+
+    def test_mood_friendly_defaults(self):
+        expected = {"variety": "deadpan", "situation": "box-dark", "sfx_text": "pen-sfx", "inner_voice": "pen-note",
+                    "dialogue": "dialogue-soft", "mood": "soft-caption", "narration": "diary", "place": "place-card"}
+        for kind, preset in expected.items():
+            with self.subTest(kind=kind):
+                self.assertEqual(production.validate_caption_text({"kind": kind, "text": "가"}, require_preset=False), preset)
+
+    def test_old_presets_still_registered(self):
+        old = {"pop", "shout", "punch", "drop", "shake", "box-yellow", "box-dark", "box-pink", "box-mint", "box-sky",
+               "ribbon", "sticker", "stamp", "bubble", "tilt-red", "tilt-blue", "burst", "whoosh", "pen-sfx",
+               "bracket", "whisper", "thought", "pen-note", "dialogue", "dialogue-box", "serif-fade", "serif-low",
+               "editorial", "letter-fade", "film-line", "pen-script", "place-card", "place-editorial"}
+        registered = {p for spec in REGISTRY["kinds"].values() for p in spec["presets"]}
+        self.assertEqual(len(old), 33)
+        self.assertTrue(old <= registered)
+        self.assertEqual(len(registered), 43)
+
+    def test_narration_reading_time(self):
+        text = "가나다라마바사아자차"
+        self.assertAlmostEqual(production.narration_seconds(text), 3.3)
+        self.assertAlmostEqual(production.narration_seconds("가 나\n다 라"), 3.18)
+        cue = {"kind": "narration", "text": text, "duration": 75}
+        self.assertEqual(len(production.narration_warnings([cue])), 1)
+        self.assertEqual(production.narration_warnings([{**cue, "duration": 99}]), [])
+        self.assertEqual(len(production.narration_warnings([{**cue, "duration": 2.5}], fps=1)), 1)
+        self.assertEqual(production.caption_style_share({"captions": [{"kind": k} for k in ["narration"] * 2 + ["place"]]})["mood_share"], 1.0)
 
     def test_review_page_shows_caption_ratio(self):
         items = review.validate_candidates(candidates(), ENTRIES)
         with tempfile.TemporaryDirectory() as tmp:
             page = review.page_html("prod-x", 1, items, ENTRIES, Path(tmp))
-        self.assertIn("자막 비율: 예능 3 · 감성 1 · 대사 0 (예능 75%, 목표 80% 참고)", page)
+        self.assertIn("자막 비율: 감성 1 · 예능 3 · 대사 0 (감성 25%, 목표 90% 참고 · 목표 범위 밖)", page)
         data = candidates()
         data["candidates"][0]["plan"]["captions"][0]["preset"] = "serif-fade"
         with self.assertRaisesRegex(ValueError, "c01: Caption preset"):
@@ -93,6 +131,15 @@ class FontLockTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("VLOG_MEDIA_TESTS") == "1", "set VLOG_MEDIA_TESTS=1 (scripts/smoke-media.sh)")
 class GalleryMediaTests(unittest.TestCase):
+    def test_look_gallery_dimensions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(os.path.realpath(tmp)) / "look-gallery.jpg"
+            subprocess.run(["node", str(PROJECT_ROOT / "renderer/scripts/gallery.mjs"), str(output), "LookGallery"],
+                           check=True, capture_output=True, text=True, timeout=300)
+            probe = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-of", "json", str(output)],
+                                              check=True, capture_output=True, text=True).stdout)
+            self.assertEqual((probe["streams"][0]["width"], probe["streams"][0]["height"]), (1920, 2160))
+
     def test_gallery_renders_every_preset(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(os.path.realpath(tmp)) / "gallery.jpg"

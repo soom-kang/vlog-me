@@ -1,5 +1,7 @@
 # vlog-me production harness 설계
 
+> 2026-10-22: 자막 비율은 감성 90 · 예능 10으로 바뀌었습니다. [계획](../plans/2026-10-22-mood-vlog-style.md)
+
 작성일: 2026-10-19 · 상태: 승인됨. 구현은 단위 1부터 하나씩 진행합니다. 현재 구현 상태는 `feature_list.json`과 `docs/roadmap.md`를 우선합니다.
 
 
