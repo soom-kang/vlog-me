@@ -108,7 +108,7 @@ class AssembleTests(LongformFixture):
         self.assertEqual((cues["bgm-0"]["from"], cues["bgm-0"]["duration"]), (0, 165))
         self.assertIn(-30, [db for _, db in cues["bgm-0"]["gain_db"]])
         self.assertEqual([(c["id"], c["from"]) for c in timeline["captions"]], [("c02-t0", 15), ("c01-t0", 120)])
-        self.assertEqual(timeline["captions"][1]["preset"], "pop")
+        self.assertEqual(timeline["captions"][1]["preset"], "deadpan")
         report = (self.run / "assemble-report.md").read_text(encoding="utf-8")
         self.assertIn("효과음 '쿵'에 음원이 없어", report)
 

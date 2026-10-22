@@ -33,7 +33,7 @@ MIN_CUT = 0.3
 PHOTO_SECONDS = (1.0, 10.0)
 INSERT_MIN = 0.5
 KIND_LABELS = {"variety": "예능", "situation": "상황", "sfx_text": "효과 글자", "inner_voice": "속마음",
-               "dialogue": "대사", "mood": "감성", "place": "장소"}
+               "dialogue": "대사", "mood": "감성", "narration": "내레이션", "place": "장소"}
 
 
 def _number(value, low, high, name):
@@ -157,7 +157,7 @@ def validate_candidates(data, entries):
             except ValueError as exc:
                 raise ValueError(f"{cid}: {exc}") from exc
             at = _number(caption.get("at"), 0, length, f"{cid}: caption at")
-            _number(caption.get("duration"), 0.2, length - at + 0.01, f"{cid}: caption duration")
+            _number(caption.get("duration"), production.NARRATION["min_seconds"] if caption["kind"] == "narration" else 0.2, length - at + 0.01, f"{cid}: caption duration")
         for sfx in plan.get("sfx", []):
             if not isinstance(sfx.get("name"), str) or not sfx["name"].strip():
                 raise ValueError(f"{cid}: sfx needs a name")
@@ -517,6 +517,7 @@ def page_html(run_id, version, candidates, entries, folder, timing=None):
              f"(감성 {share['mood_share']:.0%}, 목표 {share['target']:.0%} 참고" +
              ("" if share["in_window"] else " · 목표 범위 밖") + ")")
     variation = production.preset_warnings([x for c in candidates for x in c["plan"].get("captions", [])])
+    variation += production.narration_warnings([x for c in candidates for x in c["plan"].get("captions", [])], fps=1)
     if variation:
         ratio += " · 자막 variation: " + " / ".join(variation)
     ratio += (" · 남성 음역 목소리 남음: " + ", ".join(male)) if male else " · 남성 음역 목소리: 남은 후보 없음(음높이 추정)"

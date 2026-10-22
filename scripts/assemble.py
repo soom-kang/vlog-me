@@ -145,6 +145,7 @@ def build_timeline(run, kept, entries, library):
     warnings += sound.sfx_warnings([{"asset": c["source"], "from": c["from"]} for c in audio
                                     if c["kind"] == "sfx" and not re.search(r"-p\d+-s\d+$", c["id"])])
     warnings += production.preset_warnings(captions)
+    warnings += production.narration_warnings(captions)
     return timeline, warnings
 
 

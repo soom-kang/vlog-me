@@ -18,6 +18,7 @@ CLIP_TAGS = {"fun", "mood"}
 TRANSITIONS = {"cut", "fade", "whip"}
 # Shared with the renderer so Python validation and Remotion presets cannot drift apart.
 CAPTION_REGISTRY = json.loads((Path(__file__).resolve().parents[1] / "renderer/src/production/presets.json").read_text(encoding="utf-8"))
+NARRATION = CAPTION_REGISTRY["narration"]
 CAPTION_KINDS = set(CAPTION_REGISTRY["kinds"])
 VARIETY_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "variety"}
 MOOD_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "mood"}
@@ -107,8 +108,9 @@ def validate_caption_text(caption, require_preset=True):
     if not isinstance(text, str) or not text.strip():
         raise ValueError("Empty caption")
     lines = text.split("\n")
-    if len(lines) > CAPTION_REGISTRY["max_lines"] or any(len(line) > spec["max_chars"] for line in lines):
-        raise ValueError(f"{caption['kind']} captions allow {CAPTION_REGISTRY['max_lines']} lines of {spec['max_chars']} characters")
+    max_lines = spec.get("max_lines", CAPTION_REGISTRY["max_lines"])
+    if len(lines) > max_lines or any(len(line) > spec["max_chars"] for line in lines):
+        raise ValueError(f"{caption['kind']} captions allow {max_lines} lines of {spec['max_chars']} characters")
     if caption.get("position", "bottom") not in CAPTION_POSITIONS:
         raise ValueError("Unknown caption position")
     sub = caption.get("sub")
@@ -117,6 +119,26 @@ def validate_caption_text(caption, require_preset=True):
     if caption.get("sync", "speech") not in {"speech", "manual"}:
         raise ValueError("Caption sync must be speech or manual")
     return preset
+
+
+def narration_seconds(text):
+    """Recommended reading time; only the absolute minimum is enforced."""
+    reading = sum(NARRATION["read_base_seconds"] + NARRATION["read_per_char_seconds"] * len(re.sub(r"\s", "", line))
+                  for line in text.split("\n"))
+    return max(NARRATION["min_seconds"], reading + NARRATION["fade_frames"] / 30 + 1)
+
+
+def narration_warnings(captions, fps=30):
+    """Use fps=1 for candidate durations expressed in seconds."""
+    warnings = []
+    for caption in captions:
+        if caption.get("kind") != "narration":
+            continue
+        seconds = caption["duration"] / fps
+        recommended = narration_seconds(caption["text"])
+        if seconds < recommended:
+            warnings.append(f"'{caption['text'][:12]}…' 내레이션이 읽기에 짧습니다(현재 {seconds:.1f}초, 권장 {recommended:.1f}초)")
+    return warnings
 
 
 def preset_warnings(captions):
@@ -242,6 +264,8 @@ def validate_timeline_v2(timeline, sources):
     for caption in captions:
         _interval(caption, cursor)
         validate_caption_text(caption)
+        if caption["kind"] == "narration" and caption["duration"] < round(NARRATION["min_seconds"] * 30):
+            raise ValueError("Narration duration is below the minimum reading time")
     for overlay in overlays:
         # Photo inserts float over the running video; they never replace a clip.
         _interval(overlay, cursor)
