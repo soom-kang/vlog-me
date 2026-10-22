@@ -7,8 +7,9 @@ import {Caption, type CaptionCue} from './Captions';
 import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
 import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
 import {PhotoStack, type PhotoStackCue} from './PhotoStack';
+import registry from './presets.json';
 
-type Segment = {src: string; trimBefore: number; frames: number; playbackRate: number; gain?: number[][]; aspect?: number};
+type Segment = {src: string; trimBefore: number; frames: number; playbackRate: number; gain?: number[][]; aspect?: number; drift?: boolean};
 type AudioCue = {id: string; src: string; from: number; duration: number; gain: number[][]; in?: number};
 export type CandidateProps = {
   kind: 'video' | 'image'; segments: Segment[]; zoom: number; captions: CaptionCue[]; audio?: AudioCue[];
@@ -17,10 +18,12 @@ export type CandidateProps = {
   durationInFrames: number; keyFrame: number;
 };
 
-const Zoomed = ({zoom, durationInFrames, children}: {zoom: number; durationInFrames: number; children: React.ReactNode}) => {
+const Zoomed = ({zoom, durationInFrames, children, video = false, drift = false}: {zoom: number; durationInFrames: number;
+  children: React.ReactNode; video?: boolean; drift?: boolean}) => {
   const frame = useCurrentFrame();
-  // Photos drift from 1x to the planned zoom; video keeps a steady punch-in.
-  const scale = interpolate(frame, [0, durationInFrames], [1, zoom], {extrapolateRight: 'clamp'});
+  // Photos keep their existing drift; videos opt in to a small zoom from their planned scale.
+  const end = video ? (drift ? Math.min(3, zoom * registry.motion.drift_scale) : zoom) : zoom;
+  const scale = interpolate(frame, [0, durationInFrames], [video ? zoom : 1, end], {extrapolateRight: 'clamp'});
   return <AbsoluteFill style={{transform: `scale(${scale})`}}>{children}</AbsoluteFill>;
 };
 
@@ -40,11 +43,11 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
               <>
                 <BlurBackdrop kind="video" src={segment.src} aspect={segment.aspect} trimBefore={segment.trimBefore}
                   playbackRate={segment.playbackRate} />
-                <AbsoluteFill style={{transform: `scale(${zoom})`}}>
+                <Zoomed zoom={zoom} durationInFrames={segment.frames} video drift={segment.drift}>
                   <Video src={staticFile(segment.src)} trimBefore={segment.trimBefore} playbackRate={segment.playbackRate}
                     volume={segment.gain ? (f) => gainAt(f, segment.gain as number[][]) : 1}
                     style={{width: '100%', height: '100%'}} objectFit="contain" />
-                </AbsoluteFill>
+                </Zoomed>
               </>
             ) : (
               <>

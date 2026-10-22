@@ -14,6 +14,7 @@
     "letterbox": [2.0, 2.39],
     "recommended": {"grade": "warm", "grade_strength": 0.5, "grain": 0.08, "vignette": 0.2, "letterbox": null}
   },
+  "motion": {"dissolve_frames": 15, "drift_scale": 1.05, "light_leak_min_frames": 15},
   "kinds": {
     "variety": {"group": "variety", "max_chars": 18, "presets": ["deadpan", "pop", "shout", "punch", "drop", "shake"]},
     "situation": {"group": "variety", "max_chars": 28,

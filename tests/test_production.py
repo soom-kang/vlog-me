@@ -131,6 +131,45 @@ class ProductionTests(unittest.TestCase):
 
 
 class TimelineV2Tests(unittest.TestCase):
+    def test_dissolve_and_drift_rules(self):
+        timeline, sources = edit_fixture()
+        timeline["clips"][1]["transition"] = "dissolve"
+        timeline["clips"][0]["drift"] = True
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+        sources["v1"]["frames"] = 233
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+        sources["v1"]["frames"] = 232
+        with self.assertRaisesRegex(ValueError, "Dissolve needs D more"):
+            production.validate_timeline_v2(timeline, sources)
+        sources["v1"]["frames"] = 210
+        with self.assertRaisesRegex(ValueError, "Dissolve needs D more"):
+            production.validate_timeline_v2(timeline, sources)
+        for index, update, message in [(0, {"transition": "dissolve"}, "First clip"),
+                                       (2, {"drift": False}, "Photos already drift"),
+                                       (0, {"drift": "yes"}, "drift must")]:
+            timeline, sources = edit_fixture()
+            timeline["clips"][index].update(update)
+            with self.subTest(update=update), self.assertRaisesRegex(ValueError, message):
+                production.validate_timeline_v2(timeline, sources)
+        timeline, sources = edit_fixture()
+        timeline["clips"][1].update(transition="dissolve", duration=14)
+        with self.assertRaisesRegex(ValueError, "both clips"):
+            production.validate_timeline_v2(timeline, sources)
+
+    def test_narration_and_light_leak_minimums(self):
+        timeline, sources = edit_fixture()
+        timeline["captions"] = [{"id": "n1", "kind": "narration", "preset": "diary", "text": "바람이 불었다",
+                                 "from": 0, "duration": 74}]
+        with self.assertRaisesRegex(ValueError, "Narration duration"):
+            production.validate_timeline_v2(timeline, sources)
+        timeline["captions"][0]["duration"] = 75
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+        timeline["effects"] = [{"id": "fx1", "type": "light_leak", "from": 0, "duration": 14, "strength": 2}]
+        with self.assertRaisesRegex(ValueError, "Light leak"):
+            production.validate_timeline_v2(timeline, sources)
+        timeline["effects"][0]["duration"] = 15
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+
     def test_existing_fixture_still_valid(self):
         timeline, sources = edit_fixture()
         self.assertNotIn("look", timeline)

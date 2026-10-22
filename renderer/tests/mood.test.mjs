@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {softFade, narrationLineStarts, narrationSeconds, gradeFilter, letterboxBar} from '../src/production/mood.mjs';
+import {softFade, narrationLineStarts, narrationSeconds, gradeFilter, letterboxBar, lightLeakOpacity} from '../src/production/mood.mjs';
 
 const registry = JSON.parse(readFileSync(new URL('../src/production/presets.json', import.meta.url), 'utf8'));
 const rules = registry.narration;
@@ -47,4 +47,17 @@ test('letterbox dimensions match the 1080p contract', () => {
   assert.equal(letterboxBar(2.39), 138);
   assert.equal(letterboxBar(2.0), 60);
   assert.equal(letterboxBar(1), 0);
+});
+
+test('light leak has a capped plateau and clamps short cues', () => {
+  for (const duration of [1, 3, 15, 60]) {
+    for (let frame = -1; frame <= duration + 1; frame++) {
+      const value = lightLeakOpacity(frame, duration, 2);
+      assert.ok(value >= 0 && value <= 0.5);
+    }
+    assert.equal(lightLeakOpacity(0, duration, 1), 0);
+    assert.equal(lightLeakOpacity(duration, duration, 1), 0);
+  }
+  assert.equal(lightLeakOpacity(30, 60, 2), 0.5);
+  assert.equal(lightLeakOpacity(30, 60, 1), 0.3);
 });

@@ -60,3 +60,10 @@ export function gradeFilter(grade, strength) {
 export function letterboxBar(aspect, width = 1920, height = 1080) {
   return Math.max(0, Math.round((height - width / aspect) / 2));
 }
+
+/** @param {number} frame @param {number} duration @param {number} strength */
+export function lightLeakOpacity(frame, duration, strength) {
+  if (duration <= 0) return 0;
+  const peak = Math.min(0.5, 0.3 * strength);
+  return peak * clamp01(Math.min(frame / (0.3 * duration), (duration - frame) / (0.4 * duration)));
+}

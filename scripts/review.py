@@ -146,11 +146,15 @@ def validate_candidates(data, entries):
             if insert.get("position", "right") not in production.OVERLAY_POSITIONS:
                 raise ValueError(f"{cid}: insert position must be left or right")
             _number(insert.get("tilt", 0), -production.OVERLAY_MAX_TILT, production.OVERLAY_MAX_TILT, f"{cid}: insert tilt")
+        if "transition" in plan and (not isinstance(plan["transition"], str) or plan["transition"] not in production.TRANSITIONS):
+            raise ValueError(f"{cid}: unknown transition")
+        if "drift" in plan and (type(plan["drift"]) is not bool or entry["kind"] != "video"):
+            raise ValueError(f"{cid}: drift is true/false and only for video")
         for effect in plan.get("effects", []):
             if not isinstance(effect, dict) or effect.get("type") not in production.EFFECT_TYPES:
                 raise ValueError(f"{cid}: effect type must be one of {sorted(production.EFFECT_TYPES)}")
             at = _number(effect.get("at"), 0, length - 0.1, f"{cid}: effect at")
-            _number(effect.get("duration"), 0.1, length - at + 0.01, f"{cid}: effect duration")
+            _number(effect.get("duration"), production.MOTION["light_leak_min_frames"] / FPS if effect["type"] == "light_leak" else 0.1, length - at + 0.01, f"{cid}: effect duration")
             _number(effect.get("strength", 1), 0.5, 2, f"{cid}: effect strength")
         if not isinstance(plan.get("deflicker", False), bool) or (plan.get("deflicker") and entry["kind"] != "video"):
             raise ValueError(f"{cid}: deflicker is true/false and only for video")
@@ -391,7 +395,7 @@ def render_props(candidate, entry, staged=None, speech=(), photos=None, look=Non
         speed = plan.get("speed", 1)
         mutes = sound.map_mutes(plan["cuts"], speed, plan.get("mute", []))
         segments = [{"src": entry["proxy"], "trimBefore": round(start * FPS), "aspect": display_aspect(entry),
-                     "frames": max(1, round((end - start) * FPS / speed)), "playbackRate": speed}
+                     "frames": max(1, round((end - start) * FPS / speed)), "playbackRate": speed, "drift": plan.get("drift", False)}
                     for start, end in plan["cuts"]]
         for segment, ranges in zip(segments, mutes):
             segment["gain"] = sound.mute_envelope(segment["frames"], ranges, base_db=plan.get("original_gain_db", 0))
@@ -447,6 +451,10 @@ def card_html(candidate, entry, folder, timing=()):
         span = f"{e(Path(entry['original']).name)} · 사진 {length:.1f}초"
         frames = f'<figure><img src="{cid}/src-1.jpg" alt=""><figcaption>사진</figcaption></figure>'
         edit = [f"줌 ×{plan.get('zoom', 1):g}(천천히 확대)"]
+    if plan.get("transition") == "dissolve":
+        edit.append("디졸브(조립 후 확인)")
+    if plan.get("drift"):
+        edit.append("느린 줌")
     edit += [f"자막 [{KIND_LABELS[c['kind']]}·{e(production.validate_caption_text(c, False))}] “{e(c['text'])}” {c['at']:.1f}s" for c in plan.get("captions", [])]
     edit += [f"효과음 {e(s['name'])} {s['at']:.1f}s" + (f" · {e(s['asset'])} {s.get('gain_db', -6)} dB" if s.get("asset") else " · (음원 미지정, 계획만)")
              for s in plan.get("sfx", [])]

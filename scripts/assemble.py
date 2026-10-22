@@ -8,6 +8,7 @@ edits must be resolved (rebuild the review and select again) before assembling.
 import argparse
 from datetime import datetime, timezone
 import json
+import math
 import re
 import signal
 
@@ -69,6 +70,8 @@ def build_timeline(run, kept, entries, library, look=None):
                         "transition": plan.get("transition", "cut") if index == 0 else "cut"}
                 if plan.get("deflicker"):
                     clip["deflicker"] = True
+                if plan.get("drift"):
+                    clip["drift"] = True
                 clips.append(clip)
                 if entry.get("has_audio", True):
                     db = plan.get("original_gain_db", 0)
@@ -138,6 +141,22 @@ def build_timeline(run, kept, entries, library, look=None):
         talk = [[a - span["start"], b - span["start"]] for a, b in speech if b > span["start"] and a < span["start"] + frames]
         audio.append({"id": f"bgm-{index}", "kind": "bgm", "source": span["asset"], "from": span["start"], "duration": frames,
                       "in": span["in"], "gain_db": sound.duck_envelope(frames, talk, base_db=span["gain_db"])})
+    for index, clip in enumerate(clips):
+        if clip.get("transition") != "dissolve":
+            continue
+        cid = clip["id"].rsplit("-k", 1)[0]
+        if index == 0:
+            clip["transition"] = "fade"
+            warnings.append(f"{cid}: 영상 첫 장면은 디졸브할 앞 장면이 없어 페이드로 바꿨습니다")
+            continue
+        previous = clips[index - 1]
+        source = entries[previous["source"]]
+        d = production.MOTION["dissolve_frames"]
+        enough = (source["kind"] != "video" or previous.get("in", 0)
+                  + math.ceil((previous["duration"] + d) * previous.get("speed", 1)) <= source["frames"])
+        if min(previous["duration"], clip["duration"]) < d or not enough:
+            clip["transition"] = "cut"
+            warnings.append(f"{cid}: 앞 장면 원본 여유가 부족해 디졸브 대신 컷")
     timeline = {"schema_version": 2, "purpose": "production", "fps": FPS, "width": 1920, "height": 1080,
                 "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions, "overlays": overlays,
                 "effects": effects}

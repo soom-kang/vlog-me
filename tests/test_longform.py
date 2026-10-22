@@ -94,6 +94,29 @@ ADOPT_TWO = {"c01": {"decision": "adopt"}, "c02": {"decision": "adopt"}, "c03": 
 
 
 class AssembleTests(LongformFixture):
+    def test_dissolve_assembly_keeps_audio_cuts_and_corrects_unavailable_tails(self):
+        data = plan_candidates()
+        data["candidates"][0]["plan"].update(transition="dissolve", drift=True)
+        data["candidates"][1]["plan"]["transition"] = "dissolve"
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        state = assemble.assemble(self.run_id)
+        timeline = common.read_json(self.run / "timeline.json")
+        self.assertEqual([c["transition"] for c in timeline["clips"]], ["fade", "dissolve", "cut"])
+        self.assertTrue(timeline["clips"][1]["drift"])
+        self.assertIn("페이드로 바꿨습니다", " ".join(state["warnings"]))
+        self.assertEqual([a["duration"] for a in timeline["audio"] if a["kind"] == "original"], [30, 45])
+        # Force the preceding clip to consume its full source; the dissolve becomes a cut.
+        self.review_and_select(ADOPT_TWO, candidates=data, order=["c01", "c02"])
+        with patch.object(assemble, "review", wraps=review) as reviewed:
+            entries = review.read_entries(self.run)
+            entries["v001"]["frames"] = 90
+            reviewed.read_entries.return_value = entries
+            state = assemble.assemble(self.run_id)
+        timeline = common.read_json(self.run / "timeline.json")
+        self.assertEqual(timeline["clips"][-1]["transition"], "cut")
+        self.assertIn("디졸브 대신 컷", " ".join(state["warnings"]))
+        self.assertEqual(timeline["duration_frames"], 165)
+
     def test_global_look_survives_review_and_assembly(self):
         data = plan_candidates()
         data["look"] = {"grade": "film", "grain": 0.1, "letterbox": 2.0}

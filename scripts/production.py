@@ -15,11 +15,12 @@ RUN_PATTERN = r"prod-[a-z0-9][a-z0-9-]{0,70}"
 SOURCE_PARENT = "sources"
 PROFILE_LIMITS = {"concurrency": 8, "timeout_seconds": 14400}
 CLIP_TAGS = {"fun", "mood"}
-TRANSITIONS = {"cut", "fade", "whip"}
+TRANSITIONS = {"cut", "fade", "whip", "dissolve"}
 # Shared with the renderer so Python validation and Remotion presets cannot drift apart.
 CAPTION_REGISTRY = json.loads((Path(__file__).resolve().parents[1] / "renderer/src/production/presets.json").read_text(encoding="utf-8"))
 NARRATION = CAPTION_REGISTRY["narration"]
 LOOK = CAPTION_REGISTRY["look"]
+MOTION = CAPTION_REGISTRY["motion"]
 CAPTION_KINDS = set(CAPTION_REGISTRY["kinds"])
 VARIETY_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "variety"}
 MOOD_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "mood"}
@@ -28,7 +29,7 @@ AUDIO_KINDS = {"original", "bgm", "sfx"}
 OVERLAY_POSITIONS = {"left", "right"}
 STACK_POSITIONS = {"left", "right", "center"}
 STACK_PHOTOS = (2, 12)
-EFFECT_TYPES = {"punch_zoom", "shake", "flash", "speedlines"}
+EFFECT_TYPES = {"punch_zoom", "shake", "flash", "speedlines", "light_leak"}
 OVERLAY_MAX_TILT = 10
 
 
@@ -229,7 +230,7 @@ def validate_timeline_v2(timeline, sources):
 
     cursor = 0
     clip_by_id = {}
-    for clip in clips:
+    for index, clip in enumerate(clips):
         source = sources.get(clip.get("source"))
         if clip["from"] != cursor or not source or source.get("kind") not in {"video", "image"}:
             raise ValueError("Clips must be contiguous video or image sources")
@@ -239,6 +240,22 @@ def validate_timeline_v2(timeline, sources):
             raise ValueError("deflicker must be true or false")
         if clip.get("transition", "cut") not in TRANSITIONS:
             raise ValueError("Unknown transition")
+        if "drift" in clip:
+            if type(clip["drift"]) is not bool:
+                raise ValueError("drift must be true or false")
+            if source["kind"] != "video":
+                raise ValueError("Photos already drift")
+        if clip.get("transition") == "dissolve":
+            d = MOTION["dissolve_frames"]
+            if index == 0:
+                raise ValueError("First clip cannot dissolve")
+            previous = clips[index - 1]
+            if min(previous["duration"], clip["duration"]) < d:
+                raise ValueError("Dissolve needs both clips to last at least D frames")
+            previous_source = sources[previous["source"]]
+            if (previous_source["kind"] == "video" and previous.get("in", 0)
+                    + math.ceil((previous["duration"] + d) * previous.get("speed", 1)) > previous_source["frames"]):
+                raise ValueError("Dissolve needs D more source frames after the previous clip")
         zoom = clip.get("zoom", 1)
         if isinstance(zoom, bool) or not isinstance(zoom, (int, float)) or not 1 <= zoom <= 3:
             raise ValueError("Zoom must be 1..3")
@@ -316,6 +333,8 @@ def validate_timeline_v2(timeline, sources):
         _interval(effect, cursor)
         if effect.get("type") not in EFFECT_TYPES:
             raise ValueError(f"Effect type must be one of {sorted(EFFECT_TYPES)}")
+        if effect["type"] == "light_leak" and effect["duration"] < MOTION["light_leak_min_frames"]:
+            raise ValueError("Light leak is shorter than the minimum duration")
         strength = effect.get("strength", 1)
         if isinstance(strength, bool) or not isinstance(strength, (int, float)) or not 0.5 <= strength <= 2:
             raise ValueError("Effect strength must be 0.5..2")

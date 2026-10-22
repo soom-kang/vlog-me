@@ -7,10 +7,11 @@ import {Caption, type CaptionCue} from './Captions';
 import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
 import {PhotoInsert, type PhotoInsertCue} from './PhotoInsert';
 import {PhotoStack, type PhotoStackCue} from './PhotoStack';
+import registry from './presets.json';
 
 // Renders timeline v2 (scripts/production.py validates it before every render).
 type Clip = {id: string; source: string; from: number; duration: number; in?: number; speed?: number; zoom?: number;
-  tag: string; transition?: string; aspect?: number};
+  tag: string; transition?: string; aspect?: number; drift?: boolean};
 type AudioCue = {id: string; kind: string; clip?: string; source?: string; from: number; duration: number; in?: number;
   gain_db: number[][]};
 type Asset = {src: string; kind: 'video' | 'image' | 'audio'};
@@ -26,7 +27,9 @@ const FADE = 10;
 const ClipVisual = ({clip, asset}: {clip: Clip; asset: Asset}) => {
   const frame = useCurrentFrame();
   const zoom = clip.zoom ?? 1;
-  const opacity = clip.transition === 'fade' ? interpolate(frame, [0, FADE], [0, 1], {extrapolateRight: 'clamp'}) : 1;
+  const fadeFrames = clip.transition === 'dissolve' ? registry.motion.dissolve_frames : FADE;
+  const opacity = clip.transition === 'fade' || clip.transition === 'dissolve'
+    ? interpolate(frame, [0, fadeFrames], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : 1;
   if (asset.kind === 'image') {
     // Photos drift slowly toward the planned zoom.
     const scale = interpolate(frame, [0, clip.duration], [1, zoom], {extrapolateRight: 'clamp'});
@@ -39,10 +42,12 @@ const ClipVisual = ({clip, asset}: {clip: Clip; asset: Asset}) => {
       </AbsoluteFill>
     );
   }
+  const scale = clip.drift
+    ? interpolate(frame, [0, clip.duration], [zoom, Math.min(3, zoom * registry.motion.drift_scale)], {extrapolateRight: 'clamp'}) : zoom;
   return (
     <AbsoluteFill style={{opacity}}>
       <BlurBackdrop kind="video" src={asset.src} aspect={clip.aspect} trimBefore={clip.in ?? 0} playbackRate={clip.speed ?? 1} />
-      <AbsoluteFill style={{transform: `scale(${zoom})`}}>
+      <AbsoluteFill style={{transform: `scale(${scale})`}}>
         <Video src={staticFile(asset.src)} trimBefore={clip.in ?? 0} playbackRate={clip.speed ?? 1} muted
           style={{width: '100%', height: '100%'}} objectFit="contain" />
       </AbsoluteFill>
@@ -57,8 +62,8 @@ export const ProductionTimeline = ({timeline, assets}: ProductionProps) => {
   return (
     <AbsoluteFill style={{backgroundColor: 'black'}}>
       <AbsoluteFill style={{transform: effectTransform(frame, effects), filter: lookFilter(timeline.look)}}>
-        {timeline.clips.map((clip) => (
-          <Sequence key={clip.id} from={clip.from} durationInFrames={clip.duration} name={clip.id}>
+        {timeline.clips.map((clip, index) => (
+          <Sequence key={clip.id} from={clip.from} durationInFrames={clip.duration + (timeline.clips[index + 1]?.transition === 'dissolve' ? registry.motion.dissolve_frames : 0)} name={clip.id}>
             <ClipVisual clip={clip} asset={assets[clip.source]} />
           </Sequence>
         ))}
