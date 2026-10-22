@@ -1,7 +1,10 @@
 """The Orca development flow must keep production single-agent and media out of worktrees."""
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -52,6 +55,27 @@ class OrcaHarnessTests(unittest.TestCase):
 
     def test_run_state_is_ignored(self):
         self.assertIn(".orca-runs/", text(".gitignore").splitlines())
+
+    def test_shared_symlinks_are_ignored(self):
+        # Orca shares these as symlinks; a trailing-slash pattern would only match real directories.
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            shutil.copy(PROJECT / ".gitignore", root / ".gitignore")
+            (root / "target").mkdir()
+            (root / "renderer").mkdir()
+            for link in [".tools", "renderer/node_modules"]:
+                (root / link).symlink_to(root / "target")
+            (root / "renderer/keep.txt").write_text("tracked sibling")
+            status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all"], cwd=root, check=True,
+                                    capture_output=True, text=True).stdout
+            self.assertNotIn(".tools", status)
+            self.assertNotIn("node_modules", status)
+
+    def test_docs_use_orca_branch_names(self):
+        for path in ["AGENTS.md", "docs/orca.md", *[f"docs/orca/{name}" for name in TEMPLATES]]:
+            self.assertNotIn("orca/<task>", text(path), path)
+        self.assertIn("<git user>/<name>", text("AGENTS.md"))
 
 
 if __name__ == "__main__":

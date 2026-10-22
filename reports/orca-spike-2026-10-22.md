@@ -9,6 +9,7 @@
 | 3. 실패 receipt 모양 | PASS | 아래(2026-10-22 사용자 요청으로 실행) |
 | 4. setup hook 위치 | PASS | 아래 |
 | 5. worktree에서 검증 | 부분 PASS | 아래 |
+| 6. Orca child worktree | PASS | 아래. 발견한 `.gitignore` symlink 미매칭과 브랜치 이름 차이는 수정함 |
 
 ## 1. 모델 ID와 effort
 
@@ -48,6 +49,23 @@
 - 잘못된 모델 ID는 시작 전에 걸러지지 않습니다. `worker-start`가 0이 아닌 코드로 끝나고 `failedStage: dispatch_input`, `providerRejected`가 나오면, 먼저 모델 ID 오타나 사용 불가를 의심합니다. 이것은 한도 초과가 아니므로 fallback하지 않고 사용자에게 알립니다.
 - `worker-read`의 liveness(`exited`)와 `worker-list`의 fleet liveness(`unverifiable`)는 다를 수 있습니다. 정리 여부는 `nextAction`을 따릅니다.
 - 한도 초과는 이와 달리 **실행 중에** 나타날 것으로 예상합니다. 이번 실험으로는 그 문구를 확인할 수 없습니다.
+
+## 6. Orca child worktree 확인(커밋 `44131a6` 이후)
+
+사용자 요청으로 Orca 작업물을 main에 커밋한 뒤(push 없음), `orca worktree create --name orca-check-shared --parent-worktree <main> --base-branch main --setup skip`으로 agent 없이 child worktree를 만들었습니다(`/Users/soom.kang/orca/workspaces/vlog-me/orca-check-shared`, 브랜치 `soom-kang/orca-check-shared`).
+
+| 확인 | 결과 |
+| --- | --- |
+| `orca.yaml` 신뢰 승인 요청 | 없음(경고 0개). `sharedDirectories`는 승인 없이 적용됨 |
+| `.tools`, `renderer/node_modules` | main checkout을 가리키는 symlink로 생성 |
+| 원본·작업·음원 폴더(`sources`, `work`, `raw`, `assets`, `.cache`) | 없음 |
+| `./scripts/dev-check.sh` | PASS(157개, skip 6, lint·typecheck·node test) |
+| worktree `git status` | **`?? .tools`, `?? renderer/node_modules`가 추적되지 않은 파일로 보임** |
+| 정리 | symlink 제거(원본 디렉터리 유지 확인) → `orca worktree rm` → worktree와 브랜치 모두 삭제됨 |
+
+**발견:** `.gitignore`의 `.tools/`, `node_modules/`는 끝의 `/` 때문에 실제 디렉터리에만 맞고 symlink에는 맞지 않습니다. worker가 `git add -A`로 커밋하면 이 symlink가 브랜치에 들어갈 수 있습니다. 2026-10-22 수정: 패턴을 `.tools`, `node_modules`로 바꿨습니다. `tests/test_orca_harness.py`의 `test_shared_symlinks_are_ignored`가 symlink가 무시되는지 확인합니다(이전 `.gitignore`로는 FAIL, 수정 뒤 PASS).
+
+브랜치 이름은 `orca/<task>`가 아니라 Orca 기본값 `<git 사용자>/<name>`입니다(`soom-kang/<name>`). 2026-10-22에 `AGENTS.md`, `docs/orca.md`, 설계·계획 문서를 이 형식으로 고쳤습니다.
 
 ## 4. setup hook 위치
 

@@ -44,6 +44,7 @@
    ```text
    orca orchestration worker-start --spec "<지시문>" --worktree new-child --name orca-<task> --agent codex --model gpt-6-astra --effort xhigh --json
    ```
+   Orca는 worker 브랜치를 `<git 사용자>/<name>` 형식으로 만듭니다(예: `soom-kang/orca-<task>`). 아래 `<branch>`는 receipt의 worktree 정보나 worktree에서 `git branch --show-current`로 확인한 실제 이름입니다. 상태 파일에도 적습니다.
    독립된 작업이 여럿이면 병렬로 띄워도 됩니다. 다만 같은 파일을 두 worker가 고치지 않게 합니다.
 4. **대기**
    ```text
@@ -123,7 +124,7 @@ coordinator, plan, review는 같은 Claude 한도를 나눠 씁니다. 그래서
 | 단계 | 상태 | task | dispatch | 모델 | fallback | branch/worktree |
 | --- | --- | --- | --- | --- | --- | --- |
 | plan | succeeded | ... | ... | claude-opus-5-5 | no | - |
-| coding | running | ... | ... | gpt-6-astra | - | orca-<task> |
+| coding | running | ... | ... | gpt-6-astra | - | soom-kang/orca-<task> |
 | review | pending | | | | | |
 
 ## 검증

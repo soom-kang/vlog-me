@@ -58,7 +58,7 @@
 설계 §5.2의 내용을 Codex가 바로 따를 수 있게 짧게 씁니다.
 - 역할: Orca coding worker. 받은 plan 문서의 범위만 구현합니다.
 - 금지: `sources/`·`work/`·`raw/`·`assets/audio/`·`.env*` 접근(절대 경로 포함), push, main 병합, `feature_list.json`·`progress.md`·`session-handoff.md`·`reports/` 수정, 테스트 기대값 약화, 다운로드, 렌더, 외부 호출, `config/`의 phase·권한 값 변경.
-- 허용: worker 브랜치(`orca/<task>`)에 로컬 커밋.
+- 허용: worker 브랜치(Orca 기본 `<git 사용자>/<name>`)에 로컬 커밋.
 - 검증 명령: `./init.sh`, 관련 `python3 -m unittest tests.<모듈>`, `npm --prefix renderer run lint|typecheck|test`(`./scripts/npm.sh` 경유).
 - 완료 보고: 변경 파일, 실행한 검증과 결과, 남은 문제.
 - Skill 파일을 바꾸면 `config/skills-lock.json` hash도 갱신해야 한다는 점.
@@ -73,10 +73,10 @@
 1. 역할·모델 표(Task 1에서 확인한 ID 반영).
 2. 시작 전 확인: main이 깨끗한지, production 세션이 진행 중이 아닌지.
 3. 기본 흐름 1~9단계와 단계별 `orca` 명령 예시(`run-create`, `worker-start --worktree new-child --agent codex --model … --effort xhigh`, `check --wait`, `worker-release`).
-4. 리뷰 조건 7개와 판정 방법. diff 줄 수는 `git diff --numstat main...orca/<task>`의 추가+삭제 합계로 계산하고, `package-lock.json` 같은 생성 파일은 뺍니다.
+4. 리뷰 조건 7개와 판정 방법. diff 줄 수는 `git diff --numstat main...<branch>`의 추가+삭제 합계로 계산하고, `package-lock.json` 같은 생성 파일은 뺍니다.
 5. fallback 절차: 감지 문구(Task 1 결과), `worker-read`로 확인, `worker-stop`, `--retry-of` 재실행, 상태 파일 기록.
 6. coordinator 이어받기 절차: 사용자가 Codex 세션을 열고 줄 첫 지시문(Task 5 템플릿), `run-use`로 같은 Run에 붙기.
-7. 병합 절차: 병합 전 확인 항목(검증 결과, 리뷰, `sources/`·`work/` 경로 언급 검사, main 미커밋 변경 없음), 사용자 승인 뒤 `git merge --no-ff orca/<task>`, push 금지.
+7. 병합 절차: 병합 전 확인 항목(검증 결과, 리뷰, `sources/`·`work/` 경로 언급 검사, main 미커밋 변경 없음), 사용자 승인 뒤 `git merge --no-ff <branch>`, push 금지.
 8. 상태 파일 형식과 위치: `.orca-runs/<run-id>.md`(gitignore 대상, `work/`와 분리).
 9. 정리: worker release, worktree 삭제는 사용자 확인 후.
 
@@ -89,7 +89,7 @@
 - 공통: 개발 작업만 한다는 범위, 금지 경로, 완료 보고 형식, `worker_done`의 `--outcome` 사용.
 - plan worker: 결과를 `docs/superpowers/plans/<날짜>-<기능>.md`에 쓰고 코드는 바꾸지 않습니다.
 - coding worker: `AGENTS.md`와 plan 문서 경로를 읽고 시작합니다.
-- review worker: plan 문서와 `git diff main...orca/<task>`만 받습니다. coding 대화는 받지 않습니다. 결과는 심각도 순 목록과 "병합 가능/수정 필요" 판정입니다. 코드는 바꾸지 않습니다.
+- review worker: plan 문서와 `git diff main...<branch>`만 받습니다. coding 대화는 받지 않습니다. 결과는 심각도 순 목록과 "병합 가능/수정 필요" 판정입니다. 코드는 바꾸지 않습니다.
 - coordinator 이어받기: 상태 파일 경로를 받아 `docs/orca.md`의 절차를 따르고, plan·review에는 fallback 모델을 바로 쓰도록 합니다.
 
 **검증:** 각 템플릿에 금지 경로와 완료 보고 형식이 들어 있는지 Task 7 테스트로 확인합니다.

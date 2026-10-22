@@ -15,7 +15,7 @@ Claude 단일 세션에서 구현했습니다. 구현에는 Orca worker나 Codex
 | 4. 운영 문서 | PASS | `docs/orca.md` |
 | 5. 지시문 템플릿 | PASS | `docs/orca/` 4개 |
 | 6. worktree 설정·dev 검증 | PASS | `orca.yaml`, `scripts/dev-check.sh`, `scripts/dev_tests.py`, `.gitignore` |
-| 7. 테스트 | PASS | `tests/test_orca_harness.py` 6개 |
+| 7. 테스트 | PASS | `tests/test_orca_harness.py` 8개(symlink 무시·브랜치 이름 포함) |
 | 8. 기록 | PASS | 이 보고서, `progress.md`, `session-handoff.md` |
 
 ## 검증

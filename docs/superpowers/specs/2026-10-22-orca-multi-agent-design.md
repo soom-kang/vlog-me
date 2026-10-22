@@ -68,7 +68,7 @@ Claude 사용량 한도(토큰)가 바닥나도 개발이 멈추지 않도록 Co
 - 한 Orca Run 안에서 두 작업을 섞지 않습니다. 개발 중 실제 미디어 확인이 필요하면 Run을 마치고 production 세션에서 따로 합니다.
 
 ### 5.2 Codex 격리
-- coding worker는 항상 **새 child worktree**(`--worktree new-child`)에서 작업합니다. 브랜치 이름은 `orca/<task-slug>`입니다. 이 worktree에는 `sources/`, `work/`가 없습니다.
+- coding worker는 항상 **새 child worktree**(`--worktree new-child`)에서 작업합니다. 브랜치 이름은 Orca 기본값 `<git 사용자>/<name>`입니다(예: `soom-kang/orca-<task>`, 2026-10-22 확인 후 수정). 이 worktree에는 `sources/`, `work/`가 없습니다.
 - 저장소 루트에 Codex용 `AGENTS.md`를 새로 만듭니다. 내용은 다음과 같습니다.
   - 개발 작업만 한다는 범위, 그리고 `sources/`·`work/`·`raw/`·`assets/audio/`·`.env*`에 접근하지 않는다는 금지 사항.
   - 실행할 검증 명령(`./init.sh`, 관련 `python3 -m pytest tests/...`, renderer 타입 검사·lint).
