@@ -6,6 +6,14 @@
   "max_same_preset_in_a_row": 2,
   "narration": {"read_base_seconds": 0.6, "read_per_char_seconds": 0.12, "min_seconds": 2.5, "fade_frames": 15},
   "soft_fade_frames": 18,
+  "look": {
+    "grades": ["none", "warm", "faded", "film"],
+    "max_grade_strength": 1.0,
+    "max_grain": 0.25,
+    "max_vignette": 0.5,
+    "letterbox": [2.0, 2.39],
+    "recommended": {"grade": "warm", "grade_strength": 0.5, "grain": 0.08, "vignette": 0.2, "letterbox": null}
+  },
   "kinds": {
     "variety": {"group": "variety", "max_chars": 18, "presets": ["deadpan", "pop", "shout", "punch", "drop", "shake"]},
     "situation": {"group": "variety", "max_chars": 28,

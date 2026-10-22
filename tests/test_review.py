@@ -44,6 +44,23 @@ def candidates():
 
 
 class CandidateContractTests(unittest.TestCase):
+    def test_candidates_look_reaches_props_and_page(self):
+        data = candidates()
+        self.assertIsNone(review.candidates_look(data))
+        self.assertNotIn("look", review.render_props(data["candidates"][0], ENTRIES["v001"]))
+        data["look"] = {"grade": "warm", "grade_strength": 0.5, "grain": 0.08, "vignette": 0.2}
+        items = review.validate_candidates(data, ENTRIES)
+        look = review.candidates_look(data)
+        self.assertEqual(review.render_props(items[0], ENTRIES["v001"], look=look)["look"], data["look"])
+        with tempfile.TemporaryDirectory() as tmp:
+            page = review.page_html("prod-x", 1, items, ENTRIES, Path(tmp), look=look)
+        self.assertIn("화면 톤: warm 0.5 · grain 0.08 · vignette 0.2", page)
+        for bad in [{"grade": "teal"}, {"grain": 1}, False]:
+            with self.subTest(look=bad), self.assertRaises(ValueError):
+                review.candidates_look({"look": bad})
+            with self.subTest(candidates_look=bad), self.assertRaises(ValueError):
+                review.validate_candidates({**data, "look": bad}, ENTRIES)
+
     def test_valid_candidates_and_frame_plan(self):
         items = review.validate_candidates(candidates(), ENTRIES)
         self.assertEqual(review.edited_seconds(items[0], ENTRIES["v001"]), 14.0)

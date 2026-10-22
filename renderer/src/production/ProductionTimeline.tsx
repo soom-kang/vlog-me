@@ -1,6 +1,7 @@
 import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from '../gain.mjs';
+import {LookOverlay, lookFilter, type LookSpec} from './Look';
 import {BlurBackdrop} from './BlurBackdrop';
 import {Caption, type CaptionCue} from './Captions';
 import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
@@ -15,7 +16,7 @@ type AudioCue = {id: string; kind: string; clip?: string; source?: string; from:
 type Asset = {src: string; kind: 'video' | 'image' | 'audio'};
 export type ProductionProps = {
   timeline: {fps: number; width: number; height: number; duration_frames: number; clips: Clip[]; audio: AudioCue[];
-    captions: CaptionCue[]; effects?: EffectCue[];
+    captions: CaptionCue[]; effects?: EffectCue[]; look?: LookSpec;
     overlays?: ((PhotoInsertCue & {style?: undefined; source: string}) | (PhotoStackCue & {style: 'stack'; sources: string[]}))[]};
   assets: Record<string, Asset>;
 };
@@ -55,7 +56,7 @@ export const ProductionTimeline = ({timeline, assets}: ProductionProps) => {
   const effects = timeline.effects ?? [];
   return (
     <AbsoluteFill style={{backgroundColor: 'black'}}>
-      <AbsoluteFill style={{transform: effectTransform(frame, effects)}}>
+      <AbsoluteFill style={{transform: effectTransform(frame, effects), filter: lookFilter(timeline.look)}}>
         {timeline.clips.map((clip) => (
           <Sequence key={clip.id} from={clip.from} durationInFrames={clip.duration} name={clip.id}>
             <ClipVisual clip={clip} asset={assets[clip.source]} />
@@ -78,6 +79,7 @@ export const ProductionTimeline = ({timeline, assets}: ProductionProps) => {
           </Sequence>
         );
       })}
+      <AbsoluteFill style={{filter: lookFilter(timeline.look)}}>
       {(timeline.overlays ?? []).map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
           {cue.style === 'stack'
@@ -85,6 +87,8 @@ export const ProductionTimeline = ({timeline, assets}: ProductionProps) => {
             : <PhotoInsert cue={cue} src={assets[cue.source].src} />}
         </Sequence>
       ))}
+      </AbsoluteFill>
+      <LookOverlay look={timeline.look} />
       {timeline.captions.map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
           <Caption cue={cue} />

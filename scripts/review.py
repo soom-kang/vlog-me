@@ -61,11 +61,26 @@ def edited_to_source(candidate, t):
     return plan["cuts"][-1][1]
 
 
+def candidates_look(data):
+    look = data.get("look")
+    return None if look is None else production.validate_look(look)
+
+
+def look_summary(look):
+    production.validate_look(look)
+    parts = [f"{look.get('grade', 'none')} {look.get('grade_strength', 0.6):g}",
+             f"grain {look.get('grain', 0):g}", f"vignette {look.get('vignette', 0):g}"]
+    if look.get("letterbox") is not None:
+        parts.append(f"letterbox {look['letterbox']:g}")
+    return "화면 톤: " + " · ".join(parts)
+
+
 def validate_candidates(data, entries):
     """`entries` maps source id -> sources.json entry. Returns candidates in order."""
     candidates = data.get("candidates") if isinstance(data, dict) else None
     if not isinstance(candidates, list) or not candidates:
         raise ValueError("candidates.json needs a non-empty candidates list")
+    candidates_look(data)
     seen = set()
     for c in candidates:
         cid = c.get("id")
@@ -369,7 +384,7 @@ def stack_interval(insert):
     return max(3, min(45, round(insert.get("interval", 0.35) * FPS)))
 
 
-def render_props(candidate, entry, staged=None, speech=(), photos=None):
+def render_props(candidate, entry, staged=None, speech=(), photos=None, look=None):
     """Frame-exact props for the Remotion CandidatePreview composition."""
     plan = candidate["plan"]
     if entry["kind"] == "video":
@@ -407,7 +422,7 @@ def render_props(candidate, entry, staged=None, speech=(), photos=None):
                 "duration": max(1, min(round(fx["duration"] * FPS), total - min(round(fx["at"] * FPS), total - 1))),
                 "strength": fx.get("strength", 1)} for index, fx in enumerate(plan.get("effects", []))]
     return {"kind": kind, "segments": segments, "zoom": plan.get("zoom", 1), "captions": captions, "overlays": overlays,
-            "effects": effects,
+            "effects": effects, **({"look": production.validate_look(look)} if look is not None else {}),
             "audio": audio_cues(candidate, entry, total, staged or {}, list(speech)),
             "durationInFrames": total, "keyFrame": min(round(candidate["key_moment"] * FPS), total - 1)}
 
@@ -502,7 +517,7 @@ def source_times(candidate, entry):
     return [edited_to_source(candidate, t) for t in (0.0, max(0.0, key - 1.0), key, max(0.0, length - 0.05))]
 
 
-def page_html(run_id, version, candidates, entries, folder, timing=None):
+def page_html(run_id, version, candidates, entries, folder, timing=None, look=None):
     groups = {}
     for candidate in candidates:
         groups.setdefault(candidate["source"], []).append(candidate)
@@ -520,6 +535,8 @@ def page_html(run_id, version, candidates, entries, folder, timing=None):
     variation += production.narration_warnings([x for c in candidates for x in c["plan"].get("captions", [])], fps=1)
     if variation:
         ratio += " · 자막 variation: " + " / ".join(variation)
+    if look is not None:
+        ratio += " · " + look_summary(look)
     ratio += (" · 남성 음역 목소리 남음: " + ", ".join(male)) if male else " · 남성 음역 목소리: 남은 후보 없음(음높이 추정)"
     return f'''<!doctype html>
 <html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
@@ -560,7 +577,9 @@ def build(run_id):
             raise ValueError(f"Review needs an analyzed run, got {state.get('stage')}/{state.get('status')}")
         entries = read_entries(run)
         candidates_path = safe_path(run, "candidates.json", True)
-        candidates = validate_candidates(read_json(candidates_path), entries)
+        data = read_json(candidates_path)
+        look = candidates_look(data)
+        candidates = validate_candidates(data, entries)
         staged = stage_audio(run, used_audio(candidates), config.get("audio_platforms", ["youtube"]))
         review_root = run / "review"
         review_root.mkdir(exist_ok=True)
@@ -596,7 +615,7 @@ def build(run_id):
                     else:
                         run_command(["sips", "-Z", "480", str(proxy), "--out", out], timeout=timeout)
                 photos = {k: v["proxy"] for k, v in entries.items()}
-                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry), photos),
+                jobs.append({"id": candidate["id"], "props": render_props(candidate, entry, staged, speech_segments(run, entry), photos, look=look),
                              "preview": bool(candidate.get("preview"))})
                 # Music audition: the same edit once per BGM option, compared by ear before choosing.
                 for asset_id in candidate["plan"].get("bgm_options", []):
@@ -605,7 +624,7 @@ def build(run_id):
                     variant["plan"]["bgm"] = {"asset": asset_id, "gain_db": gain}
                     (folder / f"{candidate['id']}--{asset_id}").mkdir()
                     jobs.append({"id": f"{candidate['id']}--{asset_id}", "still": False, "preview": True,
-                                 "props": render_props(variant, entry, staged, speech_segments(run, entry), photos)})
+                                 "props": render_props(variant, entry, staged, speech_segments(run, entry), photos, look=look)})
             write_json(folder / "render-input.json", {"run_id": run_id, "version": version, "jobs": jobs})
             run_command(["node", str(common.ROOT / "renderer/scripts/review.mjs"), run_id, str(version), str(run)], timeout=timeout)
             for job in jobs:
@@ -613,7 +632,7 @@ def build(run_id):
                     safe_path(folder, f"{job['id']}/expected.jpg", True)
                 if job["preview"]:
                     safe_path(folder, f"{job['id']}/preview.mp4", True)
-            (folder / "index.html").write_text(page_html(run_id, version, timed, entries, folder, timing), encoding="utf-8")
+            (folder / "index.html").write_text(page_html(run_id, version, timed, entries, folder, timing, look=look), encoding="utf-8")
             production.require_production_scope()
             state.update(stage="reviewed", status="pending", review_version=version,
                          candidates_sha256=digest(candidates_path),

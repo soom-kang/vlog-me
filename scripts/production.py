@@ -19,6 +19,7 @@ TRANSITIONS = {"cut", "fade", "whip"}
 # Shared with the renderer so Python validation and Remotion presets cannot drift apart.
 CAPTION_REGISTRY = json.loads((Path(__file__).resolve().parents[1] / "renderer/src/production/presets.json").read_text(encoding="utf-8"))
 NARRATION = CAPTION_REGISTRY["narration"]
+LOOK = CAPTION_REGISTRY["look"]
 CAPTION_KINDS = set(CAPTION_REGISTRY["kinds"])
 VARIETY_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "variety"}
 MOOD_CAPTIONS = {k for k, v in CAPTION_REGISTRY["kinds"].items() if v["group"] == "mood"}
@@ -182,12 +183,33 @@ def _gain(points, duration):
         previous = frame
 
 
+def validate_look(look):
+    """Validate the optional global look without adding defaults to saved timelines."""
+    allowed = {"grade", "grade_strength", "grain", "vignette", "letterbox"}
+    if not isinstance(look, dict) or set(look) - allowed:
+        raise ValueError("Look must be an object with only grade, grade_strength, grain, vignette and letterbox")
+    if "grade" in look and look["grade"] not in LOOK["grades"]:
+        raise ValueError("Unknown look grade")
+    for key in ["grade_strength", "grain", "vignette"]:
+        if key in look:
+            value = look[key]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 <= value <= LOOK[f"max_{key}"]:
+                raise ValueError(f"Look {key} must be a finite number in 0..{LOOK[f'max_{key}']}")
+    if look.get("letterbox") is not None:
+        value = look["letterbox"]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value not in LOOK["letterbox"]:
+            raise ValueError("Unknown letterbox aspect")
+    return look
+
+
 def validate_timeline_v2(timeline, sources):
     """Validate a production edit. `sources` maps id -> {kind, frames?, has_audio?}."""
     if timeline.get("schema_version") != 2 or timeline.get("purpose") != "production":
         raise ValueError("Only production timeline v2 is accepted here")
     if timeline.get("fps") != 30 or (timeline.get("width"), timeline.get("height")) != (1920, 1080):
         raise ValueError("Production renderer supports 1920x1080 CFR 30 only")
+    if "look" in timeline:
+        validate_look(timeline["look"])
     clips, audio, captions = timeline.get("clips", []), timeline.get("audio", []), timeline.get("captions", [])
     overlays = timeline.get("overlays", [])
     if not clips:

@@ -49,7 +49,7 @@ def ordered(candidates, decisions, entries, order=None):
     return sorted(kept, key=lambda c: (position[c["source"]], (c.get("range") or [0])[0]))
 
 
-def build_timeline(run, kept, entries, library):
+def build_timeline(run, kept, entries, library, look=None):
     clips, audio, captions, overlays, effects, bgm_spans, speech, warnings = [], [], [], [], [], [], [], []
     cursor = 0
     for authored in kept:
@@ -141,6 +141,8 @@ def build_timeline(run, kept, entries, library):
     timeline = {"schema_version": 2, "purpose": "production", "fps": FPS, "width": 1920, "height": 1080,
                 "duration_frames": cursor, "clips": clips, "audio": audio, "captions": captions, "overlays": overlays,
                 "effects": effects}
+    if look is not None:
+        timeline["look"] = production.validate_look(look)
     # Photo-stack shutters are one intentional burst, not separate effects, so they skip the density/repeat advice.
     warnings += sound.sfx_warnings([{"asset": c["source"], "from": c["from"]} for c in audio
                                     if c["kind"] == "sfx" and not re.search(r"-p\d+-s\d+$", c["id"])])
@@ -160,14 +162,16 @@ def assemble(run_id):
         candidates_path, selection_path = safe_path(run, "candidates.json", True), safe_path(run, "selection.json", True)
         if digest(candidates_path) != state.get("candidates_sha256") or digest(selection_path) != state.get("selection_sha256"):
             raise ValueError("candidates.json or selection.json changed after selection; review and select again")
-        candidates = review.validate_candidates(read_json(candidates_path), entries)
+        data = read_json(candidates_path)
+        look = review.candidates_look(data)
+        candidates = review.validate_candidates(data, entries)
         selection = read_json(selection_path)
         decisions = review.validate_selection(selection, candidates)
         kept = ordered(candidates, decisions, entries, selection.get("order"))
         staged = review.stage_audio(run, review.used_audio(kept), config.get("audio_platforms", ["youtube"]))
         library = {a["id"]: a for a in audio_library.load_library()["assets"] if a["id"] in staged}
         sources = source_map(entries, library.values())
-        timeline, warnings = build_timeline(run, kept, entries, {k: sources[k] for k in library})
+        timeline, warnings = build_timeline(run, kept, entries, {k: sources[k] for k in library}, look=look)
         duration = production.validate_timeline_v2(timeline, sources)
         target = run / "timeline.json"
         if target.exists():
@@ -179,6 +183,8 @@ def assemble(run_id):
                   f"- 자막: 감성 {share['mood']} · 예능 {share['variety']} · 대사 {share['dialogue']}"
                   + (f" (감성 {share['mood_share']:.0%})" if share["mood_share"] is not None else ""),
                   f"- 음원: {', '.join(sorted(library)) or '없음'}", "", "## 확인할 점"]
+        if look is not None:
+            report.insert(4, "- " + review.look_summary(look))
         report += [f"- {w}" for w in warnings] or ["- 없음"]
         (run / "assemble-report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
         state.update(stage="assembled", status="pending", timeline_sha256=digest(target), duration_seconds=round(duration / FPS, 2),

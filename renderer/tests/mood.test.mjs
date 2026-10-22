@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {softFade, narrationLineStarts, narrationSeconds} from '../src/production/mood.mjs';
+import {softFade, narrationLineStarts, narrationSeconds, gradeFilter, letterboxBar} from '../src/production/mood.mjs';
 
 const registry = JSON.parse(readFileSync(new URL('../src/production/presets.json', import.meta.url), 'utf8'));
 const rules = registry.narration;
@@ -30,4 +30,21 @@ test('narration reading time matches the Python contract', () => {
   assert.ok(Math.abs(narrationSeconds('가나다라마바사아자차', rules) - 3.3) < 1e-10);
   assert.ok(Math.abs(narrationSeconds('가 나\n다 라', rules) - 3.18) < 1e-10);
   assert.equal(narrationSeconds('가', rules), 2.5);
+});
+
+test('grade filters and tint use bounded deterministic coefficients', () => {
+  assert.deepEqual(gradeFilter('none', 0.6), {filter: 'none', tint: null});
+  assert.ok(gradeFilter('warm', 0).filter.includes('sepia(0)'));
+  for (const grade of registry.look.grades) assert.equal(typeof gradeFilter(grade, 0.5).filter, 'string');
+  assert.deepEqual(gradeFilter('warm', 0.5), {
+    filter: 'sepia(0.09) saturate(1.04) hue-rotate(-2deg) brightness(1.01)',
+    tint: {color: 'rgba(255,180,110,0.035)', blend: 'soft-light'},
+  });
+  assert.equal(gradeFilter('faded', 0.5).tint.blend, 'lighten');
+});
+
+test('letterbox dimensions match the 1080p contract', () => {
+  assert.equal(letterboxBar(2.39), 138);
+  assert.equal(letterboxBar(2.0), 60);
+  assert.equal(letterboxBar(1), 0);
 });

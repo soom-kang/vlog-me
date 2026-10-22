@@ -94,6 +94,17 @@ ADOPT_TWO = {"c01": {"decision": "adopt"}, "c02": {"decision": "adopt"}, "c03": 
 
 
 class AssembleTests(LongformFixture):
+    def test_global_look_survives_review_and_assembly(self):
+        data = plan_candidates()
+        data["look"] = {"grade": "film", "grain": 0.1, "letterbox": 2.0}
+        self.review_and_select(ADOPT_TWO, candidates=data)
+        jobs = common.read_json(self.run / "review/v1/render-input.json")["jobs"]
+        self.assertTrue(all(job["props"]["look"] == data["look"] for job in jobs))
+        assemble.assemble(self.run_id)
+        self.assertEqual(common.read_json(self.run / "timeline.json")["look"], data["look"])
+        self.assertIn("화면 톤: film", (self.run / "assemble-report.md").read_text())
+        self.assertIn("mood_share", render_prod.check(self.run_id)["captions"])
+
     def test_adopted_candidates_become_a_valid_timeline(self):
         self.review_and_select(ADOPT_TWO)
         state = assemble.assemble(self.run_id)

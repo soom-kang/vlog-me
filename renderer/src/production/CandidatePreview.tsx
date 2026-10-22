@@ -1,6 +1,7 @@
 import {AbsoluteFill, Composition, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {Audio, Video} from '@remotion/media';
 import {gainAt} from '../gain.mjs';
+import {LookOverlay, lookFilter, type LookSpec} from './Look';
 import {BlurBackdrop} from './BlurBackdrop';
 import {Caption, type CaptionCue} from './Captions';
 import {EffectOverlay, effectTransform, type EffectCue} from './Effects';
@@ -12,7 +13,7 @@ type AudioCue = {id: string; src: string; from: number; duration: number; gain: 
 export type CandidateProps = {
   kind: 'video' | 'image'; segments: Segment[]; zoom: number; captions: CaptionCue[]; audio?: AudioCue[];
   overlays?: ((PhotoInsertCue & {style?: undefined; src: string}) | (PhotoStackCue & {style: 'stack'; srcs: string[]}))[];
-  effects?: EffectCue[];
+  effects?: EffectCue[]; look?: LookSpec;
   durationInFrames: number; keyFrame: number;
 };
 
@@ -24,12 +25,12 @@ const Zoomed = ({zoom, durationInFrames, children}: {zoom: number; durationInFra
 };
 
 export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], overlays = [], effects = [],
-  durationInFrames}: CandidateProps) => {
+  durationInFrames, look}: CandidateProps) => {
   const frame = useCurrentFrame();
   let offset = 0;
   return (
     <AbsoluteFill style={{backgroundColor: 'black'}}>
-      <AbsoluteFill style={{transform: effectTransform(frame, effects)}}>
+      <AbsoluteFill style={{transform: effectTransform(frame, effects), filter: lookFilter(look)}}>
       {segments.map((segment, index) => {
         const from = offset;
         offset += segment.frames;
@@ -68,11 +69,14 @@ export const CandidatePreview = ({kind, segments, zoom, captions, audio = [], ov
           <Audio src={staticFile(cue.src)} trimBefore={cue.in ?? 0} volume={(frame) => gainAt(frame, cue.gain)} />
         </Sequence>
       ))}
+      <AbsoluteFill style={{filter: lookFilter(look)}}>
       {overlays.map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
           {cue.style === 'stack' ? <PhotoStack cue={cue} srcs={cue.srcs} /> : <PhotoInsert cue={cue} src={cue.src} />}
         </Sequence>
       ))}
+      </AbsoluteFill>
+      <LookOverlay look={look} />
       {captions.map((cue) => (
         <Sequence key={cue.id} from={cue.from} durationInFrames={cue.duration} name={cue.id}>
           <Caption cue={cue} />

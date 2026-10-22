@@ -131,6 +131,23 @@ class ProductionTests(unittest.TestCase):
 
 
 class TimelineV2Tests(unittest.TestCase):
+    def test_existing_fixture_still_valid(self):
+        timeline, sources = edit_fixture()
+        self.assertNotIn("look", timeline)
+        self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
+
+    def test_look_is_optional_and_bounded(self):
+        timeline, sources = edit_fixture()
+        good = {"grade": "warm", "grade_strength": 0.5, "grain": 0.08, "vignette": 0.2, "letterbox": 2.39}
+        self.assertEqual(production.validate_timeline_v2({**timeline, "look": good}, sources), 240)
+        self.assertEqual(production.validate_look({}), {})
+        self.assertEqual(production.validate_look({"letterbox": None}), {"letterbox": None})
+        for bad in [None, [], {"grade": "teal"}, {"grain": 0.3}, {"vignette": True}, {"letterbox": 1.85},
+                    {"lut": "file"}, {"grade_strength": 1.2}, {"grain": float("nan")}, {"vignette": float("inf")},
+                    {"grade_strength": -0.1}, {"grain": "0.1"}, {"letterbox": True}]:
+            with self.subTest(look=bad), self.assertRaises(ValueError):
+                production.validate_timeline_v2({**timeline, "look": bad}, sources)
+
     def test_valid_edit_is_content_driven(self):
         timeline, sources = edit_fixture()
         self.assertEqual(production.validate_timeline_v2(timeline, sources), 240)
