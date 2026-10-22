@@ -4,7 +4,7 @@
 
 ## 현재 기준
 
-- [mood-vlog-style.md](mood-vlog-style.md): 감성 90 · 예능 10 자막·화면 톤 환경(2026-10-22). 갤러리 still은 아직 만들지 않았습니다
+- [mood-vlog-style.md](mood-vlog-style.md): 감성 90 · 예능 10 자막·화면 톤 환경(2026-10-22). 갤러리 still 2장 생성(caption-gallery-v2.jpg, look-gallery.jpg), 사용자 피드백 대기
 - [orca-dev-orchestration.md](orca-dev-orchestration.md): 개발 작업용 Orca 멀티 에이전트 흐름 구현·검증·한계(2026-10-22). 사전 확인은 [orca-spike-2026-10-22.md](orca-spike-2026-10-22.md)
 - [first-sample-review-2026-10-19.md](first-sample-review-2026-10-19.md): 첫 실제 sample(vietnam-20260527) 후보 리뷰까지의 진행·제한
 - [preview-only-review.md](preview-only-review.md): 현재 시작·미리보기 동작, 검증, 제한

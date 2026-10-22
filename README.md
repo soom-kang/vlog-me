@@ -1,6 +1,6 @@
 # vlog-me
 
-Claude Code 하나에서 Skills와 프로젝트 harness를 사용해 롱폼 여행 브이로그(감성 90 · 예능 10, 대사 없는 장면의 내레이션 자막)를 편집하는 로컬 환경입니다. ingest부터 후보 리뷰, 조립, 롱폼 렌더까지 구현했고 **합성 영상으로만 검증**했습니다. 실제 영상은 `/vlog-workflow`로 시작하며, 첫 sample 방법은 [로드맵](docs/roadmap.md)에 있습니다.
+Claude Code 하나에서 Skills와 프로젝트 harness를 사용해 롱폼 여행 브이로그(감성 95 · 예능 5, 풍경과 구어체 감성 자막 중심, [하우스 스타일](docs/house-style.md))를 편집하는 로컬 환경입니다. ingest부터 후보 리뷰, 조립, 롱폼 렌더까지 구현했고 **합성 영상으로만 검증**했습니다. 실제 영상은 `/vlog-workflow`로 시작하며, 첫 sample 방법은 [로드맵](docs/roadmap.md)에 있습니다.
 
 ## 시작
 

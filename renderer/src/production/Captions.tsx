@@ -34,6 +34,8 @@ const speakerColor = (speaker: string | null | undefined, fallback: string) => {
 };
 
 const THIN = '0 1px 2px rgba(0,0,0,0.55), 0 0 12px rgba(0,0,0,0.25)';
+// Reference-style (오눅·걍민경) subtitles: plain white gothic, readable on bright scenery without a box.
+const TALK_SHADOW = '0 1px 3px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.35)';
 type Motion = {pop: number; fade: number; soft: number; frame: number; duration: number; fps: number};
 
 const titleBox = (background: string, color: string, border: string) => (_cue: CaptionCue, {pop}: Motion): CSSProperties => ({
@@ -100,12 +102,18 @@ const STYLES: Record<string, (cue: CaptionCue, m: Motion) => CSSProperties> = {
     textShadow: '0 2px 16px rgba(0,0,0,0.55)'}),
   'place-card': (_cue, {fade}) => ({fontFamily: FONTS.serif, fontSize: 42, color: '#fffaf0', opacity: fade,
     borderLeft: '5px solid #fffaf0', paddingLeft: 20, textShadow: '0 2px 10px rgba(0,0,0,0.55)', letterSpacing: 2}),
+  talk: (cue) => ({fontFamily: FONTS.dialogue, fontSize: 42, color: speakerColor(cue.speaker, '#ffffff'),
+    ...outline('rgba(20,20,20,0.85)', 4), textShadow: TALK_SHADOW, lineHeight: 1.35}),
+  'talk-mood': (_cue, {soft}) => ({fontFamily: FONTS.dialogue, fontSize: 36, color: '#fdfaf3', letterSpacing: 1,
+    lineHeight: 1.4, textShadow: TALK_SHADOW, opacity: soft}),
+  'pop-word': (_cue, {pop}) => ({fontFamily: FONTS.pen, fontSize: 132, color: '#efff7a', ...outline('#2a2f00', 5),
+    textShadow: '0 3px 10px rgba(0,0,0,0.35)', transform: `rotate(-4deg) scale(${0.6 + 0.4 * pop})`}),
 };
 
 const SOFT_SHADOW = '0 2px 18px rgba(0,0,0,0.55)';
 
 type NarrationOptions = {fontFamily: string; fontSize: number; textAlign: 'left' | 'center';
-  lineHeight: number; color?: string; blur: number; lift: number};
+  lineHeight: number; color?: string; blur: number; lift: number; shadow?: string; letterSpacing?: number};
 
 const narrationLayout = (options: NarrationOptions) => (cue: CaptionCue, {frame, duration, fps}: Motion): ReactNode => {
   const lines = cue.text.split('\n');
@@ -115,7 +123,8 @@ const narrationLayout = (options: NarrationOptions) => (cue: CaptionCue, {frame,
   // The subtitle follows the last line, while retaining the common fade-out.
   const subStart = (starts.at(-1) ?? 0) + fadeFrames;
   return <div style={{fontFamily: options.fontFamily, fontSize: options.fontSize, textAlign: options.textAlign,
-    lineHeight: options.lineHeight, color: options.color ?? '#fbf6ec', letterSpacing: 1, textShadow: THIN}}>
+    lineHeight: options.lineHeight, color: options.color ?? '#fbf6ec', letterSpacing: options.letterSpacing ?? 1,
+    textShadow: options.shadow ?? THIN}}>
     {lines.map((line, index) => {
       const t = interpolate(frame, [starts[index], starts[index] + fadeFrames], [0, 1], clamp);
       return <div key={index} style={{whiteSpace: 'pre-wrap', opacity: t * out,
@@ -149,6 +158,15 @@ const LAYOUTS: Record<string, (cue: CaptionCue, m: Motion) => ReactNode> = {
   'diary-center': narrationLayout({fontFamily: FONTS.serif, fontSize: 44, textAlign: 'center', lineHeight: 1.7, blur: 4, lift: 8}),
   letter: narrationLayout({fontFamily: FONTS.pen, fontSize: 66, textAlign: 'left', lineHeight: 1.35,
     color: '#fff8e8', blur: 0, lift: 6}),
+  'talk-note': narrationLayout({fontFamily: FONTS.dialogue, fontSize: 40, textAlign: 'center', lineHeight: 1.45,
+    color: '#ffffff', blur: 0, lift: 4, shadow: TALK_SHADOW, letterSpacing: 0}),
+  'place-tiny': (cue, {fade}) => (
+    <div style={{color: '#ffffff', opacity: fade, textShadow: TALK_SHADOW}}>
+      <div style={{fontFamily: FONTS.dialogue, fontSize: 26, letterSpacing: 1}}>{cue.text}</div>
+      {cue.sub ? <div style={{fontFamily: FONTS.latin, fontSize: 20, letterSpacing: 3, marginTop: 4,
+        textTransform: 'uppercase', opacity: 0.85}}>{cue.sub}</div> : null}
+    </div>
+  ),
   typewriter: (cue, {frame, duration, fps}) => {
     const lines = cue.text.split('\n');
     const starts = narrationLineStarts(lines, duration, fps, registry.narration);

@@ -1,6 +1,6 @@
 # 실제 제작까지의 로드맵
 
-목표는 실제 여행 영상(mp4)과 아이폰 사진에서 재밌는 장면과 감성 장면을 골라 YouTube 롱폼 브이로그를 Claude Code 하나로 편집하는 것입니다. 감성 90 · 예능 10을 지향하며 대사 없는 장면에는 내레이션 자막을 씁니다. 승인된 설계는 [production harness 설계](superpowers/specs/2026-10-19-production-harness-design.md)에 있습니다. 이 문서는 현재 위치와 다음 단위를 여는 방법만 정리합니다.
+목표는 실제 여행 영상(mp4)과 아이폰 사진에서 재밌는 장면과 감성 장면을 골라 YouTube 롱폼 브이로그를 Claude Code 하나로 편집하는 것입니다. 감성 95 · 예능 5를 지향하며 작업 방식은 [하우스 스타일](house-style.md)(2026-10-23 확정)을 따릅니다. 승인된 설계는 [production harness 설계](superpowers/specs/2026-10-19-production-harness-design.md)에 있습니다. 이 문서는 현재 위치와 다음 단위를 여는 방법만 정리합니다.
 
 ## 현재 위치 (2026-10-19)
 

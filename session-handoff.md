@@ -2,7 +2,27 @@
 
 ## Current Objective
 
-2026-10-22 (최신): `mood-vlog-style`을 완료하고 병합했습니다(`95259e0`, Orca Run run_35eda3424ac5, 상태 파일 `.orca-runs/run_35eda3424ac5.md`). 감성 90 · 예능 10, 내레이션 자막, 감성 preset 10개, look·light_leak·dissolve·drift가 들어갔고, 자막 Skill은 `k-mood-caption`입니다. 다음 허용 행동은 둘입니다. (1) 사용자가 동의하면 갤러리 still 두 장을 만듭니다: `node renderer/scripts/gallery.mjs reports/caption-gallery-v2.jpg`, `node renderer/scripts/gallery.mjs reports/look-gallery.jpg LookGallery`. 기존 caption-gallery.jpg는 덮어쓰지 않습니다. 사용자가 보고 크기·위치·톤을 조정합니다. (2) 영상 편집·렌더는 사용자가 따로 요청할 때 `/vlog-workflow`로 시작합니다. 기존 prod run의 timeline은 고치지 않았습니다. 정리할 것: worktree `/Users/soom.kang/orca/workspaces/vlog-me/orca-mood-vlog-style`과 브랜치 `soom-kang/orca-mood-vlog-style`은 사용자 확인 뒤 지웁니다. Orca new-child는 origin/main에서 만들어지므로 다음부터 `--base-branch main`을 씁니다. 근거: reports/mood-vlog-style.md.
+2026-10-23 (하우스 스타일, 최신): 베트남 본편(render v3)이 확정됐습니다. 새 영상은 `/vlog-workflow`로 시작하며 docs/house-style.md(감성 95 · 예능 5)를 기본으로 따릅니다. 새 원본 폴더는 phase 절차(source_roots 갱신)가 필요합니다. 현재 config: audio_search=true, audio_downloads=false, production_render=false.
+
+2026-10-23 (render v3): run은 rendered/succeeded이고 최종본은 `render/v3/final.mp4`(9분 18.9초), 크레딧은 `render/v3/credits.md`입니다. 다음은 사용자 시청입니다. 작은 수정(자막·음량)은 timeline.json → `--check` → 렌더 동의 후 v4로 진행합니다. 장면을 바꾸려면 리뷰부터 다시 합니다. config: audio_search=true, audio_downloads=false, production_render=false. 이전 timeline은 timeline.prev-20261022-154240.json(v2 렌더용)과 timeline.prev-20261022-render-v1.json입니다.
+
+2026-10-23 (리뷰 v15): `review/v15/index.html`(후보 76개, 약 9분 19초, 새 감성 BGM 4곡 반영). config는 audio_search=true, audio_downloads=false, production_render=false입니다. 다음 허용 행동: 사용자의 채택·제외·수정 답을 받아 `review.py select`로 기록 → `assemble.py`(현재 timeline.json은 timeline.prev-*로 밀림) → 렌더 동의 후 `render_prod.py`(render v3). 크레딧에 새 곡 4개 표기가 들어가는지 렌더 후 credits.md로 확인합니다.
+
+2026-10-22 (리뷰 v14): `review/v14/index.html`(후보 76개, 약 9분 19초). 목소리는 카메라를 보고 혼자 말하는 장면 4개만 살립니다. config: audio_search=true(2026-10-22 사용자 동의), audio_downloads=false. 다음 허용 행동은 둘입니다. (1) 사용자가 Mixkit 후보곡을 승인하면 audio_downloads를 켜고 승인된 파일만 받아 등록한 뒤 BGM을 배치하고 리뷰 v15를 만듭니다. 다운로드 후 플래그는 다시 false로 돌립니다. (2) 후보 선택을 받아 `review.py select`로 기록합니다.
+
+2026-10-22 (리뷰 v13): run은 reviewed/pending이고 `review/v13/index.html`(후보 76개, 약 9분 19초)입니다. 다음 허용 행동은 사용자 선택을 받아 `review.py select`로 기록하는 것입니다(selection.json 백업 있음). 그다음 `assemble.py`(현재 timeline.json은 timeline.prev-*로 밀림), 렌더는 동의를 받은 뒤입니다. 남은 확인: c25·c74 남성 음역 짧은 구간, c32·c33 추정 교정 자막 청취, c62 메뉴 넘기는 손, 대화 요약 자막(c21·c56·c58·c65)이 사실에 맞는지 사용자 확인.
+
+2026-10-22 (레퍼런스형 preset): 1단계(개발) 완료. 새 preset 5종과 문서·Skill lock을 반영했고 init.sh는 PASS입니다. 다음 허용 행동: 사용자가 갤러리 v3를 확인하면 2단계(제작)를 진행합니다. 순서는 candidates.json 백업(candidates.prev-20261022-v12.json) → 72개 후보 문구 구어체로 다시 쓰기 → 대화 겹침 장면 추가(점심 v057·v060·v066, 밤 바 v115–v119, 저녁 v137–v139. 원음 끔, 동행 암시 금지) → 레퍼런스 음량 측정으로 BGM 음량 조정 → review v13입니다. 계획 파일: ~/.claude/plans/pasted-content-id-5d15-vlog-me-synthetic-backus.md
+
+2026-10-22 (감성 재선별): run `prod-20261020-053818-932c04b5`는 reviewed/pending, 리뷰 `review/v12/index.html`(후보 72개, 약 8분 22초)입니다. 다음 허용 행동: 사용자의 채택·제외·자막 수정 답을 받아 `review.py select`로 기록(기존 selection.json은 덮어쓰이며 백업 selection.prev-20261022-main-v1.json 있음) → `assemble.py`(현재 timeline.json은 timeline.prev-*로 밀림) → 샘플 렌더는 `production_render` 동의 후. 남은 경고: c24·c70 남성 음역 짧은 구간, c31·c32 추정 교정 자막 청취 확인, c59 메뉴 넘기는 손 확인. 10분 목표에는 약 1분 38초 모자랍니다(동행이 나오는 구간을 빼면 남는 원본 한계).
+
+2026-10-22 (render v2): `render/v2/final.mp4` 렌더 완료(QA 8/8 PASS). `production_render`는 false로 되돌렸습니다. 다음은 사용자 시청입니다. 알려진 가독성 약점: c41 내레이션, c15 대사(밝은 배경). 수정은 timeline.json → `--check` → 렌더 동의 후 v3입니다. state.json의 timeline_sha256은 render_prod가 갱신하지 않아 v1 조립 hash로 남아 있습니다(props.json에는 수정된 timeline이 들어 있음).
+
+2026-10-22 (본편 감성 적용): run `prod-20261020-053818-932c04b5`의 timeline.json에 감성 스타일을 적용하고 `--check` PASS를 받았습니다(자막 67, 내레이션 4, warm look, 효과음 21). state.json은 그대로 rendered/succeeded이고 timeline hash만 달라졌습니다(예상된 상태). 이전 timeline은 `timeline.prev-20261022-render-v1.json`입니다. 다음 허용 행동: 사용자가 렌더를 요청하고 `production_render: true`에 동의하면 `render_prod.py`(render/v2, v1 보존). 렌더 뒤 플래그를 false로 돌립니다. 주의: candidates.json은 갱신하지 않았으므로 `assemble.py`를 다시 돌리면 이 수정이 timeline.prev-*로 밀립니다.
+
+2026-10-22 (갤러리): 다음 허용 행동 (1)을 마쳤습니다. `reports/caption-gallery-v2.jpg`, `reports/look-gallery.jpg`를 만들었고 사용자 피드백(자막 크기·위치·가독성·톤)을 기다립니다. 피드백에 따라 preset·look 값을 조정하는 것은 개발 작업이며, 사용자가 요청할 때 시작합니다.
+
+2026-10-22: `mood-vlog-style`을 완료하고 병합했습니다(`95259e0`, Orca Run run_35eda3424ac5, 상태 파일 `.orca-runs/run_35eda3424ac5.md`). 감성 90 · 예능 10, 내레이션 자막, 감성 preset 10개, look·light_leak·dissolve·drift가 들어갔고, 자막 Skill은 `k-mood-caption`입니다. 다음 허용 행동은 둘입니다. (1) 사용자가 동의하면 갤러리 still 두 장을 만듭니다: `node renderer/scripts/gallery.mjs reports/caption-gallery-v2.jpg`, `node renderer/scripts/gallery.mjs reports/look-gallery.jpg LookGallery`. 기존 caption-gallery.jpg는 덮어쓰지 않습니다. 사용자가 보고 크기·위치·톤을 조정합니다. (2) 영상 편집·렌더는 사용자가 따로 요청할 때 `/vlog-workflow`로 시작합니다. 기존 prod run의 timeline은 고치지 않았습니다. 정리할 것: worktree `/Users/soom.kang/orca/workspaces/vlog-me/orca-mood-vlog-style`과 브랜치 `soom-kang/orca-mood-vlog-style`은 사용자 확인 뒤 지웁니다. Orca new-child는 origin/main에서 만들어지므로 다음부터 `--base-branch main`을 씁니다. 근거: reports/mood-vlog-style.md.
 
 2026-10-22: 개발 작업 전용 Orca 흐름(`orca-dev-orchestration`)을 구현했습니다. 운영 절차는 `docs/orca.md`, Codex 규칙은 `AGENTS.md`, 근거는 reports/orca-dev-orchestration.md입니다. production은 그대로 Claude 단일 세션입니다. vlog-me는 Orca repo로 등록했고(2026-10-22), 실패 receipt 확인도 마쳤습니다(reports/orca-spike-2026-10-22.md 3번). 남은 일: 사용자의 `orca.yaml` 승인, 첫 실제 Orca Run(사용자가 기능을 지정할 때). `first-real-sample`은 on_hold이며, 재개는 사용자 결정입니다.
 

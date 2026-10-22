@@ -213,6 +213,38 @@
       ],
       "status": "completed",
       "evidence": "reports/mood-vlog-style.md; merge 95259e0; dev-check PASS(180, 7 skip); init.sh PASS. 갤러리 still·렌더 NOT_RUN"
+    },
+    {
+      "id": "main-edit-vietnam-mood",
+      "name": "Apply mood 90 / variety 10 style to the Vietnam main edit",
+      "description": "Edit timeline.json of prod-20261020-053818-932c04b5 in place: captions 109->67 (4 narration), look warm 0.5/grain 0.08/vignette 0.2, light_leak x2, c21 dissolve, drift x4, effects 9->3, sfx 48->21. Clips, order, original audio and BGM unchanged. 2026-10-22 follow-up: user asked for a fresh mood-90 recut from the full source pool; new candidates.json (72 candidates, ~8:22, mood 79% by caption share) and review v12.",
+      "dependencies": [
+        "main-edit-vietnam",
+        "mood-vlog-style"
+      ],
+      "status": "completed",
+      "evidence": "render/v2/final.mp4 (4:40.9, 8428 frames, -14.47 LUFS, -1.96 dBTP, QA 8/8 PASS; props include look and 4 narration); --check PASS (mood_share 0.62); backup timeline.prev-20261022-render-v1.json; render/v1 kept. Frame check: c41 narration on white sand and c15 dialogue-soft on light wood have weak contrast. Human viewing NOT_RUN. candidates.json not synced; state.timeline_sha256 still the v1 assemble hash. Recut: review/v12/index.html (72 stills, 24 previews); failed review v11 (browser socket hang-up at 43/72 stills) kept; old candidates/selection kept as *.prev-20261022-main-v1.json. Selection, assembly, sample render NOT_RUN. 2026-10-22 v13: reference-style spoken captions (talk/talk-note/talk-mood/place-tiny/pop-word), 76 candidates (~9:19) incl. 4 overlapping-conversation scenes (original off, BGM on, solo-voice summaries; companion-cue words 0), BGM -12 to -14 dB, cartoon SFX removed; review/v13 (76 stills, 28 previews); male-pitch warnings c25, c74. Selection/assembly/render NOT_RUN. v14: voice kept only for to-camera solo talk (c38, c45, c74, c76); 9 other dialogue candidates muted with talk-note captions; BGM calm only (Serene View, Sunset Dream; cookie Clumsy Daddy); mood share 82%; review/v14 (76 stills, 28 previews); male-pitch warning c74. audio_search=true (user consent 2026-10-22), audio_downloads=false; 10 Mixkit emotional candidates proposed, none downloaded. v15: 4 approved Mixkit tracks downloaded and registered 2026-10-23 (bgm-forest-mist 148, bgm-chillax 655, bgm-slow-pop 351, bgm-old-letter 854; usable for youtube); audio_downloads back to false; chapters slow-pop/chillax/forest-mist/sunset-dream/old-letter/serene-view, gain matched to ~-27 LUFS before final normalization; review/v15 (76 stills, 28 previews). Listening NOT_RUN. 2026-10-23 render v3: to-camera talk scenes (c38, c45, c74) without BGM and with full original ambience (no ducking per pause); cookie c76 keeps BGM under voice; 76 adopted; review v16; assemble PASS (dissolve fallback to cut at c27, c61, c68); render/v3/final.mp4 9:18.9, 16767 frames, -14.1 LUFS, -1.75 dBTP, QA 8/8 PASS; credits.md lists 7 BGM + 2 SFX. production_render back to false. Human viewing NOT_RUN."
+    },
+    {
+      "id": "reference-talk-presets",
+      "name": "Reference-style (오눅·걍민경) spoken caption presets",
+      "description": "Add talk (dialogue), talk-note (narration), talk-mood (mood), place-tiny (place), pop-word (variety) presets; kind defaults unchanged. Docs: caption-style reference section, overlapping-conversation rule (original off, BGM on, solo-voice summary caption, no companion cues); sound-guide rule; k-mood-caption step 6 and skills-lock hash.",
+      "dependencies": [
+        "mood-vlog-style"
+      ],
+      "status": "completed",
+      "evidence": "./init.sh PASS 2026-10-22 (Python 182, 7 skip; Node 9; lint; typecheck); tests/test_captions.py test_reference_talk_presets; reports/caption-gallery-v3.jpg. Real-scene readability and taste vs references NOT_RUN (checked in the next review)."
+    },
+    {
+      "id": "house-style-defaults",
+      "name": "Save the confirmed premium mood house style as project defaults",
+      "description": "docs/house-style.md (mood 95 / fun 5, voice only for to-camera solo talk with no BGM, muted scenery talk -> spoken captions, overlapping conversations muted + solo summary, calm BGM gain-matched to -27 LUFS, minimal SFX, look and transitions). presets.json target 0.95 / window 0.85-1.0 and talk-family presets as kind defaults; config editorial_direction/caption_style; CLAUDE.md, README, roadmap, editorial-guide, caption-style, sound-guide; vlog-workflow, vlog-scout, k-mood-caption skills + skills-lock.",
+      "dependencies": [
+        "reference-talk-presets",
+        "main-edit-vietnam-mood"
+      ],
+      "status": "completed",
+      "evidence": "./init.sh PASS 2026-10-23 (Python 182, 7 skip; lint; typecheck); render_prod --check PASS on the v3 timeline (its mood share 82% now shows below the new 85% window, not rejected)."
     }
   ]
 }

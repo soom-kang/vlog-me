@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # vlog-workflow
 
-여행 영상·사진을 감성 90 · 예능 10의 YouTube 롱폼 브이로그로 편집하는 흐름을 이어 갑니다. 이 Skill은 순서와 확인 지점을 정합니다. 판단 기준은 아래 Skill과 문서에 있습니다.
+여행 영상·사진을 감성 95 · 예능 5의 YouTube 롱폼 브이로그로 편집하는 흐름을 이어 갑니다. 따로 지시가 없으면 [하우스 스타일](../../../docs/house-style.md)(2026-10-23 확정)을 따릅니다. 목소리는 카메라를 보고 혼자 말할 때만 살리고 그때는 BGM을 빼며, 나머지는 BGM과 감성 구어체 자막으로 처리합니다. 이 Skill은 순서와 확인 지점을 정합니다. 판단 기준은 아래 Skill과 문서에 있습니다.
 
 - 후보 선별: `vlog-scout`
 - 자막: `k-mood-caption`, [docs/caption-style.md](../../../docs/caption-style.md)

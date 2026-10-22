@@ -30,7 +30,7 @@ When the user's prompt is only a development task description, decide the role b
 - Vlog type, story and tone come from each production prompt. Runtime is content-driven, without a fixed target duration. Earlier style preferences are references, not forced defaults.
 - Preserve originals and existing artifacts. Synthetic helpers accept only `synthetic-*` runs; production contracts (`scripts/production.py`) accept only `prod-*` runs and paths inside `source_roots` under `sources/`. Never label real media as synthetic to bypass scope.
 - Originals under `sources/` are read-only. `.claude/hooks/protect_sources.py` blocks tool calls that would write there; do not work around it.
-- Write captions by `docs/caption-style.md` (mood 90 / variety 10 with narration captions, presets from `renderer/src/production/presets.json`). Never present unspoken text as `dialogue`.
+- Default production style is `docs/house-style.md` (confirmed 2026-10-23: mood 95 / variety 5, scenery + spoken-tone captions, her voice only for to-camera solo talk with no BGM under it, calm BGM gain-matched). Write captions by `docs/caption-style.md` (presets from `renderer/src/production/presets.json`). Never present unspoken text as `dialogue`.
 - Sound follows `docs/sound-guide.md`. Register audio with `scripts/audio_library.py`; download a Claude-found file only after the user approves that file in chat and the production config enables audio search/downloads.
 - Production renders need `production_render: true`, set only when the user asks for a render. Never overwrite a finished `render/vN/`.
 - `timeline.json` is the render input. Edit through Claude Code; do not maintain a second master timeline or launch native Remotion Studio from upstream examples.
