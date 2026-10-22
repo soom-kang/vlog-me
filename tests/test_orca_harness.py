@@ -33,6 +33,14 @@ class OrcaHarnessTests(unittest.TestCase):
         for name in ["setup.example.json", "production.example.json"]:
             self.assertIs(json.loads(text(f"config/{name}"))["use_subagents"], False)
 
+    def test_orca_sessions_pick_role_from_task_only_prompt(self):
+        claude = text("CLAUDE.md")
+        for rule in ["## Orca Development Sessions", "Dispatched worker", "caller.orcaSessionId",
+                     "never coordinate", "The user's two approvals (plan, merge) still apply"]:
+            self.assertIn(rule, claude)
+        self.assertLess(claude.index("Dispatched worker"), claude.index("Orca coordinator"))
+        self.assertIn("작업 내용만", text("docs/orca.md"))
+
     def test_worker_templates_forbid_media(self):
         for name in TEMPLATES:
             template = text(f"docs/orca/{name}")

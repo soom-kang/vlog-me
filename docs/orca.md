@@ -17,7 +17,17 @@
 
 1. Orca에 이 저장소를 등록합니다: `orca repo add`(또는 Orca 앱에서 폴더 추가). 2026-10-22에 등록했습니다.
 2. 저장소의 `orca.yaml`을 신뢰하도록 Orca에서 승인합니다. 이 파일은 새 worktree에 `.tools/`와 `renderer/node_modules`만 symlink합니다(`worktree.sharedDirectories`). 원본 미디어와 음원 폴더는 공유하지 않습니다.
-3. coordinator로 쓸 Claude 세션을 Orca에서 엽니다(모델 opus 5.5, effort medium).
+3. coordinator로 쓸 Claude 세션을 Orca의 vlog-me main worktree에서 엽니다(모델 opus 5.5, effort medium).
+
+## 작업 요청 방법
+
+Orca에서 연 Claude 세션에는 **작업 내용만** 적으면 됩니다. 예: `review 카드에 후보 길이 합계를 표시해줘`.
+`CLAUDE.md`의 "Orca Development Sessions" 규칙에 따라 Claude가 역할을 스스로 정합니다.
+- Orca 세션이고(`orca status --json`의 `caller.orcaSessionId`) 개발 작업이면, coordinator로서 아래 흐름 전체를 진행합니다.
+- dispatch preamble이 있는 세션은 worker로만 일합니다.
+- Orca 밖이거나 production·미디어 작업이면, 지금처럼 단일 Claude 세션으로 일합니다.
+
+사용자 승인은 그대로 두 번입니다: plan 문서 승인, main 병합 승인.
 
 ## 시작 전 확인(coordinator)
 
